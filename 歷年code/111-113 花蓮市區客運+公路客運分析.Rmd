@@ -1,0 +1,2843 @@
+---
+title: "2025 bus"
+output: html_notebook
+author: "Hsu, Yao-Chih"
+date: "114-10-11"
+---
+
+# 參數設定
+```{r}
+# library
+library(xml2)
+library(data.table)
+library(dplyr)
+library(lubridate)
+library(tidyr)
+library(ggplot2)
+library(future.apply)
+library(progressr)
+library(readxl)
+library(pbapply)
+library(stringr)
+library(openxlsx)
+library(readr)
+library(purrr)
+```
+
+```{r}
+# time
+start_time = Sys.time()
+```
+
+# 太魯閣客運
+```{r}
+# load .xml file function
+xml_loader <- function(path){
+  xml_data <- read_xml(path)
+  return(xml_data)
+}
+
+# transform to data frame by RouteName
+get_xml_text <- function(node, path) {
+  result <- xml_find_first(node, path)
+  if (length(result) == 0 || is.na(result)) return(NA_character_)
+  xml_text(result, trim = TRUE)
+}
+
+xml_to_dataframe <- function(xml_data){
+  tickets <- xml_find_all(xml_data, ".//BusICTicket")
+  tickets_str <- vapply(tickets, as.character, character(1))
+
+  ticket_data <- rbindlist(lapply(tickets_str, function(ticket_str) {
+    ticket <- read_xml(ticket_str)
+    list(
+      ID = get_xml_text(ticket, "ID"),
+      IDType = get_xml_text(ticket, "IDType"),
+      HolderType = get_xml_text(ticket, "HolderType"),
+      TicketType = get_xml_text(ticket, "TicketType"),
+      SubTicketType = get_xml_text(ticket, "SubTicketType"),
+      PlateNumber = get_xml_text(ticket, "PlateNumber"),
+      RouteUID = get_xml_text(ticket, "RouteUID"),
+      RouteName = get_xml_text(ticket, "RouteName"),
+      SubRouteUID = get_xml_text(ticket, "SubRouteUID"),
+      SubRouteName = get_xml_text(ticket, "SubRouteName"),
+      Direction = get_xml_text(ticket, "Direction"),
+      FarePricingType = get_xml_text(ticket, "FarePricingType"),
+      StopOrStation = get_xml_text(ticket, "StopOrStation"),
+      BoardingStopUID = get_xml_text(ticket, ".//BoardingStopUID"),
+      BoardingStopName = get_xml_text(ticket, ".//BoardingStopName"),
+      BoardingStopSequence = get_xml_text(ticket, ".//BoardingStopSequence"),
+      BoardingTime = get_xml_text(ticket, ".//BoardingTime"),
+      DeboardingStopUID = get_xml_text(ticket, ".//DeboardingStopUID"),
+      DeboardingStopName = get_xml_text(ticket, ".//DeboardingStopName"),
+      DeboardingStopSequence = get_xml_text(ticket, ".//DeboardingStopSequence"),
+      DeboardingTime = get_xml_text(ticket, ".//DeboardingTime"),
+      Price = get_xml_text(ticket, "Price"),
+      Discount = get_xml_text(ticket, "Discount"),
+      TransferCode = get_xml_text(ticket, "TransferCode"),
+      DiscountInfo = get_xml_text(ticket, "DiscountInfo"),
+      PaymentPrice = get_xml_text(ticket, "PaymentPrice")
+    )
+  }), fill = TRUE)
+  
+  return(ticket_data)
+}
+
+# loader
+loader <- function(path){
+  xml_data = data.frame()
+  for (i in 1:length(path[[1]])){
+    xml_raw_data = xml_loader(path=path[[1]][i])
+    
+    xml_data <- rbind(xml_data, xml_to_dataframe(xml_raw_data))
+  }
+  data = xml_data %>% data.frame()
+  
+  return(data)
+}
+
+# check the save path
+check_path <- function(path) {
+  if (!dir.exists(path)) {
+    dir.create(path, recursive = TRUE, showWarnings = FALSE)
+  }
+}
+
+# generate the specified month interval
+generate_months <- function(year.from, year.to, month.from = 1, month.to = 12) {
+  months = unlist(lapply(year.from:year.to, function(y) {sprintf("%04d%02d", y, month.from:month.to)}))
+  return(months)
+}
+
+# convert HolderType to common ticket type
+convert_holder_type_taroko <- function(types) {
+  map <- c(
+    "A"   = "一般票",
+    "B"   = "學生票",
+    "C01" = "敬老優待票",
+    "C02" = "愛心優待票",
+    "C09" = "其他優待票",
+    "D"   = "員工票",
+    "TPASS" = "TPASS"
+  )
+  result <- map[types]
+  result[is.na(result)] <- NA
+  return(result)
+}
+
+# simple summary for every variables
+df_summary <- function(data) {
+  res <- list()
+  
+  # 使用 pblapply 取代 for 迴圈，自動顯示進度條
+  temp_res <- pblapply(colnames(data), function(col) {
+    # 計算每個 unique 值出現次數
+    tbl <- data.frame(table(data[[col]], useNA = "ifany"), stringsAsFactors = FALSE)
+    colnames(tbl) <- c("values", "times")
+    
+    list(
+      unique = tbl,
+      NAs = sum(is.na(data[[col]])),
+      type = class(data[[col]])[1]
+    )
+  })
+  
+  # 將結果組回 list，欄位名稱對應原欄位
+  names(temp_res) <- colnames(data)
+  res <- temp_res
+  
+  return(res)
+}
+```
+
+```{r}
+# config
+year.from = 2022  # 西元
+year.to = 2025
+month.from = 1
+month.to = 12
+
+windowsFonts(kai = windowsFont("Microsoft JhengHei"))
+
+# 檔案路徑
+base_path <- "../../資料集/107-11407_花蓮_太魯閣客運_市區客運"
+months <- generate_months(year.from, year.to, month.from, month.to)
+roc_years <- as.character(as.integer(substr(months, 1, 4)) - 1911)
+paths <- unlist(mapply(function(ym, roc) {
+  files <- sprintf("%s_ic_HUA_0412_0%d.xml", ym, 1:3)
+  file.path(base_path, roc, files)
+}, ym = months, roc = roc_years, SIMPLIFY = FALSE))
+
+# 檢查檔案是否存在
+exists_mask <- file.exists(paths)
+
+# 輸出 warning
+if(any(!exists_mask)) {
+  warning("以下檔案不存在:\n", paste(paths[!exists_mask], collapse = "\n"))
+}
+
+# 只保留存在的檔案
+paths <- paths[exists_mask]
+
+# 將票證資料轉為資料框，以列表呈現
+# 啟用多核心
+plan(multisession, workers = parallel::detectCores() - 1)
+handlers("txtprogressbar")  # 顯示進度條
+
+# 平行讀取市區公車
+df_taroko <- with_progress({
+  p <- progressor(along = seq(1, length(paths), by = 3))
+  
+  result <- future_lapply(seq(1, length(paths), by = 3), function(month_index) {
+    path <- paths[month_index:min(month_index + 2, length(paths))]
+    out <- loader(path)
+    p()   # 更新進度
+    return(out)
+  },
+  future.packages = c("xml2", "data.table", "dplyr", "lubridate", "tidyr"))
+  
+  do.call(rbind, result)  # 合併結果
+})
+
+# 檢視前幾筆資料
+head(df_taroko)
+```
+
+```{r}
+# 整理日期，找出星期幾
+# 新增 Weekday 欄位
+
+# 上車分鐘與下車分鐘
+# 上車分鐘指該天上車時間權全換為分鐘，如 21 小時 31 分 15 秒為 21 × 60 + 31 = 1291 分鐘
+# 新增 BoardingTimeInMinutes 和 DeboardingTimeInMinutes 欄位
+
+# 搭乘時間
+# 是指下車分鐘減去上車分鐘
+
+# 修改 HolderType 使得如果 SubTicketType 是 #HUA-199 或 #HUA-399 就轉為 TPASS
+
+# 將上下車格式修改成日期格式
+
+df_taroko <- df_taroko %>% mutate(
+  BoardingParsed = if_else(
+    BoardingTime == "0000-00-00 00:00:00",
+    as.POSIXct(NA),
+    suppressWarnings(ymd_hms(BoardingTime))
+  ),
+  DeboardingParsed = if_else(
+    DeboardingTime == "0000-00-00 00:00:00",
+    as.POSIXct(NA),
+    suppressWarnings(ymd_hms(DeboardingTime))
+  ),
+  
+  # 星期幾
+  Weekday = weekdays(coalesce(BoardingParsed, DeboardingParsed)),
+  
+  # 上車分鐘
+  BoardingTimeInMinutes = hour(BoardingParsed) * 60 + minute(BoardingParsed) + second(BoardingParsed) / 60,
+  
+  # 下車分鐘
+  DeboardingTimeInMinutes = hour(DeboardingParsed) * 60 + minute(DeboardingParsed) + second(DeboardingParsed) / 60,
+  
+  # 搭乘時間
+  TravelTime = DeboardingTimeInMinutes - BoardingTimeInMinutes,
+  
+  # TPASS 修改 (方便畫圖)
+  HolderType = if_else(SubTicketType %in% c('#HUA-199', '#HUA-399'), 'TPASS', HolderType),
+  
+  # 修改時間格式
+  BoardingTime = BoardingParsed,
+  DeboardingTime = DeboardingParsed,
+  ) %>% 
+  select(-BoardingParsed, -DeboardingParsed)  # 清除中間欄位
+```
+
+```{r}
+# variables
+names(df_taroko)
+```
+
+| 欄位名稱                | 中文名稱       | 說明                                           |
+| ------------------------| -------------- | --------------------------------------------   |
+| `ID`                    | 票證識別碼     | 資料筆唯一識別碼，用於區隔每一筆旅次或票證紀錄。                  |   
+| `IDType`                | 識別碼類型     | 識別碼類型，如車牌編號、票證序號等，指明 ID 的來源或格式。         |     
+| `HolderType`            | 票證持有者類   | 票證持有者類型，例如一般民眾、學生、敬老卡等。                    | 
+| `TicketType`            | 票種           | 如單程票、電子票證、日票等，用以區分不同票價方案。                |    
+| `SubTicketType`         | 子票種         | 子票種／細分類，如半價、愛心票、團體票等，為 TicketType 的細部補充|。     
+| `PlateNumber`           | 車輛牌號       | 車輛牌照號碼，標示該筆旅次所搭乘的車輛。                       |  
+| `RouteUID`              | 路線識別碼     | 路線全域唯一識別碼，用於串接不同 API 時對應相同路線。         | 
+| `RouteName`             | 路線名稱       |  路線名稱，例如「302 花蓮－太魯閣」。                        | 
+| `SubRouteUID`           | 附屬路線識別碼 | 編碼原則：前四碼主路線，第五碼正副路線，第六碼去返程。             |    
+| `SubRouteName`          | 附屬路線名稱   | 附屬路線名稱，對應 SubRouteUID 的文字描述。               |  
+| `Direction`             | 去／返程方向   | 通常 0 或 1 表示去程，2 或 3 表示返程。                  |  
+| `FarePricingType`       | 計費方式       | 如「區間計費」、「里程計費」、「階梯票價」等。                    |  
+| `StopOrStation`         | 站點類型       | 表示站牌 (Stop) 或站位 (Station)，用於票證 OD 分析對應的資料層級。| 
+| `BoardingStopUID`       | 上車站點識別碼 | 上車站點識別碼，對應 StopOrStation。                   | 
+| `BoardingStopName`      | 上車站名       | 上車站名稱。                                      
+| `BoardingStopSequence`  | 上車站序       | 上車站在整條路線中的站序（第幾站）。                         |  
+| `BoardingTime`          | 上車時間       | 上車時間（ISO 8601 格式）。                         |  
+| `DeboardingStopUID`     | 下車站點識別碼 | 下車站點識別碼。                                    | 
+| `DeboardingStopName`    | 下車站名       | 下車站名稱。                                       
+| `DeboardingStopSequence`| 下車站序       | 下車站在整條路線中的站序。                              | 
+| `DeboardingTime`        | 下車時間       | 下車時間（ISO 8601 格式）。                         | 
+| `Price`                 | 原始票價       | 計算後之票價（未含折扣）。                              |  
+| `Discount`              | 折扣           | 折扣比例或金額，例如「半價」、「８折」。                       |  
+| `TransferCode`          | 轉乘代碼       | 轉乘優惠代碼，用於標示可否轉乘及轉乘時限等規則。                   | 
+| `DiscountInfo`          | 折扣說明       | 折扣補充說明文字，補充 Discount 欄位的詳細條件。            | 
+| `PaymentPrice`          | 實付金額       | 實際支付金額（Price 扣除 Discount 後）。             |  
+
+| 欄位名稱                | 資料來源                   | 變數
+| ------------------------| -------------------------- | ----------------------------------------- |
+| `ID`                    | ticp.motc.gov.tw           | #########################################################################|
+| `IDType`                | ticp.motc.gov.tw           | EasyCard、PaymentID、iPASS、icash|
+| `HolderType`            | ticp.motc.gov.tw           | A、B、C01、C02、C09 (???|
+| `TicketType`            | 110traffic.hl.gov.tw       | 1、4 (???|
+| `SubTicketType`         | ticp.motc.gov.tw           | HUA-199、HUA-399(花蓮通勤月票)|
+| `PlateNumber`           | ticp.motc.gov.tw           | 009-FV、010-FV、011-FV、075-FV、076-FV、
+                                                         EAA-283、EAA-286、EAA-287、EAA-287、EAA-289|
+| `RouteUID`              | 交通部公共運輸資料開放平台 | HUA0301、HUA0302、HUA0303、HUA0305|
+| `RouteName`             | 110traffic.hl.gov.tw       | 301、302、303、305|
+| `SubRouteUID`           | motc-ptx.gitbook.io        | HUA030101、HUA030102、HUA030201、HUA030202、HUA030301、HUA030302、HUA0303B1、HUA0303B2、HUA0303C1、HUA0303C2|
+| `SubRouteName`          | Gist                       | 301、302、303、303B、303C、303D、305、305A|
+| `Direction`             | motc-ptx.gitbook.io        | 0、1 (0去，1回，來源 https://zh.wikipedia.org/zh-tw/太魯閣客運)|
+| `FarePricingType`       | ticp.motc.gov.tw           | ODFares (???|
+| `StopOrStation`         | Gist                       | 0 (???|
+| `BoardingStopUID`       | 110traffic.hl.gov.tw       | HUA290407、HUA290442、HUA290453、HUA290470、HUA290471、HUA290494	、HUA290495、HUA290528、HUA290529、HUA290530|
+| `BoardingStopName`      | 110traffic.hl.gov.tw       | 三角市場、上騰高商、中山(市八)市場	、中山三慶豐七街口、中華紙漿、中華路、九曲洞、亞洲水泥廠、仁安社區、信義國小|
+| `BoardingStopSequence`  | ticp.motc.gov.tw           | 1、10、11、12、13、14、15、16、17、18 |
+| `BoardingTime`          | ticp.motc.gov.tw           | #########################################################################|
+| `DeboardingStopUID`     | 110traffic.hl.gov.tw       | -99(逃票)、HUA290407、HUA290442、HUA290452、HUA290470、HUA290471、HUA290494、 HUA290528、HUA290529、HUA290530|
+| `DeboardingStopName`    | 110traffic.hl.gov.tw       | -99、三角市場、上騰高商、中山(市八)市場、中山三慶豐七街口、中華紙漿、中華路、九曲洞、亞洲水泥廠、仁安社區 (-99 ???|
+| `DeboardingStopSequence`| ticp.motc.gov.tw           | -99、1、10、11、12、13、14、15、16、17 (-99 ???|
+| `DeboardingTime`        | ticp.motc.gov.tw           | #########################################################################|
+| `Price`                 | 110traffic.hl.gov.tw       | 0、104、106、109、110、12、13、149、15、16|
+| `Discount`              | ticp.motc.gov.tw           | 0、12、13、15、16、17、18、19、20、21			|
+| `TransferCode`          | ticp.motc.gov.tw           | 0102、0199、0202、0299、0302、0399、0402、0499、0602、0702|
+| `DiscountInfo`          | ticp.motc.gov.tw           | ???(第一項變數沒有值)|
+| `PaymentPrice`          | 110traffic.hl.gov.tw       | 0、1、10、104、109、11、110、12、13、14|
+
+
+```{r}
+# modify some row
+df_taroko$HolderType = convert_holder_type_taroko(df_taroko$HolderType)
+
+# simple summary for every variables
+df_taroko.summary = df_summary(df_taroko)
+print(df_taroko.summary$HolderType)
+
+# 轉換日期格式
+df_taroko$BoardingTime <- format(as.POSIXct(df_taroko$BoardingTime),"%Y-%m-%d %H:%M:%S")
+df_taroko$DeboardingTime <- format(as.POSIXct(df_taroko$DeboardingTime),"%Y-%m-%d %H:%M:%S")
+```
+
+```{r}
+# 儲存至 .csv 檔案
+path = paste0("datasets")
+check_path(path)
+write.csv(df_taroko, file = paste0(path, "/太魯閣客運_", year.from - 1911, "-", year.to - 1911, ".csv"), row.names = FALSE, fileEncoding = "UTF-8")
+```
+
+# 統聯客運
+```{r}
+# for 除了太魯閣客運以外的客運的資料讀檔函數
+# 對照表清理函式
+clean_names <- function(df) {
+  # 先處理上車/下車時間欄位，拆成日期與時間
+  if("上車時間(上)" %in% colnames(df)) {
+    df <- df %>%
+      mutate(
+        上車交易日期 = as.character(as.Date(as.POSIXct(`上車時間(上)`))),
+        上車交易時間 = format(as.POSIXct(`上車時間(上)`), "%H:%M:%S")
+      ) %>%
+      select(-`上車時間(上)`)
+  } else if("上車時間" %in% colnames(df)) {
+    df <- df %>%
+      mutate(
+        上車交易日期 = as.character(as.Date(as.POSIXct(`上車時間`))),
+        上車交易時間 = format(as.POSIXct(`上車時間`), "%H:%M:%S")
+      ) %>%
+      select(-`上車時間`)
+  }
+  
+  if("下車時間(下)" %in% colnames(df)) {
+    df <- df %>%
+      mutate(
+        下車交易時間 = format(as.POSIXct(`下車時間(下)`), "%H:%M:%S")
+      ) %>%
+      select(-`下車時間(下)`)
+  } else if("下車時間" %in% colnames(df)) {
+    df <- df %>%
+      mutate(
+        下車交易時間 = format(as.POSIXct(`下車時間`), "%H:%M:%S")
+      ) %>%
+      select(-`下車時間`)
+  }
+  
+  # 如果是現場售票，則有人數欄位，依照人數重複行數，便於計算
+  if ("人數" %in% colnames(df)) {
+    df <- df %>%
+      mutate(人數 = ifelse(is.na(人數) | 人數 < 1, 1, 人數)) %>%
+      tidyr::uncount(weights = 人數, .remove = FALSE)  # 每行重複人數次，包括原本那行
+  }
+  
+  # 依照對照表重命名
+  df <- df %>%
+    rename(
+      "路線"         = any_of(c("路線", "路線公路編號", "路線編號")),
+      "車號"         = any_of(c("車號")),
+      "票種編號"     = any_of(c("票種編號")),
+      "票種名稱"     = any_of(c("票種名稱", "票種代碼", "票種", "交易票種", "卡種")),
+      "路線名稱"     = any_of(c("路線名稱")),
+      "卡號"         = any_of(c("卡號")),
+      "上車交易日期" = any_of(c("上車交易日期", "售票日期", "營運日期")),
+      "上車交易時間" = any_of(c("上車交易時間")),
+      "下車交易時間" = any_of(c("下車交易時間")),
+      "交易型態"     = any_of(c("交易型態")),
+      "去返程"       = any_of(c("去返程", "往返程", "狀態", "去返")),
+      "票證公司"     = any_of(c("票證公司", "票證公司編號", "票証公司")),
+      "票價票種"     = any_of(c("票價票種")),
+      "上車站點"     = any_of(c("上車站點", "計費站序(上)", "上車招呼站代碼", "上車站序")),
+      "上車站點名稱" = any_of(c("上車站點名", "上車站點名稱", "計費站名(上)", "上車站名", "上車購票站名稱", "上車招呼站名稱", "上車站")),
+      "下車站點"     = any_of(c("下車站點", "計費站序(下)", "下車招呼站代碼", "下車站序")),
+      "下車站點名稱" = any_of(c("下車站點名", "下車站點名稱", "計費站名(下)", "下車站名", "下車群組名稱", "下車招呼站名稱", "下車站")),
+      "客運公司編號" = any_of(c("客運公司編號")),
+      "司機編號"     = any_of(c("司機編號"))
+    )
+  
+  # 補齊缺少欄位
+  standard_cols <- c(
+    "路線","車號","票種名稱","票價票種","路線名稱","卡號",
+    "上車交易日期","上車交易時間",
+    "下車交易時間","交易型態","去返程",
+    "票證公司","上車站點","上車站點名稱","下車站點",
+    "下車站點名稱","客運公司編號","司機編號"
+  )
+  
+  missing_cols <- setdiff(standard_cols, colnames(df))
+  if(length(missing_cols) > 0){
+    df[missing_cols] <- NA
+  }
+  
+  # 統一型態：所有欄位轉成字串，避免 bind_rows 衝突
+  df[] <- lapply(df, function(x) {
+    if(is.numeric(x)) as.character(x) else x
+  })
+  
+  # 重新排序欄位
+  df <- df[, standard_cols]
+  return(df)
+}
+
+# 自動判斷讀檔函數
+read_any <- function(file, sheet = NULL, skip = 0) {
+  if (grepl("\\.csv$", file, ignore.case = TRUE)) {
+    return(read_csv(file, skip = skip, show_col_types = FALSE, locale = locale(encoding = "BIG5")))
+  } else if (grepl("\\.(xls|xlsx)$", file, ignore.case = TRUE)) {
+    return(read_excel(file, sheet = sheet, skip = skip))
+  } else {
+    stop("不支援的檔案格式: ", file)
+  }
+}
+```
+
+```{r}
+# 基本路徑
+base_path <- "../../資料集/107-11407_統聯客運_市區客運_國道客運_公路客運"
+
+# 讀取檔案清理合併
+files <- c(
+  paste0(base_path, "/111/11101_11201_310_N2.xlsx"),
+  paste0(base_path, "/111/11104-11201_310A_N2(1).xlsx"),
+  paste0(base_path, "/111/公路客運1123.1131_11008-11101.xlsx"),
+  paste0(base_path, "/111/公路客運1123.1131_11008-11103.xlsx"),
+  paste0(base_path, "/111/公路客運1123.1131_11008-11103.xlsx"),
+  paste0(base_path, "/111/公路客運1123.1131_11008-11103.xlsx"),
+  paste0(base_path, "/111/市區公車_308310_110-11104-ATTCH1.xlsx"),
+  paste0(base_path, "/111/統聯客運電子票證資料-11008-11103.xlsx"),
+  paste0(base_path, "/111/統聯客運電子票證資料-11008-11103.xlsx"),
+  paste0(base_path, "/111/統聯客運電子票證資料-11008-11103.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/112年電子票證資料-東部運研所.xlsx"),
+  paste0(base_path, "/112/2023_09_01_2023_09_30.xlsx"),
+  paste0(base_path, "/112/2023_10_01_2023_10_31.xlsx"),
+  paste0(base_path, "/112/2023_11_01_2023_11_30.xlsx"),
+  paste0(base_path, "/112/202302_202402_20240315.xlsx"),
+  paste0(base_path, "/113/ubus_202403-202503.xlsx"),
+  paste0(base_path, "/113/2024年01月統聯客運補貼明細(電子票證).csv"),
+  paste0(base_path, "/113/2024年02月統聯客運補貼明細(電子票證).csv"),
+  paste0(base_path, "/113/2024年03月統聯客運補貼明細(電子票證).csv"),
+  paste0(base_path, "/113/2024年04月統聯客運補貼明細(電子票證).csv"),
+  paste0(base_path, "/113/2024年05月統聯客運補貼明細(電子票證).csv"),
+  paste0(base_path, "/113/2024年06月統聯客運補貼明細(電子票證).csv"),
+  paste0(base_path, "/113/2024年07月統聯客運補貼明細(電子票證).csv"),
+  paste0(base_path, "/113/2024年08月統聯客運補貼明細(電子票證).csv"),
+  paste0(base_path, "/113/2024年09月統聯客運補貼明細(電子票證).csv"),
+  paste0(base_path, "/113/2024年10月統聯客運補貼明細(電子票證).csv"),
+  paste0(base_path, "/113/2024年11月統聯客運補貼明細(電子票證).csv"),
+  paste0(base_path, "/113/2024年12月統聯客運補貼明細(電子票證).csv"),
+  paste0(base_path, "/114/2025年1月統聯客運補貼明細(電子票證).csv"),
+  paste0(base_path, "/114/2025年2月統聯客運補貼明細(電子票證).csv"),
+  paste0(base_path, "/114/2025年3月統聯客運補貼明細(電子票證).csv"),
+  paste0(base_path, "/114/2025年4月統聯客運補貼明細(電子票證).xlsx"),
+  paste0(base_path, "/114/2025年5月統聯客運補貼明細(電子票證).xlsx"),
+  paste0(base_path, "/114/2025年6月統聯客運補貼明細(電子票證).xlsx"),
+  paste0(base_path, "/114/2025年7月統聯客運補貼明細(電子票證).xlsx")
+)
+
+sheets <- c(
+  "工作表1",
+  "工作表1",
+  "11101",
+  "11101",
+  "11102",
+  "11103",
+  "市區客運",
+  "11101",
+  "11102",
+  "11103",
+  "308",
+  "308A",
+  "1123",
+  "1125",
+  "1128",
+  "1129",
+  "1130",
+  "1132",
+  "1132A",
+  "1133",
+  "1135",
+  "1135A",
+  "1136",
+  "1137",
+  "1139",
+  "1139B",
+  "1139C",
+  "1140",
+  "1143",
+  "1145",
+  "票種表",
+  "票種表",
+  "票種表",
+  "工作表1",
+  "202403-202503",
+  "2024年01月統聯客運補貼明細(電子票證)",
+  "2024年02月統聯客運補貼明細(電子票證)",
+  "2024年03月統聯客運補貼明細(電子票證)",
+  "2024年04月統聯客運補貼明細(電子票證)",
+  "2024年05月統聯客運補貼明細(電子票證)",
+  "2024年06月統聯客運補貼明細(電子票證)",
+  "2024年07月統聯客運補貼明細(電子票證)",
+  "2024年08月統聯客運補貼明細(電子票證)",
+  "2024年09月統聯客運補貼明細(電子票證)",
+  "2024年10月統聯客運補貼明細(電子票證)",
+  "2024年11月統聯客運補貼明細(電子票證)",
+  "2024年12月統聯客運補貼明細(電子票證)",
+  "2025年1月統聯客運補貼明細(電子票證)",
+  "2025年2月統聯客運補貼明細(電子票證)",
+  "2025年3月統聯客運補貼明細(電子票證)",
+  "2025年4月統聯客運補貼明細(電子票證)",
+  "2025年5月統聯客運補貼明細(電子票證)",
+  "all佐證資料新022025060120250630-2025",
+  "all佐證資料新022025070120250731-2025"
+  )
+
+skips <- c(
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  3,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0
+)
+
+# 用 pblapply 取代 for 迴圈
+df_list <- pblapply(seq_along(files), function(i) {
+  temp <- read_any(files[i], sheet = sheets[i], skip = skips[i])
+  temp <- clean_names(temp)
+  return(temp)
+})
+
+# 合併所有資料框
+df_ubus <- bind_rows(df_list)
+```
+
+```{r}
+# modify some rows
+df_ubus$上車交易日期 <- parse_date_time(df_ubus$上車交易日期, orders = c("ymd", "y/m/d")) %>% as.Date()
+df_ubus$上車交易時間 <- hms(df_ubus$上車交易時間)
+df_ubus$下車交易時間 <- hms(df_ubus$下車交易時間)
+df_ubus$客運公司編號 = "統聯客運"
+df_ubus <- df_ubus[!grepl("合計", df_ubus$路線), ]
+
+route_map <- c(
+  "000308" = "308",
+  "003081" = "308",
+  "003082" = "308A",
+  "000310" = "310",
+  "003101" = "310",
+  "003110" = "311",
+  "003111" = "311A",
+  "001121" = "1121",
+  "001122" = "1122",
+  "001123" = "1123",
+  "001125" = "1125",
+  "011280" = "1128",
+  "001129" = "1129",
+  "001130" = "1130",
+  "011320" = "1132",
+  "011321" = "1132A",
+  "011330" = "1133",
+  "001135" = "1135",
+  "011351" = "1135A",
+  "001136" = "1136",
+  "001137" = "1137",
+  "011390" = "1139",
+  "011392" = "1139B",
+  "011393" = "1139C",
+  "011400" = "1140",
+  "011410" = "1141",
+  "011411" = "1141A",
+  "001142" = "1142",
+  "001143" = "1143",
+  "001145" = "1145"
+)
+df_ubus$路線 <- recode(df_ubus$路線, !!!route_map)
+```
+
+```{r}
+# 查看結果
+head(df_ubus)
+```
+
+```{r}
+# simple summary for every variables
+df_ubus.summary = df_summary(df_ubus)
+print(df_ubus.summary$票種名稱)
+```
+
+```{r}
+# 儲存至 .csv 檔案
+path = paste0("datasets")
+check_path(path)
+write.csv(df_ubus, file = paste0(path, "/統聯客運_", year.from - 1911, "-", year.to - 1911, ".csv"), row.names = FALSE, fileEncoding = "UTF-8")
+```
+
+# 花蓮客運
+```{r}
+# 基本路徑
+base_path <- "../../資料集/107-113.07-花蓮客運資料 停駛"
+
+# 讀取檔案清理合併
+files <- c(
+  paste0(base_path, "/111年/2022年04月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/111年/2022年05月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/111年/2022年06月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/111年/2022年07月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/111年/2022年08月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/111年/2022年09月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/111年/2022年10月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/111年/2022年11月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/111年/2022年12月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/111年/11104-車售.xlsx"),
+  paste0(base_path, "/111年/11105-車售.xlsx"),
+  paste0(base_path, "/111年/11106-車售.xls"),
+  paste0(base_path, "/111年/11107-車售.xls"),
+  paste0(base_path, "/111年/11108-車售.xlsx"),
+  paste0(base_path, "/111年/11109-車售.xlsx"),
+  paste0(base_path, "/111年/11110-車售.xls"),
+  paste0(base_path, "/111年/11111-車售.xls"),
+  paste0(base_path, "/111年/11112-車售.xls"),
+  paste0(base_path, "/112年/2023年01月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/112年/11201-車售.xls"),
+  paste0(base_path, "/113年/2024年03月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/113年/2024年04月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/113年/2024年05月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/113年/2024年06月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/113年/2024年07月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/11008-12+11101-03/花蓮客運車上售票資料-11101-04+11008-12.xlsx"),
+  paste0(base_path, "/11008-12+11101-03/花蓮客運車上售票資料-11101-04+11008-12.xlsx"),
+  paste0(base_path, "/11008-12+11101-03/花蓮客運車上售票資料-11101-04+11008-12.xlsx"),
+  paste0(base_path, "/11008-12+11101-03/花蓮客運電子票證資料-11008-11104.xlsx"),
+  paste0(base_path, "/11008-12+11101-03/花蓮客運電子票證資料-11008-11104.xlsx"),
+  paste0(base_path, "/11008-12+11101-03/花蓮客運電子票證資料-11008-11104.xlsx"),
+  paste0(base_path, "/11008-12+11101-03/花蓮客運電子票證資料-11008-11104.xlsx"),
+  paste0(base_path, "/11008-12+11101-03/花蓮客運電子票證資料-11101-04 +11008-12.xlsx"),
+  paste0(base_path, "/11008-12+11101-03/花蓮客運電子票證資料-11101-04 +11008-12.xlsx"),
+  paste0(base_path, "/11008-12+11101-03/花蓮客運電子票證資料-11101-04 +11008-12.xlsx"),
+  paste0(base_path, "/11008-12+11101-03/花蓮客運電子票證資料-11101-04 +11008-12.xlsx"),
+  paste0(base_path, "/11008-12+11101-03/統聯客運車上售票資料.xlsx"),
+  paste0(base_path, "/11008-12+11101-03/統聯客運電子票證資料-11101-03+11008-12.xlsx"),
+  paste0(base_path, "/11008-12+11101-03/統聯客運電子票證資料-11101-03+11008-12.xlsx"),
+  paste0(base_path, "/11008-12+11101-03/統聯客運電子票證資料-11101-03+11008-12.xlsx"),
+  paste0(base_path, "/11105-11202/電子票證資料/2022年05月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/11105-11202/電子票證資料/2022年06月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/11105-11202/電子票證資料/2022年07月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/11105-11202/電子票證資料/2022年08月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/11105-11202/電子票證資料/2022年09月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/11105-11202/電子票證資料/2022年10月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/11105-11202/電子票證資料/2022年11月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/11105-11202/電子票證資料/2022年12月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/11105-11202/電子票證資料/2023年01月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/11105-11202/電子票證資料/2023年02月花蓮客運補貼明細.csv"),
+  paste0(base_path, "/11203-11302資料-資料有問題/1121路線.csv"),
+  paste0(base_path, "/11203-11302資料-資料有問題/1122路線.csv"),
+  paste0(base_path, "/11203-11302資料-資料有問題/1133路線.csv"),
+  paste0(base_path, "/11203-11302資料-資料有問題/1141A路線.csv"),
+  paste0(base_path, "/11203-11302資料-資料有問題/1141路線.csv"),
+  paste0(base_path, "/11203-11302資料-資料有問題/1142路線.csv")
+)
+
+sheets <- c(
+  "2022年04月花蓮客運補貼明細",
+  "2022年05月花蓮客運補貼明細",
+  "2022年06月花蓮客運補貼明細",
+  "2022年07月花蓮客運補貼明細",
+  "2022年08月花蓮客運補貼明細",
+  "2022年09月花蓮客運補貼明細",
+  "2022年10月花蓮客運補貼明細",
+  "2022年11月花蓮客運補貼明細",
+  "2022年12月花蓮客運補貼明細",
+  "正常",
+  "正常",
+  "營運統計報表系統-車上電子售票交易明細表",
+  "營運統計報表系統-車上電子售票交易明細表",
+  "營運統計報表系統-車上電子售票交易明細表",
+  "營運統計報表系統-車上電子售票交易明細表",
+  "營運統計報表系統-車上電子售票交易明細表",
+  "營運統計報表系統-車上電子售票交易明細表",
+  "營運統計報表系統-車上電子售票交易明細表",
+  "2023年01月花蓮客運補貼明細",
+  "營運統計報表系統-車上電子售票交易明細表",
+  "2024年03月花蓮客運補貼明細",
+  "2024年04月花蓮客運補貼明細",
+  "2024年05月花蓮客運補貼明細",
+  "2024年06月花蓮客運補貼明細",
+  "2024年07月花蓮客運補貼明細",
+  "11101",
+  "11102",
+  "11103",
+  "11101",
+  "11102",
+  "11103",
+  "11104",
+  "11101",
+  "11102",
+  "11103",
+  "11104",
+  "11101",
+  "11101",
+  "11102",
+  "11103",
+  "2022年05月花蓮客運補貼明細",
+  "2022年06月花蓮客運補貼明細",
+  "2022年07月花蓮客運補貼明細",
+  "2022年08月花蓮客運補貼明細",
+  "2022年09月花蓮客運補貼明細",
+  "2022年10月花蓮客運補貼明細",
+  "2022年11月花蓮客運補貼明細",
+  "2022年12月花蓮客運補貼明細",
+  "2023年01月花蓮客運補貼明細",
+  "2023年02月花蓮客運補貼明細",
+  "1121路線",
+  "1122路線",
+  "1133路線",
+  "1141A路線",
+  "1141路線",
+  "1142路線"
+)
+
+skips <- c(
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0
+)
+
+# 用 pblapply 取代 for 迴圈
+df_list <- pblapply(seq_along(files), function(i) {
+  temp <- read_any(files[i], sheet = sheets[i], skip = skips[i])
+  temp <- clean_names(temp)
+  return(temp)
+})
+
+# 合併所有資料框
+df_huabus <- bind_rows(df_list)
+```
+
+```{r}
+# modify some rows
+# 日期格式調整
+df_huabus$上車交易日期 <- parse_date_time(df_huabus$上車交易日期, orders = c("ymd", "y/m/d")) %>% as.Date()
+
+# 時間格式調整
+
+df_huabus <- df_huabus %>%
+  mutate(
+    # 上車交易時間
+    上車交易時間 = str_pad(上車交易時間, width = 6, side = "left", pad = "0"), # 補齊到6位數
+    上車交易時間 = if_else(
+      str_detect(上車交易時間, "^\\d{6}$"),  # 6位連續數字
+      str_c(
+        str_sub(上車交易時間, 1, 2), ":",   # 小時
+        str_sub(上車交易時間, 3, 4), ":",   # 分鐘
+        str_sub(上車交易時間, 5, 6)         # 秒
+      ),
+      上車交易時間  # 原本格式保留
+    ),
+    上車交易時間 = hms(上車交易時間),
+
+    # 下車交易時間
+    下車交易時間 = str_pad(下車交易時間, width = 6, side = "left", pad = "0"),
+    下車交易時間 = if_else(
+      str_detect(下車交易時間, "^\\d{6}$"),  # 6位連續數字
+      str_c(
+        str_sub(下車交易時間, 1, 2), ":",   # 小時
+        str_sub(下車交易時間, 3, 4), ":",   # 分鐘
+        str_sub(下車交易時間, 5, 6)         # 秒
+      ),
+      下車交易時間  # 原本格式保留
+    ),
+    下車交易時間 = hms(下車交易時間)
+  )
+
+# 客運公司編號調整
+df_huabus$客運公司編號 = "花蓮客運"
+df_huabus <- df_huabus[!grepl("合計", df_huabus$路線), ]
+```
+
+```{r}
+# 查看結果
+head(df_huabus)
+```
+
+```{r}
+# simple summary for every variables
+df_huabus.summary = df_summary(df_huabus)
+print(df_huabus.summary$票種名稱)
+```
+
+```{r}
+# 儲存至 .csv 檔案
+path = paste0("datasets")
+check_path(path)
+write.csv(df_huabus, file = paste0(path, "/花蓮客運_", year.from - 1911, "-", year.to - 1911, ".csv"), row.names = FALSE, fileEncoding = "UTF-8")
+```
+
+# 興東客運 (僅 8119)
+```{r}
+# 基本路徑
+base_path <- "../../資料集/11001-11403_興東客運_鼎東海線_公路客運_花蓮市區客運"
+
+# 讀取檔案清理合併
+files <- c(
+  paste0(base_path, "/route8119_111to114/sdbus8119_df.csv")
+)
+
+sheets <- c(
+  "sdbus8119_df"
+)
+
+skips <- c(
+  0
+)
+
+# 用 pblapply 取代 for 迴圈
+# df_list <- pblapply(seq_along(files), function(i) {
+#   temp <- read_any(files[i], sheet = sheets[i], skip = skips[i])
+#   temp <- clean_names(temp)
+#   return(temp)
+# })
+
+# 合併所有資料框
+# df_sd <- bind_rows(df_list)
+df_sd <- read.csv(file = files[1], skip = skips[1])  %>%
+  mutate(
+    上車交易日期 = as.character(as.Date(營運日期)),
+    上車交易時間 = 上車時間,
+    下車交易時間 = 下車時間 
+  ) %>%
+  select(-營運日期, -上車時間, -下車時間) %>% 
+  clean_names()
+```
+
+```{r}
+# modify some rows
+# 日期格式調整
+df_sd$上車交易日期 <- parse_date_time(df_sd$上車交易日期, orders = c("ymd", "y/m/d")) %>% as.Date()
+
+# 時間格式調整
+
+df_sd <- df_sd %>%
+  mutate(
+    # 上車交易時間
+    上車交易時間 = str_pad(上車交易時間, width = 6, side = "left", pad = "0"), # 補齊到6位數
+    上車交易時間 = if_else(
+      str_detect(上車交易時間, "^\\d{6}$"),  # 6位連續數字
+      str_c(
+        str_sub(上車交易時間, 1, 2), ":",   # 小時
+        str_sub(上車交易時間, 3, 4), ":",   # 分鐘
+        str_sub(上車交易時間, 5, 6)         # 秒
+      ),
+      上車交易時間  # 原本格式保留
+    ),
+    上車交易時間 = hms(上車交易時間),
+
+    # 下車交易時間
+    下車交易時間 = str_pad(下車交易時間, width = 6, side = "left", pad = "0"),
+    下車交易時間 = if_else(
+      str_detect(下車交易時間, "^\\d{6}$"),  # 6位連續數字
+      str_c(
+        str_sub(下車交易時間, 1, 2), ":",   # 小時
+        str_sub(下車交易時間, 3, 4), ":",   # 分鐘
+        str_sub(下車交易時間, 5, 6)         # 秒
+      ),
+      下車交易時間  # 原本格式保留
+    ),
+    下車交易時間 = hms(下車交易時間)
+  )
+
+# 客運公司編號調整
+df_sd$客運公司編號 = "興東客運"
+df_sd <- df_sd[!grepl("合計", df_sd$路線), ]
+```
+
+```{r}
+# 查看結果
+head(df_sd)
+```
+
+```{r}
+# simple summary for every variables
+df_sd.summary = df_summary(df_sd)
+print(df_sd.summary$票種名稱)
+```
+
+```{r}
+# 儲存至 .csv 檔案
+path = paste0("datasets")
+check_path(path)
+write.csv(df_sd, file = paste0(path, "/興東客運_", year.from - 1911, "-", year.to - 1911, ".csv"), row.names = FALSE, fileEncoding = "UTF-8")
+```
+
+
+# 資料讀取時間
+```{r}
+# time
+time_spent <- Sys.time() - start_time
+print(paste0("Time spent: ", round(as.numeric(time_spent, units="secs"), 2), " seconds"))
+```
+
+# 合併所有資料
+```{r}
+df_bus = df_ubus %>% select(-交易型態, -票價票種, -司機編號)
+df_bus.colnames = df_bus %>% colnames()
+
+temp_taroko <- df_taroko %>%
+  rename(
+    路線 = RouteName,
+    車號 = PlateNumber,
+    路線名稱 = RouteUID,
+    卡號 = ID,
+    票證公司 = IDType,
+    上車站點 = BoardingStopSequence,
+    上車站點名稱 = BoardingStopName,
+    下車站點 = DeboardingStopSequence,
+    下車站點名稱 = DeboardingStopName,
+  ) %>%
+  mutate(
+    上車交易日期 = BoardingTime %>% as.Date(),
+    上車交易時間 = format(ymd_hms(BoardingTime), "%H:%M:%S") %>% hms(),
+    下車交易時間 = format(ymd_hms(DeboardingTime), "%H:%M:%S") %>% hms(),
+    去返程 = ifelse(Direction == 0, "往程", "返程"),
+    客運公司編號 = "太魯閣客運",
+    票種名稱 = ifelse(!is.na(SubTicketType) & SubTicketType != "", SubTicketType, HolderType),
+  )
+
+temp_huabus <- df_huabus %>% select(-交易型態, -票價票種, -司機編號)
+
+temp_sd <- df_sd %>% select(-交易型態, -票價票種, -司機編號)
+
+df_bus <- bind_rows(df_bus, temp_taroko, temp_huabus, temp_sd)
+df_bus <- df_bus[, df_bus.colnames]
+df_bus.summary <- df_summary(df_bus)
+```
+
+# 資料數量檢驗
+```{r}
+df_verification <- df_bus %>%
+  mutate(年月 = paste0(year(上車交易日期) - 1911, "/", sprintf("%02d", month(上車交易日期)))) %>%
+  count(年月, 路線) %>%
+  complete(年月, 路線, fill = list(n = 0)) %>%
+  pivot_wider(names_from = 路線, values_from = n, values_fill = 0) %>%
+  arrange(年月)
+print(df_verification)
+
+# 寫入 .xlsx
+wb <- createWorkbook()
+addWorksheet(wb, "資料數量檢驗")
+writeData(wb, sheet = "資料數量檢驗", x = df_verification)
+xlsx_path = paste0("datasets")
+if (!dir.exists(xlsx_path)) {
+  dir.create(xlsx_path, recursive = TRUE)
+}
+saveWorkbook(wb, file = paste0(xlsx_path, "/資料數量檢驗.xlsx"), overwrite = TRUE)
+```
+
+# 定義
+## 定義票種
+```{r}
+# 票種
+ticket_type = c(
+  "一般票",
+  "學生票",
+  "敬老票",
+  "愛心票",
+  "TPASS",
+  "其他優待票"
+)
+
+ticket_map <- list(
+  # TPASS 月票類
+  "199" = "TPASS",
+  "399" = "TPASS",
+  "月票" = "TPASS",
+  "全區公路+臺鐵" = "TPASS",
+  "全區公路客運＋全區臺鐵" = "TPASS",
+  "花蓮區" = "TPASS",
+  "台東區" = "TPASS",
+  
+  # 學生票
+  "學生" = "學生票", 
+  "學童" = "學生票", 
+   
+  # 兒童票
+  "兒童" = "其他優待票", 
+  "孩童" = "其他優待票", 
+  "小孩" = "其他優待票",
+   
+  # 陪伴票（陪同身心障礙者或敬老者）
+  "陪伴" = "其他優待票",
+  "愛陪" = "其他優待票",
+  
+  # 敬老票
+  "敬老" = "敬老票",
+
+  # 愛心票（身心障礙者）
+  "博愛" = "愛心票",
+  "愛心" = "愛心票",
+  
+  # 其他優待票（含半票、優惠）
+  "優待" = "其他優待票",
+  "半票" = "其他優待票",
+  "優惠" = "其他優待票"
+)
+
+# 判斷票種函數
+df_bus <- df_bus %>%
+  mutate(
+    票種分類 = pbsapply(票種名稱, function(ticket_name) {
+      if (is.na(ticket_name) || ticket_name == "") {
+        return("一般票")
+      }
+      matched <- names(ticket_map)[sapply(names(ticket_map), function(x) str_detect(ticket_name, x))]
+      if (length(matched) > 0) {
+        return(ticket_map[[matched[1]]])
+      } else {
+        return("一般票")
+      }
+    })
+  )
+
+
+```
+
+## 定義去返程
+```{r}
+round_trip_map <- c(
+  # 去程
+  "1" = 0,
+  "去" = 0,
+  "往" = 0,
+  
+  # 返程
+  "2" = 1,
+  "回" = 1,
+  "返" = 1,
+
+  # 循環
+  "循環" = 2,
+  
+  # 不分
+  "不分" = 255
+)
+
+# 判斷票種函數
+df_bus <- df_bus %>%
+  mutate(
+    去返程分類 = pbsapply(去返程, function(round_trip_name) {
+      if (is.na(round_trip_name) || round_trip_name == "") {
+        return(255)
+      }
+      matched <- names(round_trip_map)[sapply(names(round_trip_map), function(x) str_detect(round_trip_name, x))]
+      if (length(matched) > 0) {
+        return(round_trip_map[[matched[1]]])
+      } else {
+        return(255)
+      }
+    })
+  )
+```
+
+## 重新 summary
+```{r}
+df_bus.summary <- df_summary(df_bus)
+```
+
+## TPASS 資料數量檢驗
+```{r}
+df_tpass_verification <- df_bus %>%
+  mutate(年月 = paste0(year(上車交易日期) - 1911, "/", sprintf("%02d", month(上車交易日期)))) %>%
+  filter(票種分類 == "TPASS") %>%
+  count(年月, 路線) %>%
+  complete(年月, 路線, fill = list(n = 0)) %>%
+  pivot_wider(names_from = 路線, values_from = n, values_fill = 0) %>%
+  arrange(年月)
+print(df_tpass_verification)
+
+# 寫入 .xlsx
+wb <- createWorkbook()
+addWorksheet(wb, "TPASS資料數量檢驗")
+writeData(wb, sheet = "TPASS資料數量檢驗", x = df_tpass_verification)
+xlsx_path = paste0("datasets")
+if (!dir.exists(xlsx_path)) {
+  dir.create(xlsx_path, recursive = TRUE)
+}
+saveWorkbook(wb, file = paste0(xlsx_path, "/TPASS資料數量檢驗.xlsx"), overwrite = TRUE)
+```
+
+## 定義市區客運與公路客運設定
+```{r}
+bus_type = list()
+
+bus_type$市區線 = c(
+  '301',
+  '302',
+  '302A',
+  '305',
+  '305A',
+  '307',
+  '307A',
+  '308',
+  '308A',
+  '311',
+  '311A',
+  "1128"
+)
+
+bus_type$海岸線 = c(
+  '304',
+  '310',
+  "1123",
+  "1129",
+  "1131",
+  "1132",
+  "1132A",
+  "1136",
+  "1140",
+  "1140A",
+  "1145",
+  "8101",
+  "8102",
+  "8105",
+  "8119"
+)
+
+bus_type$山海線 = c(
+  '309',
+  '1125',
+  "1133",
+  "1141",
+  "1141A",
+  '8181'
+)
+
+bus_type$縱谷線 = c(
+  '303',
+  '303B',
+  '303C',
+  '303D',
+  "1121",
+  "1122",
+  "1130",
+  "1135",
+  "1135A",
+  "1137",
+  "1139",
+  "1139B",
+  "1139C",
+  "1142",
+  "1143",
+  "8161",
+  "8173"
+)
+```
+
+
+
+## 定義站點
+```{r}
+bus_stops = list()
+bus_stops[['301']][['順']] = c( "花蓮轉運站",
+                                "花蓮電影城",
+                                "商校街",
+                                "花蓮商校",
+                                "郵政總局",
+                                "明義國小",
+                                "遠東百貨",
+                                "花蓮文創園區",
+                                "中華路",
+                                "東大門夜市",
+                                "重慶市場(石藝大街)",
+                                "信義國小",
+                                "南濱公園",
+                                "武聖宮(榮光社區)",
+                                "燕聲廣播",
+                                "仁安社區",
+                                "阿美麻糬",
+                                "新天堂樂園",
+                                "光華樂活創意園區",
+                                "中華紙漿",
+                                "大學路口",
+                                "東華大學",
+                                "行政大樓",
+                                "原住民學院",
+                                "育成中心",
+                                "圖書館資訊大樓"
+                              )
+bus_stops[['301']][['逆']] <- rev(bus_stops[['301']][['順']])
+
+bus_stops[['302']][['順']] = c( "新城火車站",
+                                "立閣文旅",
+                                "亞洲水泥廠",
+                                "可樂",
+                                "富世國小",
+                                "太魯閣",
+                                "太魯閣國家公園",
+                                "砂卡噹",
+                                "溪畔",
+                                "燕子口",
+                                "九曲洞",
+                                "合流露營區",
+                                "綠水",
+                                "天祥"
+                              )
+bus_stops[['302']][['逆']] <- rev(bus_stops[['302']][['順']])
+
+bus_stops[['303']][['順']] = c( "花蓮轉運站",
+                                "市立圖書館",
+                                "中山(市八)市場",
+                                "明廉國小",
+                                "花蓮果菜市場",
+                                "中山三慶豐七街口",
+                                "好客藝術村",
+                                "吉安鄉公所(慶修院)",
+                                "上騰高商",
+                                "福興",
+                                "大陸麵店",
+                                "南華國小",
+                                "秧悅酒店",
+                                "干城",
+                                "花蓮監獄",
+                                "慕谷慕魚",
+                                "文蘭",
+                                "鯉魚潭潭北遊客中心",
+                                "鯉魚潭潭南遊憩區",
+                                "白鮑溪橋",
+                                "光榮(壽豐鄉原民館)",
+                                "門諾醫院壽豐分院",
+                                "豐之谷自然生態公園",
+                                "豐坪開發區",
+                                "豐坪活動中心",
+                                "豐華再現館",
+                                "雲山水"
+                              )
+bus_stops[['303']][['逆']] <- rev(bus_stops[['303']][['順']])
+
+bus_stops[['305']][['順']] = c( "花蓮轉運站",
+                                "市立圖書館",
+                                "中山(市八)市場",
+                                "花蓮後站",
+                                "明廉國小",
+                                "慈濟醫院",
+                                "慈濟大學",
+                                "莊敬路",
+                                "北昌國小",
+                                "建國北昌五街口",
+                                "建國路加油站",
+                                "三角市場",
+                                "碧雲莊",
+                                "慈濟科技大學",
+                                "水源大橋",
+                                "水源村"
+                              )
+bus_stops[['305']][['逆']] <- rev(bus_stops[['305']][['順']])
+
+```
+
+## 定義站別與重要景點對照表
+```{r}
+# 路線清單
+routes <- df_bus.summary$路線$unique$values %>% c() %>% na.omit() %>% as.character() 
+
+# 景區清單
+spots <- c("太魯閣",
+           "新城車站", 
+           "花蓮航空站", 
+           "花蓮轉運站/車站", 
+           "東大門夜市", 
+           "新天堂樂園", 
+           "海洋公園", 
+           "志學車站", 
+           "瑞穗車站", 
+           "玉里車站"
+           )
+
+# 建立對照表 (預設 NA)
+df_route_spot <- as.data.frame(matrix(NA, nrow = length(routes), ncol = length(spots), dimnames = list(routes, spots)))
+
+# 設定站名
+df_route_spot['301',  '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['301',  '新天堂樂園']      = '新天堂樂園'
+df_route_spot['301',  '東大門夜市']      = '東大門夜市'
+df_route_spot['302',  '新城車站']        = '新城火車站'
+df_route_spot['302',  '太魯閣']          = '太魯閣'
+df_route_spot['302A', '新城車站']        = '新城火車站'
+df_route_spot['302A', '太魯閣']          = '太魯閣'
+df_route_spot['303',  '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['303B', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['303C', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['303D', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['304',  '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['305',  '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['305A', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['307',  '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['307',  '東大門夜市']      = '東大門夜市'
+df_route_spot['307A', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['308',  '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['308',  '東大門夜市']      = '東大門夜市'
+df_route_spot['308A', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['308A', '東大門夜市']      = '東大門夜市'
+df_route_spot['309',  '玉里車站']        = '玉里火車站'
+df_route_spot['310',  '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['310',  '新城車站']        = '新城火車站'
+df_route_spot['310',  '東大門夜市']      = '東大門夜市'
+df_route_spot['310A', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['310A', '新城車站']        = '新城火車站'
+df_route_spot['310A', '太魯閣']          = '太魯閣'
+df_route_spot['311',  '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['311A', '花蓮航空站']      = '花蓮機場'
+df_route_spot['311A', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['8119', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['8119', '海洋公園']        = '海洋公園'
+df_route_spot['8181', '玉里車站']        = '玉里火車站'
+df_route_spot['1121', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1121', '志學車站']        = '志學'
+df_route_spot['1122', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1122', '瑞穗車站']        = '瑞穗'
+df_route_spot['1122', '志學車站']        = '志學'
+df_route_spot['1128', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1128', '東大門夜市']      = '東大門夜市'
+df_route_spot['1129', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1129', '新城車站']        = '興田'
+df_route_spot['1129', '太魯閣']          = '太魯閣'
+df_route_spot['1129', '東大門夜市']      = '東大門夜市'
+df_route_spot['1130', '玉里車站']        = '玉里站'
+df_route_spot['1132', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1132', '新城車站']        = '興田'
+df_route_spot['1132', '太魯閣']          = '太魯閣'
+df_route_spot['1132', '東大門夜市']      = '東大門夜市'
+df_route_spot['1132A','花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1132A','新城車站']        = '興田'
+df_route_spot['1132A','太魯閣']          = '太魯閣'
+df_route_spot['1132A','東大門夜市']      = '東大門夜市'
+df_route_spot['1133', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1133', '太魯閣']          = '太魯閣'
+df_route_spot['1133', '東大門夜市']      = '東大門夜市'
+df_route_spot['1133', '新城車站']        = '新城火車站'
+df_route_spot['1135', '瑞穗車站']        = '瑞穗'
+df_route_spot['1135', '玉里車站']        = '玉里站'
+df_route_spot['1135A','瑞穗車站']        = '瑞穗'
+df_route_spot['1135A','玉里車站']        = '玉里站'
+df_route_spot['1136', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1136', '新城車站']        = '民治社區'
+df_route_spot['1136', '東大門夜市']      = '東大門夜市'
+df_route_spot['1137', '瑞穗車站']        = '瑞穗'
+df_route_spot['1137', '玉里車站']        = '玉里站'
+df_route_spot['1139', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1139', '東大門夜市']      = '東大門夜市'
+df_route_spot['1139B','花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1139B','東大門夜市']      = '東大門夜市'
+df_route_spot['1139C','花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1139C','東大門夜市']      = '東大門夜市'
+df_route_spot['1140', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1140', '海洋公園']        = '海洋公園'
+df_route_spot['1140A','花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1140A','海洋公園']        = '海洋公園'
+df_route_spot['1141', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1141', '新城車站']        = '興田'
+df_route_spot['1141', '太魯閣']          = '太魯閣'
+df_route_spot['1141', '東大門夜市']      = '東大門夜市'
+df_route_spot['1141A','花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1141A','新城車站']        = '興田'
+df_route_spot['1141A','太魯閣']          = '太魯閣'
+df_route_spot['1141A','東大門夜市']      = '東大門夜市'
+df_route_spot['1142', '瑞穗車站']        = '瑞穗'
+df_route_spot['1142', '玉里車站']        = '玉里站'
+df_route_spot['1143', '瑞穗車站']        = '瑞穗'
+df_route_spot['1145', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1145', '海洋公園']        = '海洋公園'
+df_route_spot['1918', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1918', '新城車站']        = '新城火車站'
+
+# df_route_spot 攤平成長表格
+df_route_spot_long <- df_route_spot %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("路線") %>%   # rownames = 車次/路線
+  pivot_longer(
+    cols = -路線,
+    names_to = "景點",
+    values_to = "站名"
+  ) %>%
+  filter(!is.na(站名))   # 去掉 NA
+```
+
+## 定義新舊站點對照表
+```{r}
+rename_stop_map <- list(
+  # "舊" = "新" ，若已裁撤就填寫附近同鄉鎮站點
+  `1122` = c(
+    "大農大富平地森林園區"   = "大農大富平地森林園區(台9線)"
+  ),
+  `1123` = c(
+    "花蓮商校"               = NA,
+    "東大門夜市"             = NA,
+    "嘉里村"                 = NA,
+    "家樂福"                 = NA,
+    "榮民之家"               = NA,
+    "花蓮火車站"             = NA,
+    "花蓮醫院"               = NA,
+    "翰品酒店"               = NA,
+    "市立圖書館"             = NA,
+    "大同市場"               = NA,
+    "臺灣企銀"               = NA,
+    "門諾醫院"               = NA,
+    "慈濟醫院"               = NA,
+    "花蓮旅行社"             = NA,
+    "民權一街"               = NA,
+    "中興中美路口"           = NA,
+    "大陳一村"               = NA,
+    "郵政總局"               = NA,
+    "石雕博物館"             = NA,
+    "亞士都飯店"             = NA,
+    "花蓮機場"               = NA,
+    "海星中學"               = NA
+  ),
+  `1125` = c(
+    "敦厚路"                 = "光復站"
+  ),
+  `1129` = c(
+    "花蓮醫院"               = "花蓮醫院(將軍府)"
+  ),
+  `1130` = c(
+    "古風"                   = "古楓"
+  ),
+  `1132` = c(
+    "花蓮醫院"               = "花蓮醫院(將軍府)"
+  ),
+  `1132A` = c(
+    "花蓮醫院"               = "花蓮醫院(將軍府)"
+  ),
+  `1133` = c(
+    "花蓮醫院"               = "花蓮醫院(將軍府)"
+  ),
+  `1135A` = c(
+    "泰林"                   = "泰林社區"
+  ),
+  `1136` = c(
+    "花蓮醫院"               = "花蓮醫院(將軍府)"
+  ),
+  `1137` = c(
+    "瑞穗加油站"             = "瑞穗中正南瑞強路口",
+    "大農大富平地森林園區"   = "大農大富平地森林園區(台9線)"
+  ),
+  `1139` = c(
+    "慶豐郵局"               = "好客藝術村",
+    "南華四街"               = "吉安五南華四街口",
+    "吉安鄉公所"             = "吉安鄉公所(慶修院 )"
+  ),
+  `1139B` = c(
+    "慶豐郵局"               = "好客藝術村",
+    "南華四街"               = "吉安五南華四街口",
+    "吉安鄉公所"             = "吉安鄉公所(慶修院 )"
+  ),
+  `1139C` = c(
+    "慶豐郵局"               = "好客藝術村",
+    "南華四街"               = "吉安五南華四街口",
+    "吉安鄉公所"             = "吉安鄉公所(慶修院 )"
+  ),
+  `1141` = c(
+    "花蓮醫院"               = "花蓮醫院(將軍府)"
+  ),
+  `1141A` = c(
+    "花蓮醫院"               = "花蓮醫院(將軍府)"
+  ),
+  `1142` = c(
+    "大農大富平地森林園區"   = "大農大富平地森林園區(台9線)"
+  ),
+  `1145` = c(
+    "進豐街"	               = NA,
+    "石梯漁港北口"	         = "石梯漁港",
+    "大峯村"	               = "大?村"
+  ),
+  `301` = c(
+    "-99"	                   = NA
+  ),
+  `302` = c(
+    "-99"	                   = NA
+  ),
+  `303` = c(
+    "慶修院"	               = "吉安鄉公所(慶修院)",
+    "潭南遊憩區"	           = "鯉魚潭潭南遊憩區",
+    "松園別館"	             = NA,
+    "林田山林業文化園區"     = "林田山中山堂",
+    "-99"	                   = NA
+  ),
+  `305` = c(
+    "慈濟科技大學"	         = "慈濟大學",
+    "-99"	                   = NA
+  ),
+  `308` = c(
+    "花蓮火車站"  	         = "花蓮轉運站",
+    "亞士都飯店"             = "美崙田徑場",
+    "翰品酒店"               = "中美永興路口"
+  ),
+  `308A` = c(
+    "花蓮火車站"  	         = "花蓮轉運站"
+  ),
+  `310` = c(
+    "花蓮火車站"  	         = "花蓮轉運站",
+    "補點1"                  = NA
+  ),
+  `8119` = c(
+    "花蓮文創園區(中"  	     = "花蓮文創園區(中正)",
+    "大峰村"                 = "大?村",
+    "長濱衛生所"             = "長濱鄉衛生所",
+    "寧浦"                   = "寧埔"
+  )
+)
+
+# 依路線數字替換站名
+rename_stop <- function(route_num_vec, stop_name_vec) {
+  map2_chr(route_num_vec, stop_name_vec, ~{
+    route_key <- as.character(.x)
+    if (route_key %in% names(rename_stop_map) && .y %in% names(rename_stop_map[[route_key]])) {
+      rename_stop_map[[route_key]][[.y]]
+    } else {
+      .y
+    }
+  })
+}
+```
+
+
+## 定義南到北鄉鎮
+```{r}
+hua_township_order = c(
+  "臺中市",
+  "南投縣",
+  "臺東縣",
+  "富里鄉",
+  "玉里鎮",
+  "卓溪鄉",
+  "瑞穗鄉",
+  "萬榮鄉",
+  "光復鄉",
+  "鳳林鎮",
+  "豐濱鄉",
+  "壽豐鄉",
+  "秀林鄉",
+  "吉安鄉",
+  "花蓮市",
+  "新城鄉"
+)
+```
+
+## 月份位數修正
+```{r}
+normalize_month <- function(month_str) {
+  # 嘗試轉成數字
+  month_num <- suppressWarnings(as.integer(month_str))
+  
+  if (is.na(month_num)) {
+    stop(paste("Invalid month input:", month_str, "(not a number)"))
+  }
+  
+  if (month_num >= 1 && month_num <= 12) {
+    return(sprintf("%02d", month_num))  # 轉成兩位數字
+  } else {
+    stop(paste("Invalid month input:", month_str, "(must be 1–12)"))
+  }
+}
+```
+
+# 讀取各路線里程
+```{r}
+path <- "../../TDX/花蓮市區公車站點里程.csv"
+hua_mileage <- read_csv(path, col_names = TRUE, locale = locale(encoding = 'Big5'))
+
+path <- "../../TDX/公路客運站點里程.csv"
+intercity_mileage <- read_csv(path, col_names = TRUE, locale = locale(encoding = 'Big5'))
+
+bus_mileage <- rbind(hua_mileage, intercity_mileage)
+
+bus_mileage_reduced <- bus_mileage %>% 
+  select('RouteName', 'SubRouteName', 'Direction', 'StopName', 'Dist_Cum') %>% 
+  filter(!(RouteName == 1145 & StopName == "小港")) %>% 
+  group_by(RouteName, SubRouteName, Direction, StopName) %>%
+  arrange(Dist_Cum, .by_group = TRUE) %>%  # 先按 Dist_Cum 排序
+  slice(pmin(2, n())) %>%                  # 如果只有1筆，選1；至少2筆，選2
+  ungroup()
+  
+print(bus_mileage_reduced)
+```
+
+# 里程
+```{r}
+year.from = 2024
+month.from = 7
+year.to = 2025
+month.to = 6
+
+df_mileage <- df_bus %>%
+  filter(
+    !(路線 == "1145" & (上車站點名稱 == "小港" | 下車站點名稱 == "小港")),
+    上車交易日期 >= as.Date(paste0(year.from, "-", month.from, "-01")),
+    上車交易日期 < as.Date(paste0(year.to, "-",
+                            ifelse(month.to == '12',
+                                   '01',
+                                   normalize_month(as.integer(month.to) + 1)
+                                   ), 
+                            "-01")),
+    !(上車站點名稱 %in% c("", "-99") | is.na(上車站點名稱)),
+    !(下車站點名稱 %in% c("", "-99") | is.na(下車站點名稱))
+  ) %>%
+  mutate(
+    年月 = paste0(year(上車交易日期) - 1911, sprintf("%02d", month(上車交易日期))),
+    路線數字 = as.numeric(gsub("[^0-9]", "", 路線)),
+    上車站點名稱 = rename_stop(路線數字, 上車站點名稱),
+    下車站點名稱 = rename_stop(路線數字, 下車站點名稱)
+  ) %>%
+  left_join(bus_mileage_reduced, by = c("路線" = "SubRouteName", 
+                                        "去返程分類" = "Direction", 
+                                        "上車站點名稱" = "StopName")
+            ) %>% 
+  select(-RouteName) %>% 
+  rename(上車里程 = Dist_Cum) %>% 
+  left_join(bus_mileage_reduced, by = c("路線" = "SubRouteName", 
+                                        "去返程分類" = "Direction", 
+                                        "下車站點名稱" = "StopName")
+            ) %>% 
+  select(-RouteName) %>% 
+  rename(下車里程 = Dist_Cum) %>% 
+  mutate(上車里程 = 上車里程 %>% as.numeric(), 
+         下車里程 = 下車里程 %>% as.numeric(), 
+         )
+
+
+# 檢查上下車里程是否存在 NA 情況，如有則需修改對照表
+# 上車里程為 NA 的站點
+up_na <- df_mileage %>%
+  filter(is.na(上車里程)) %>%
+  select(路線, 上車站點名稱, 去返程分類) %>%
+  distinct() %>%
+  rename(站點名稱 = 上車站點名稱)
+
+# 下車里程為 NA 的站點
+down_na <- df_mileage %>%
+  filter(is.na(下車里程)) %>%
+  select(路線, 下車站點名稱, 去返程分類) %>%
+  distinct() %>%
+  rename(站點名稱 = 下車站點名稱)
+
+df_mileage_analysis_na_stop <- bind_rows(up_na, down_na) %>%
+  distinct() %>%
+  arrange(路線, 去返程分類) %>%
+  mutate(路線 = 路線 %>% as.character())
+
+print(df_mileage_analysis_na_stop)
+save_path = 'datasets/'
+if (!dir.exists(save_path)) {
+  dir.create(save_path, recursive = TRUE)
+}
+write.csv(df_mileage_analysis_na_stop, file = paste0(save_path, '路線里程站點檢查.csv'))
+
+
+
+
+# 偵測核心數，保留一個給系統
+ncores <- parallel::detectCores() - 1
+
+data_fixed_list <- pblapply(
+  1:nrow(df_mileage),
+  function(i) {
+    row <- df_mileage[i, ]
+    
+    route_id <- as.numeric(gsub("\\D", "", row$路線))
+    dir_class <- row$去返程分類  # 優先依照這個方向
+    
+    # -------- 上車里程處理 --------
+    if (is.na(row$上車里程)) {
+      matched <- bus_mileage_reduced %>%
+        filter(RouteName == route_id,
+               StopName == row$上車站點名稱,
+               Direction == dir_class)
+      
+      if (nrow(matched) > 0) {
+        tmp <- as.numeric(matched$Dist_Cum[1])
+        if (!is.na(row$下車里程)) {
+          if ((row$下車里程 - tmp) > 0) row$上車里程 <- tmp
+        } else {
+          row$上車里程 <- NA
+        }
+      }
+    }
+    
+    # -------- 下車里程處理 --------
+    if (is.na(row$下車里程)) {
+      matched <- bus_mileage_reduced %>%
+        filter(RouteName == route_id,
+               StopName == row$下車站點名稱,
+               Direction == dir_class)
+      
+      if (nrow(matched) > 0) {
+        tmp <- as.numeric(matched$Dist_Cum[1])
+        if (!is.na(row$上車里程)) {
+          if ((tmp - row$上車里程) > 0) row$下車里程 <- tmp
+        } else {
+          row$下車里程 <- NA
+        }
+      }
+    }
+    
+    # -------- 如果上下車都還是 NA，就嘗試同方向配對 --------
+    if (is.na(row$上車里程) && is.na(row$下車里程)) {
+      for (d in 0:2) {
+        matched_up <- bus_mileage_reduced %>%
+          filter(RouteName == route_id,
+                 StopName == row$上車站點名稱,
+                 Direction == d)
+        matched_down <- bus_mileage_reduced %>%
+          filter(RouteName == route_id,
+                 StopName == row$下車站點名稱,
+                 Direction == d)
+        
+        if (nrow(matched_up) > 0 && nrow(matched_down) > 0) {
+          tmp_up <- as.numeric(matched_up$Dist_Cum[1])
+          tmp_down <- as.numeric(matched_down$Dist_Cum[1])
+          
+          if ((tmp_down - tmp_up) > 0) {
+            row$上車里程 <- tmp_up
+            row$下車里程 <- tmp_down
+            break
+          }
+        }
+      }
+    }
+    
+    # -------- 計算里程 --------
+    if (!is.na(row$上車里程) && !is.na(row$下車里程)) {
+      diff_val <- row$下車里程 - row$上車里程
+      row$里程 <- ifelse(diff_val > 0, diff_val, NA_real_)
+    } else {
+      row$里程 <- NA_real_
+    }
+    
+    return(row)
+  },
+  cl = ncores
+)
+
+# 合併結果
+df_mileage <- bind_rows(data_fixed_list) %>%
+  filter(!is.na(里程))  # 移除里程無效的資料
+
+df_mileage.summary = df_mileage %>% df_summary()
+```
+
+# 公路客運分析
+## 月平均搭乘里程
+```{r}
+intercity_bus_monthly_average_mileage_plot <- function(year.from, month.from, year.to, month.to) {
+  color <- gray.colors(2)
+  year.from <- year.from %>% as.integer() %>% {ifelse(. < 1000, . + 1911, .)}
+  year.to <- year.to %>% as.integer() %>% {ifelse(. < 1000, . + 1911, .)}
+  month.from <- month.from %>% normalize_month()
+  month.to <- month.to %>% normalize_month()
+  
+  data <- df_mileage %>% 
+    filter(
+      路線 %in% c(bus_type$海岸線, bus_type$山海線, bus_type$縱谷線)
+    ) %>% 
+  select(年月, 里程) %>% 
+  group_by(年月) %>%
+  summarise(人次 = n(), 總里程_公尺 = sum(里程), .groups = "drop") %>% 
+  mutate(平均里程_公里 = 總里程_公尺 / 人次 / 1000)
+
+  # 寫入 .xlsx
+  wb <- createWorkbook()
+  title_ = paste0(year.from - 1911, month.from %>% normalize_month(), "-", year.to - 1911, month.to %>% normalize_month(), "花蓮縣公路客運平均搭乘里程")
+  addWorksheet(wb, title_)
+  writeData(wb, sheet = title_, x = data)
+  xlsx_path = paste0("datasets/", year.from - 1911, month.from %>% normalize_month(), "-", year.to - 1911, month.to %>% normalize_month())
+  if (!dir.exists(xlsx_path)) {
+    dir.create(xlsx_path, recursive = TRUE)
+  }
+  saveWorkbook(wb, file = paste0(xlsx_path, "/", title_, ".xlsx"), overwrite = TRUE)
+
+  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
+  
+  plot(x = 1:length(data$年月),
+       y = data$平均里程_公里,
+       type = "o",
+       lwd = 2,
+       pch = 16,
+       col = color[1],
+       xlab = "月份",
+       ylab = "",
+       ylim = c(min(data$平均里程_公里) * 0.9 , max(data$平均里程_公里) * 1.2),
+       cex.main = 2,
+       cex.lab = 2,
+       cex.axis = 1.5,
+       cex = 1.5,
+       xaxt = "n",
+       yaxt = "n",
+       bty = "n"
+       )
+  
+  title_ = paste0(year.from - 1911, "年", month.from %>% as.numeric(), "月至", year.to - 1911, "年", month.to %>% as.numeric(), "月花蓮縣公路客運平均搭乘里程折線圖")
+  title(main = title_, cex.main = 2, adj = 0)
+  
+  # x 軸
+  axis(side = 1, at = 1:length(data$年月), labels = data$年月, cex.axis = 1.5)
+  
+  # y 軸
+  #axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
+
+  grid()  # 網格線
+  
+  text(x = 1:length(data$年月),
+       y = data$平均里程_公里 + max(data$平均里程_公里) * 0.02,
+       labels = data$平均里程_公里 %>% round(., 1),
+       pos = 3,            # 文字顯示在點上方
+       cex = 1.5,          # 文字大小
+       col = "black"
+  )
+  
+  # 圖例
+  legend("topright", 
+         legend = c("公里"), 
+         col = c(color[1]), 
+         lwd = 2, 
+         pch = 16,
+         bty = "n",
+         inset = c(-0.15, 0),
+         xpd = TRUE,
+         cex = 1.5
+         )
+}
+
+generate_intercity_bus_monthly_average_mileage_plot <- function(year.from, month.from, year.to, month.to) {
+  # 儲存圖片
+  path <- paste0("images/line chart/", year.from - 1911, month.from %>% normalize_month(), "-", year.to - 1911, month.to %>% normalize_month(), "/")
+  check_path(path)
+  img_filename <- paste0(year.from - 1911, "年", month.from, "月至", year.to - 1911, "年", month.to, "月花蓮縣公路客運平均搭乘里程折線圖")
+  png(filename = paste0(path, "/", img_filename, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
+  intercity_bus_monthly_average_mileage_plot(year.from = 2024, month.from = 7, year.to = 2025, month.to = 6)
+  dev.off()
+}
+
+# 繪圖
+generate_intercity_bus_monthly_average_mileage_plot(year.from = 2024, month.from = 7, year.to = 2025, month.to = 6)
+```
+
+# 市區客運分析
+## 月平均搭乘里程
+```{r}
+city_bus_monthly_average_mileage_plot <- function(year.from, month.from, year.to, month.to) {
+  color <- gray.colors(2)
+  year.from <- year.from %>% as.integer() %>% {ifelse(. < 1000, . + 1911, .)}
+  year.to <- year.to %>% as.integer() %>% {ifelse(. < 1000, . + 1911, .)}
+  month.from <- month.from %>% normalize_month()
+  month.to <- month.to %>% normalize_month()
+  
+  data <- df_mileage %>% 
+    filter(
+      路線 %in% c(bus_type$市區線)
+    ) %>% 
+  select(年月, 里程) %>% 
+  group_by(年月) %>%
+  summarise(人次 = n(), 總里程_公尺 = sum(里程), .groups = "drop") %>% 
+  mutate(平均里程_公里 = 總里程_公尺 / 人次 / 1000)
+
+  # 寫入 .xlsx
+  wb <- createWorkbook()
+  title_ = paste0(year.from - 1911, month.from %>% normalize_month(), "-", year.to - 1911, month.to %>% normalize_month(), "花蓮縣市區客運平均搭乘里程")
+  addWorksheet(wb, title_)
+  writeData(wb, sheet = title_, x = data)
+  xlsx_path = paste0("datasets/", year.from - 1911, month.from %>% normalize_month(), "-", year.to - 1911, month.to %>% normalize_month())
+  if (!dir.exists(xlsx_path)) {
+    dir.create(xlsx_path, recursive = TRUE)
+  }
+  saveWorkbook(wb, file = paste0(xlsx_path, "/", title_, ".xlsx"), overwrite = TRUE)
+
+  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
+  
+  plot(x = 1:length(data$年月),
+       y = data$平均里程_公里,
+       type = "o",
+       lwd = 2,
+       pch = 16,
+       col = color[1],
+       xlab = "月份",
+       ylab = "",
+       ylim = c(min(data$平均里程_公里) * 0.9 , max(data$平均里程_公里) * 1.2),
+       cex.main = 2,
+       cex.lab = 2,
+       cex.axis = 1.5,
+       cex = 1.5,
+       xaxt = "n",
+       yaxt = "n",
+       bty = "n"
+       )
+  
+  title_ = paste0(year.from - 1911, "年", month.from %>% as.numeric(), "月至", year.to - 1911, "年", month.to %>% as.numeric(), "月花蓮縣市區客運平均搭乘里程折線圖")
+  title(main = title_, cex.main = 2, adj = 0)
+  
+  # x 軸
+  axis(side = 1, at = 1:length(data$年月), labels = data$年月, cex.axis = 1.5)
+  
+  # y 軸
+  #axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
+
+  grid()  # 網格線
+  
+  text(x = 1:length(data$年月),
+       y = data$平均里程_公里 + max(data$平均里程_公里) * 0.02,
+       labels = data$平均里程_公里 %>% round(., 1),
+       pos = 3,            # 文字顯示在點上方
+       cex = 1.5,          # 文字大小
+       col = "black"
+  )
+  
+  # 圖例
+  legend("topright", 
+         legend = c("公里"), 
+         col = c(color[1]), 
+         lwd = 2, 
+         pch = 16,
+         bty = "n",
+         inset = c(-0.15, 0),
+         xpd = TRUE,
+         cex = 1.5
+         )
+}
+
+generate_city_bus_monthly_average_mileage_plot <- function(year.from, month.from, year.to, month.to) {
+  # 儲存圖片
+  path <- paste0("images/line chart/", year.from - 1911, month.from %>% normalize_month(), "-", year.to - 1911, month.to %>% normalize_month(), "/")
+  check_path(path)
+  img_filename <- paste0(year.from - 1911, "年", month.from, "月至", year.to - 1911, "年", month.to, "月花蓮縣市區客運平均搭乘里程折線圖")
+  png(filename = paste0(path, "/", img_filename, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
+  city_bus_monthly_average_mileage_plot(year.from = 2024, month.from = 7, year.to = 2025, month.to = 6)
+  dev.off()
+}
+
+# 繪圖
+generate_city_bus_monthly_average_mileage_plot(year.from = 2024, month.from = 7, year.to = 2025, month.to = 6)
+```
+
+# 公路 + 市區
+## 每月搭乘族群變化
+```{r}
+bus_monthly_passenger_changes_plot <- function(year.from,
+                                               month.from,
+                                               year.to,
+                                               month.to,
+                                               route_type = "ALL", # "市區" "公路"
+                                               ticket_type = "ALL" # "TPASS", "非月票"
+                                               ) {
+  color <- gray.colors(4)
+  year.from <- year.from %>% as.integer() %>% {ifelse(. < 1000, . + 1911, .)}
+  year.to <- year.to %>% as.integer() %>% {ifelse(. < 1000, . + 1911, .)}
+  month.from <- month.from %>% normalize_month()
+  month.to <- month.to %>% normalize_month()
+  
+  data <- df_bus %>% 
+    filter(
+      上車交易日期 >= as.Date(paste0(year.from, "-", month.from, "-01")),
+      上車交易日期 < as.Date(paste0(year.to, "-",
+                              ifelse(month.to == '12',
+                                     '01',
+                                     normalize_month(as.integer(month.to) + 1)
+                                     ), 
+                              "-01")),
+      !is.na(卡號)
+    ) %>%
+    mutate(
+      年月 = paste0(year(上車交易日期) - 1911, sprintf("%02d", month(上車交易日期)))
+    ) %>%
+    select(年月, 路線, 票種分類, 卡號)
+  
+  # 路線類別篩選（ALL 則不篩）
+  data <- switch(
+    route_type,
+    "ALL" = data,
+    "市區" = data %>% filter(路線 %in% c(bus_type$市區線)),
+    "公路" = data %>% filter(路線 %in% c(bus_type$海岸線, bus_type$山海線, bus_type$縱谷線)),
+    stop('error: only "市區" or "公路" or "ALL" allow.')
+  )
+  
+  if (route_type == "ALL") route_type <- NULL
+  
+  # 票種篩選（ALL 則不篩）
+  data <- switch(
+    ticket_type,
+    "ALL" = data,
+    "TPASS"  = data %>% filter(票種分類 == "TPASS"),
+    "非月票" = data %>% filter(票種分類 != "TPASS"),
+    stop('error: only "TPASS" or "非月票" or "ALL" allow.')
+  )
+  
+  if (ticket_type == "ALL") ticket_type <- NULL
+
+  data <- data %>% 
+    group_by(年月) %>% 
+    count(卡號, sort = T, name = "搭乘次數") %>% 
+    mutate(
+      次數區間 = cut(
+        搭乘次數,
+        breaks = c(-Inf, 1, 4, Inf),   # 分界點
+        labels = c("僅一次", "二至四次", "五次以上"), # 區間名稱
+      )
+    ) %>% 
+    count(次數區間) %>% 
+    rename(數量 = n)
+
+  df_real = data %>% pivot_wider(names_from = 次數區間, values_from = 數量)
+  df_prop = (df_real[, -1] / rowSums(df_real[, -1]) * 100) %>% 
+    round(., 2) %>% 
+    apply(., 2, function(x) paste0(x, "%")) %>% 
+    cbind(ID = df_real[, 1], .) %>%
+    as.data.frame()
+  
+  # 寫入 .xlsx
+  wb <- createWorkbook()
+  title_ = paste0(year.from - 1911, month.from, "-", year.to - 1911, month.to, "花蓮縣", route_type, "客運", ticket_type, "乘客各搭乘次數區間月人數變化")
+  addWorksheet(wb, "數量")
+  addWorksheet(wb, "比例")
+  writeData(wb, sheet = "數量", x = df_real)
+  writeData(wb, sheet = "比例", x = df_prop)
+  xlsx_path = paste0("datasets/", year.from - 1911, month.from %>% normalize_month(), "-", year.to - 1911, month.to %>% normalize_month(), "/乘客各搭乘次數區間月人數變化/")
+  if (!dir.exists(xlsx_path)) {
+    dir.create(xlsx_path, recursive = TRUE)
+  }
+  saveWorkbook(wb, file = paste0(xlsx_path, title_, ".xlsx"), overwrite = TRUE)
+
+  
+  windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
+  
+  title_ = paste0(year.from - 1911, "年", month.from %>% as.numeric(), "月至", year.to - 1911, "年", month.to %>% as.numeric(), "月花蓮縣", route_type, "客運", ticket_type, "乘客各搭乘次數區間月人數變化折線圖")
+  
+  p <- ggplot(
+    data,
+    aes(
+      x = as.character(年月),
+      y = 數量,
+      color = 次數區間,
+      group = 次數區間
+    )) +
+    geom_line(linewidth = 1) +
+    geom_point(size = 2) +
+    scale_color_manual(values = color) +     # 使用自訂灰階色
+    scale_y_continuous(
+        trans = "log10",               # 對柱子高度做 log 變換
+        breaks = scales::pretty_breaks(n = 6),   # 刻度
+        labels = scales::comma       # 顯示原始數字
+    ) +
+    labs(
+      x = "月份",
+      y = "人數",
+      color = "搭乘次數",
+      title = title_
+    ) +
+    theme_minimal() +
+    theme(
+      text = element_text(family = "Kai"),          # 基本文字大小
+      axis.title = element_text(size = 18),                    # x, y 軸標題
+      axis.text = element_text(size = 14),                     # x, y 軸文字
+      plot.title = element_text(size = 20),                    # 圖標題
+      legend.title = element_text(size = 16),                  # 圖例標題
+      legend.text = element_text(size = 14),                   # 圖例文字
+      panel.grid.major.y = element_line(color = "gray80"),
+      panel.grid.minor = element_blank(),
+      # axis.text.x = element_text(angle = 45, hjust = 1),
+      panel.background = element_rect(fill = "white", color = NA),  # 面板背景白色
+      plot.background = element_rect(fill = "white", color = NA)    # 圖片背景白色
+    )
+  
+  return(p)
+}
+
+generate_bus_monthly_passenger_changes_plot <- function(year.from, month.from, year.to, month.to, route_type, ticket_type) {
+  # 儲存圖片
+  path <- paste0("images/line chart/", year.from - 1911, month.from %>% normalize_month(), "-", year.to - 1911, month.to %>% normalize_month(), "/乘客各搭乘次數區間月人數變化")
+  check_path(path)
+    
+  p = bus_monthly_passenger_changes_plot(year.from, month.from, year.to, month.to, route_type, ticket_type)
+  
+  if (ticket_type == "ALL") ticket_type <- NULL
+  if (route_type == "ALL") route_type <- NULL
+  filename = paste0(route_type, "客運", ticket_type, "搭乘區間月變化折線圖")
+
+  ggsave(
+    filename = paste0(path, "/", filename, ".png"),
+    plot = p,
+    width = 15,
+    height = 5,
+    units = "in",
+    dpi = 300
+  )
+}
+
+# 繪圖
+for (route_type in c("ALL", "市區", "公路")) {
+  for (ticket_type in c("ALL", "TPASS", "非月票")) {
+    generate_bus_monthly_passenger_changes_plot(year.from = 2024,
+                                            month.from = 7,
+                                            year.to = 2025,
+                                            month.to = 6,
+                                            route_type,
+                                            ticket_type
+                                            )
+  }
+}
+
+```
+
+## 平均每日使用次數
+```{r}
+bus_average_daily_use_plot <- function(year.from,
+                                       month.from,
+                                       year.to,
+                                       month.to,
+                                       route_type = "ALL"  # "市區" "公路"
+                                       ) {
+  color <- gray.colors(2)
+  year.from <- year.from %>% as.integer() %>% {ifelse(. < 1000, . + 1911, .)}
+  year.to <- year.to %>% as.integer() %>% {ifelse(. < 1000, . + 1911, .)}
+  month.from <- month.from %>% normalize_month()
+  month.to <- month.to %>% normalize_month()
+  
+  data <- df_bus %>% 
+    filter(
+      上車交易日期 >= as.Date(paste0(year.from, "-", month.from, "-01")),
+      上車交易日期 < as.Date(paste0(year.to, "-",
+                              ifelse(month.to == '12',
+                                     '01',
+                                     normalize_month(as.integer(month.to) + 1)
+                                     ), 
+                              "-01")),
+      !is.na(卡號)
+    ) %>%
+    mutate(
+      年月 = paste0(year(上車交易日期) - 1911, sprintf("%02d", month(上車交易日期)))
+    ) %>%
+    select(年月, 路線, 票種分類, 卡號)
+  
+  # 路線類別篩選（ALL 則不篩）
+  data <- switch(
+    route_type,
+    "ALL" = data,
+    "市區" = data %>% filter(路線 %in% c(bus_type$市區線)),
+    "公路" = data %>% filter(路線 %in% c(bus_type$海岸線, bus_type$山海線, bus_type$縱谷線)),
+    stop('error: only "市區" or "公路" or "ALL" allow.')
+  )
+  
+  if (route_type == "ALL") route_type <- NULL
+
+  data <- data %>% 
+    group_by(年月) %>% 
+    summarise(搭乘次數 = n(), 人數 = n_distinct(卡號)) %>% 
+    mutate(
+      # 取出民國年與月份
+      年 = as.integer(substr(年月, 1, nchar(年月)-2)) + 1911,
+      月 = as.integer(substr(年月, nchar(年月)-1, nchar(年月))),
+      # 計算該年月天數
+      天數 = days_in_month(make_date(年, 月, 1)),
+      日平均 = 搭乘次數 / 人數 / 天數,
+    ) %>%
+    select(-年, -月)  # 刪掉輔助欄位
+  
+  # 寫入 .xlsx
+  wb <- createWorkbook()
+  title_ = paste0(year.from - 1911, month.from, "-", year.to - 1911, month.to, "花蓮縣", route_type, "客運", "平均每日使用次數")
+  addWorksheet(wb, title_)
+  writeData(wb, sheet = title_, x = data)
+  xlsx_path = paste0("datasets/", year.from - 1911, month.from %>% normalize_month(), "-", year.to - 1911, month.to %>% normalize_month(), "/平均每日使用次數/")
+  if (!dir.exists(xlsx_path)) {
+    dir.create(xlsx_path, recursive = TRUE)
+  }
+  saveWorkbook(wb, file = paste0(xlsx_path, title_, ".xlsx"), overwrite = TRUE)
+
+  
+  windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
+  
+  title_ = paste0(year.from - 1911, "年", month.from %>% as.numeric(), "月至", year.to - 1911, "年", month.to %>% as.numeric(), "月花蓮縣", route_type, "客運", "平均每日使用次數折線圖")
+  
+  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
+  
+  plot(x = 1:length(data$年月),
+       y = data$日平均,
+       type = "o",
+       lwd = 2,
+       pch = 16,
+       col = color[1],
+       xlab = "月份",
+       ylab = "日均使用次數",
+       ylim = c(min(data$日平均) * 0.9 , max(data$日平均) * 1.2),
+       cex.main = 2,
+       cex.lab = 2,
+       cex.axis = 1.5,
+       cex = 1.5,
+       xaxt = "n",
+       yaxt = "n",
+       bty = "n"
+       )
+  
+  title(main = title_, cex.main = 2, adj = 0)
+  
+  # x 軸
+  axis(side = 1, at = 1:length(data$年月), labels = data$年月, cex.axis = 1.5)
+  
+  # y 軸
+  axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
+
+  grid()  # 網格線
+  
+  # 圖例
+  legend("topright", 
+         legend = "日均使用次數", 
+         col = color[1], 
+         lwd = 2, 
+         pch = 16,
+         bty = "n",
+         inset = c(-0.15, 0),
+         xpd = TRUE,
+         cex = 1.5
+         )
+}
+
+generate_bus_average_daily_use_plot <- function(year.from, month.from, year.to, month.to, route_type) {
+  # 儲存圖片
+  path <- paste0("images/line chart/", year.from - 1911, month.from %>% normalize_month(), "-", year.to - 1911, month.to %>% normalize_month(), "/平均每日使用次數/")
+  check_path(path)
+
+  img_filename = paste0(year.from - 1911, "年", month.from, "月至", year.to - 1911, "年", month.to, "月花蓮縣", ifelse(route_type == "ALL", "", route_type), "客運", "平均每日使用次數折線圖")
+
+  png(filename = paste0(path, "/", img_filename, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
+  bus_average_daily_use_plot(year.from, month.from, year.to, month.to, route_type)
+  dev.off()
+}
+
+# 繪圖
+for (route_type in c("ALL", "市區", "公路")) {
+  generate_bus_average_daily_use_plot(year.from = 2024,
+                                      month.from = 7,
+                                      year.to = 2025,
+                                      month.to = 6,
+                                      route_type
+                                      )
+}
+
+```
+
+## 公車平均轉乘次數
+```{r}
+bus_average_transfer_plot <- function(year.from,
+                                       month.from,
+                                       year.to,
+                                       month.to,
+                                       owner
+                                       ) {
+  color <- gray.colors(2)
+  year.from <- year.from %>% as.integer() %>% {ifelse(. < 1000, . + 1911, .)}
+  year.to <- year.to %>% as.integer() %>% {ifelse(. < 1000, . + 1911, .)}
+  month.from <- month.from %>% normalize_month()
+  month.to <- month.to %>% normalize_month()
+  
+  months_seq <- tibble(
+      year = as.integer(year.from),
+      month = as.integer(month.from)
+    ) %>%
+    mutate(
+      start_date = as.Date(paste0(year, "-", sprintf("%02d", month), "-01")),
+      end_date   = as.Date(paste0(as.integer(year.to), "-", sprintf("%02d", as.integer(month.to)), "-01"))
+    ) %>%
+    {seq.Date(.$start_date, .$end_date, by = "month")} %>%
+    {paste0(year(.) - 1911, sprintf("%02d", month(.)))}
+  
+  data <- df_bus %>% 
+    filter(
+      上車交易日期 >= as.Date(paste0(year.from, "-", month.from, "-01")),
+      上車交易日期 < as.Date(paste0(year.to, "-",
+                              ifelse(month.to == '12',
+                                     '01',
+                                     normalize_month(as.integer(month.to) + 1)
+                                     ), 
+                              "-01")),
+      !is.na(卡號),
+      !is.na(上車交易日期),
+      !is.na(上車交易時間),
+      !is.na(下車交易時間)
+    ) %>%
+    mutate(
+      # 若上/下車交易時間為 Period，轉為秒數再加回日期
+      上車交易時間 = as.POSIXct(上車交易日期 + seconds(上車交易時間)),
+      下車交易時間 = as.POSIXct(上車交易日期 + seconds(下車交易時間)),
+  
+      # 若下車時間早於上車時間，視為跨日 → +1天
+      下車交易時間 = if_else(
+        下車交易時間 < 上車交易時間,
+        下車交易時間 + days(1),
+        下車交易時間
+      )
+    ) %>%
+    select(卡號, 客運公司編號, 上車交易日期, 上車交易時間, 下車交易時間) %>% 
+    
+    # 計算「轉乘時限」 = 下車交易時間 + 2小時
+    mutate(
+      轉乘時限 = 下車交易時間 + hours(transfor_limit_hour)
+    )
+  
+  if (owner != "客運") {
+    data <- data %>% 
+      filter(
+        客運公司編號 %in% owner
+      )
+  } 
+    
+  # 月總人次
+  population_data <- data %>% 
+    mutate(
+      年月 = paste0(year(上車交易日期) - 1911, sprintf("%02d", month(上車交易日期)))
+    ) %>% 
+    group_by(年月) %>% 
+    summarise(人次 = n(), .groups = "drop")
+  
+  # 日與卡號轉乘次數
+  day_data <- data %>%
+    group_by(上車交易日期, 卡號) %>%
+    arrange(上車交易時間, .by_group = TRUE) %>%
+    mutate(
+      # 取得前一筆下車時間與轉乘時限
+      前一筆下車 = lag(下車交易時間),
+      前一筆轉乘時限 = lag(轉乘時限),
+      
+      # 判斷當前上車時間是否落在前一筆的區間內
+      是否轉乘 = if_else(
+        !is.na(前一筆下車) & 上車交易時間 >= 前一筆下車 & 上車交易時間 <= 前一筆轉乘時限,
+        1, 0
+      )
+    ) %>%
+    summarise(
+      轉乘次數 = sum(是否轉乘),
+      .groups = "drop"
+    )
+  
+  # 月轉乘次數
+  month_data <- day_data %>%
+    mutate(
+      年月 = paste0(year(上車交易日期) - 1911, sprintf("%02d", month(上車交易日期)))
+    ) %>% 
+    group_by(年月) %>%
+    summarise(
+      月轉乘次數 = sum(轉乘次數),
+      .groups = "drop"
+    )
+  
+  # 平均轉乘次數
+  data <- full_join(
+      population_data,
+      month_data,
+      by = "年月"
+    ) %>% 
+    mutate(平均轉乘次數 = 月轉乘次數 / 人次,
+           平均轉乘次數百分比 = sprintf("%.2f%%", 平均轉乘次數 * 100))
+  
+  # 寫入 .xlsx
+  wb <- createWorkbook()
+  title_ = paste0(year.from - 1911, month.from, "-", year.to - 1911, month.to, "花蓮縣", owner, "平均轉乘次數")
+  addWorksheet(wb, "平均轉乘次數")
+  addWorksheet(wb, "日與卡號轉乘次數")
+  writeData(wb, sheet = "平均轉乘次數", x = data)
+  writeData(wb, sheet = "日與卡號轉乘次數", x = day_data)
+  xlsx_path = paste0("datasets/", year.from - 1911, month.from %>% normalize_month(), "-", year.to - 1911, month.to %>% normalize_month(), "/平均轉乘次數/")
+  if (!dir.exists(xlsx_path)) {
+    dir.create(xlsx_path, recursive = TRUE)
+  }
+  saveWorkbook(wb, file = paste0(xlsx_path, title_, ".xlsx"), overwrite = TRUE)
+  
+  # 補齊所有月份，缺的填 0
+  data <- data %>%
+    right_join(tibble(年月 = months_seq), by = "年月") %>%  # 對齊完整月份
+    mutate(across(where(is.numeric), ~replace_na(., 0)),    # 將 NA 變 0
+           across(where(is.character), ~replace_na(., "0%"))
+           ) %>%
+    arrange(factor(年月, levels = months_seq))              # 按完整月份排序
+  
+  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
+  
+  plot(x = 1:length(data$年月),
+       y = data$平均轉乘次數,
+       type = "o",
+       lwd = 2,
+       pch = 16,
+       col = color[1],
+       xlab = "月份",
+       ylab = "",
+       ylim = c(min(data$平均轉乘次數) * 0.9 , max(data$平均轉乘次數) * 1.2),
+       cex.main = 2,
+       cex.lab = 2,
+       cex.axis = 1.5,
+       cex = 1.5,
+       xaxt = "n",
+       yaxt = "n",
+       bty = "n"
+       )
+  
+  title_ = paste0(year.from - 1911, "年", month.from %>% as.numeric(), "月至", year.to - 1911, "年", month.to %>% as.numeric(), "月花蓮縣", owner,  "平均轉乘次數折線圖")
+  title(main = title_, cex.main = 2, adj = 0)
+  
+  # x 軸
+  axis(side = 1, at = 1:length(data$年月), labels = data$年月, cex.axis = 1.5)
+  
+  # y 軸
+  axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
+
+  grid()  # 網格線
+  
+  # 圖例
+  legend("topright", 
+         legend = c("次數"), 
+         col = c(color[1]), 
+         lwd = 2, 
+         pch = 16,
+         bty = "n",
+         inset = c(-0.15, 0),
+         xpd = TRUE,
+         cex = 1.5
+         )
+}
+
+generate_bus_average_transfer_plot <- function(year.from, month.from, year.to, month.to, owners) {
+  # 儲存圖片
+  path <- paste0("images/line chart/", year.from - 1911, month.from %>% normalize_month(), "-", year.to - 1911, month.to %>% normalize_month(), "/平均轉乘次數/")
+  check_path(path)
+  
+  for (owner in owners) {
+    if (owner == "ALL") {
+      owner = "客運"
+    } 
+  
+    img_filename <- paste0(year.from - 1911, "年", month.from, "月至", year.to - 1911, "年", month.to, "月花蓮縣", owner,  "平均轉乘次數折線圖")
+    png(filename = paste0(path, "/", img_filename, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
+    bus_average_transfer_plot(year.from = 2024, month.from = 7, year.to = 2025, month.to = 6, owner = owner)
+    dev.off()
+    
+  }
+}
+
+# 轉乘時限設定，單位: 小時
+transfor_limit_hour = 2
+# 繪圖
+generate_bus_average_transfer_plot(year.from = 2024, month.from = 7, year.to = 2025, month.to = 6, owners = c("太魯閣客運", "花蓮客運", "統聯客運", "興東客運", "ALL"))
+```
+
+## 公車平均轉乘次數(TPASS)
+```{r}
+bus_average_transfer_with_tpass_plot <- function(year.from,
+                                                 month.from,
+                                                 year.to,
+                                                 month.to,
+                                                 owner
+                                                 ) {
+  color <- gray.colors(4)
+  year.from <- year.from %>% as.integer() %>% {ifelse(. < 1000, . + 1911, .)}
+  year.to <- year.to %>% as.integer() %>% {ifelse(. < 1000, . + 1911, .)}
+  month.from <- month.from %>% normalize_month()
+  month.to <- month.to %>% normalize_month()
+  
+  months_seq <- tibble(
+      year = as.integer(year.from),
+      month = as.integer(month.from)
+    ) %>%
+    mutate(
+      start_date = as.Date(paste0(year, "-", sprintf("%02d", month), "-01")),
+      end_date   = as.Date(paste0(as.integer(year.to), "-", sprintf("%02d", as.integer(month.to)), "-01"))
+    ) %>%
+    {seq.Date(.$start_date, .$end_date, by = "month")} %>%
+    {paste0(year(.) - 1911, sprintf("%02d", month(.)))}
+    
+  data <- df_bus %>% 
+    filter(
+      上車交易日期 >= as.Date(paste0(year.from, "-", month.from, "-01")),
+      上車交易日期 < as.Date(paste0(year.to, "-",
+                              ifelse(month.to == '12',
+                                     '01',
+                                     normalize_month(as.integer(month.to) + 1)
+                                     ), 
+                              "-01")),
+      !is.na(卡號),
+      !is.na(上車交易日期),
+      !is.na(上車交易時間),
+      !is.na(下車交易時間)
+    ) %>%
+    mutate(
+      # 若上/下車交易時間為 Period，轉為秒數再加回日期
+      上車交易時間 = as.POSIXct(上車交易日期 + seconds(上車交易時間)),
+      下車交易時間 = as.POSIXct(上車交易日期 + seconds(下車交易時間)),
+  
+      # 若下車時間早於上車時間，視為跨日 → +1天
+      下車交易時間 = if_else(
+        下車交易時間 < 上車交易時間,
+        下車交易時間 + days(1),
+        下車交易時間
+      )
+    ) %>%
+    select(卡號, 客運公司編號, 票種分類, 上車交易日期, 上車交易時間, 下車交易時間) %>% 
+    
+    # 計算「轉乘時限」 = 下車交易時間 + 2小時
+    mutate(
+      轉乘時限 = 下車交易時間 + hours(transfor_limit_hour)
+    )
+  
+  if (owner != "客運") {
+    data <- data %>% 
+      filter(
+        客運公司編號 %in% owner
+      )
+  } 
+  
+  # 月總人次
+  population_data <- data %>% 
+    mutate(
+      年月 = paste0(year(上車交易日期) - 1911, sprintf("%02d", month(上車交易日期)))
+    ) %>% 
+    group_by(年月) %>% 
+    summarise(人次 = n(),
+              TPASS人次 = sum(票種分類 == "TPASS", na.rm = TRUE),
+              .groups = "drop"
+              ) %>% 
+    mutate(其他票種人次 = 人次 - TPASS人次)
+  
+  # 日與卡號轉乘次數
+  day_data <- data %>%
+    group_by(上車交易日期, 卡號) %>%
+    arrange(上車交易時間, .by_group = TRUE) %>%
+    mutate(
+      # 取得前一筆下車時間與轉乘時限
+      前一筆下車 = lag(下車交易時間),
+      前一筆轉乘時限 = lag(轉乘時限),
+      
+      # 判斷當前上車時間是否落在前一筆的區間內
+      是否轉乘 = if_else(
+        !is.na(前一筆下車) & 上車交易時間 >= 前一筆下車 & 上車交易時間 <= 前一筆轉乘時限,
+        1, 0
+      )
+    ) %>%
+    summarise(
+      轉乘次數 = sum(是否轉乘),
+      TPASS轉乘次數 = sum(是否轉乘 & 票種分類 == "TPASS"),
+      .groups = "drop"
+    ) %>% 
+    mutate(其他票種轉乘次數 = 轉乘次數 - TPASS轉乘次數)
+  
+  
+  # 月轉乘次數
+  month_data <- day_data %>%
+    mutate(
+      年月 = paste0(year(上車交易日期) - 1911, sprintf("%02d", month(上車交易日期)))
+    ) %>% 
+    group_by(年月) %>%
+    summarise(
+      月轉乘次數 = sum(轉乘次數),
+      TPASS月轉乘次數 = sum(TPASS轉乘次數),
+      .groups = "drop"
+    ) %>% 
+    mutate(其他票種月轉乘次數 = 月轉乘次數 - TPASS月轉乘次數)
+  
+  # 平均轉乘次數
+  data <- full_join(
+      population_data,
+      month_data,
+      by = "年月"
+    ) %>% 
+    mutate(平均轉乘次數 = 月轉乘次數 / 人次,
+           平均轉乘次數百分比 = sprintf("%.2f%%", 平均轉乘次數 * 100),
+           
+           TPASS平均轉乘次數 = TPASS月轉乘次數 / TPASS人次,
+           TPASS平均轉乘次數百分比 = sprintf("%.2f%%", TPASS平均轉乘次數 * 100),
+           
+           其他票種平均轉乘次數 = 其他票種月轉乘次數 / 其他票種人次,
+           其他票種平均轉乘次數百分比 = sprintf("%.2f%%", 其他票種平均轉乘次數 * 100),
+           )
+  
+  # 寫入 .xlsx
+  wb <- createWorkbook()
+  title_ = paste0(year.from - 1911, month.from, "-", year.to - 1911, month.to, "花蓮縣", owner, "平均轉乘次數(TPASS)")
+  addWorksheet(wb, "平均轉乘次數")
+  addWorksheet(wb, "日與卡號轉乘次數")
+  writeData(wb, sheet = "平均轉乘次數", x = data)
+  writeData(wb, sheet = "日與卡號轉乘次數", x = day_data)
+  xlsx_path = paste0("datasets/", year.from - 1911, month.from %>% normalize_month(), "-", year.to - 1911, month.to %>% normalize_month(), "/平均轉乘次數(TPASS)/")
+  if (!dir.exists(xlsx_path)) {
+    dir.create(xlsx_path, recursive = TRUE)
+  }
+  saveWorkbook(wb, file = paste0(xlsx_path, title_, ".xlsx"), overwrite = TRUE)
+  
+  # 補齊所有月份，缺的填 0
+  data <- data %>%
+    right_join(tibble(年月 = months_seq), by = "年月") %>%  # 對齊完整月份
+    mutate(across(where(is.numeric), ~replace_na(., 0)),    # 將 NA 變 0
+           across(where(is.character), ~replace_na(., "0%"))
+           ) %>%
+    arrange(factor(年月, levels = months_seq))              # 按完整月份排序
+  
+  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
+
+  plot(x = 1:length(data$年月),
+       y = data$平均轉乘次數,
+       type = "o",
+       lwd = 2,
+       pch = 16,
+       col = color[1],
+       xlab = "月份",
+       ylab = "",
+       ylim = c(min(data[c("平均轉乘次數", "TPASS平均轉乘次數", "其他票種平均轉乘次數")]) * 0.9 , max(data[c("平均轉乘次數", "TPASS平均轉乘次數", "其他票種平均轉乘次數")]) * 1.2),
+       cex.main = 2,
+       cex.lab = 2,
+       cex.axis = 1.5,
+       cex = 1.5,
+       xaxt = "n",
+       yaxt = "n",
+       bty = "n"
+       )
+  
+  lines(x = 1:length(data$年月),
+        y = data$TPASS平均轉乘次數,
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        cex = 1.5,
+        col = color[2]
+        )
+  
+  lines(x = 1:length(data$年月),
+        y = data$其他票種平均轉乘次數,
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        cex = 1.5,
+        col = color[3]
+        )
+  
+  title_ = paste0(year.from - 1911, "年", month.from %>% as.numeric(), "月至", year.to - 1911, "年", month.to %>% as.numeric(), "月花蓮縣", owner,  "平均轉乘次數折線圖")
+  title(main = title_, cex.main = 2, adj = 0)
+  
+  # x 軸
+  axis(side = 1, at = 1:length(data$年月), labels = data$年月, cex.axis = 1.5)
+  
+  # y 軸
+  axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
+
+  grid()  # 網格線
+  
+  # 圖例
+  legend("topright", 
+         legend = c("平均轉乘次數", "TPASS", "其他票種"), 
+         col = c(color[1:3]), 
+         lwd = 2, 
+         pch = 16,
+         bty = "n",
+         inset = c(-0.15, 0),
+         xpd = TRUE,
+         cex = 1.5
+         )
+}
+
+generate_bus_average_transfer_with_tpass_plot <- function(year.from, month.from, year.to, month.to, owners) {
+  # 儲存圖片
+  path <- paste0("images/line chart/", year.from - 1911, month.from %>% normalize_month(), "-", year.to - 1911, month.to %>% normalize_month(), "/平均轉乘次數(TPASS)/")
+  check_path(path)
+  
+  for (owner in owners) {
+    if (owner == "ALL") {
+      owner = "客運"
+    } 
+  
+    img_filename <- paste0(year.from - 1911, "年", month.from, "月至", year.to - 1911, "年", month.to, "月花蓮縣", owner,  "平均轉乘次數折線圖")
+    png(filename = paste0(path, "/", img_filename, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
+    bus_average_transfer_with_tpass_plot(year.from = 2024, month.from = 7, year.to = 2025, month.to = 6, owner = owner)
+    dev.off()
+    
+  }
+}
+
+# 轉乘時限設定，單位: 小時
+transfor_limit_hour = 2
+# 繪圖
+generate_bus_average_transfer_with_tpass_plot(year.from = 2024, month.from = 7, year.to = 2025, month.to = 6, owners = c("太魯閣客運", "花蓮客運", "統聯客運", "興東客運", "ALL"))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

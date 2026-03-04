@@ -1,0 +1,88 @@
+---
+title: "Untitled"
+author: "Jundian"
+date: "2025-09-10"
+output: html_document
+---
+
+# library&讀API金鑰
+```{r}
+# 安裝devtools套件
+#install.packages(devtools)
+# 自GitHub下載TDX套件
+#devtools::install_github("ChiaJung-Yeh/NYCU_TDX")
+#devtools::install_github("ChiaJung-Yeh/TWspData")
+
+library(TDX)
+library(httr)
+library(jsonlite)
+library(sf)
+library(cli)
+library(dplyr)
+library(TWspdata)
+library(data.table)
+library(purrr)
+
+# API 金鑰
+access_token <- get_token(client_id = "m9937020-577b0981-78ba-463e", client_secret = "670af1b7-e6d6-4ac5-9d2b-1c2cf2dcddf3")
+```
+
+# 公路客運&鄉鎮界線資料
+```{r}
+# 縣市名稱代碼表
+TDX_County
+
+# 介接一般公路客運公車路線站點資料(地理資料)
+Intercity_Bus_Station=Bus_StopOfRoute(access_token, "Intercity", dtype="sf")
+# 鄉鎮界線資料並轉換座標系統
+towns <- TWspdata::taiwan_town %>% 
+  st_transform(towns, crs = st_crs(Intercity_Bus_Station))
+```
+
+# 花蓮市區公車
+```{r}
+#====================公路客運====================
+# 篩出花蓮公路客運路線站點(地理資料)
+Hualien_intercity_bus_station <- Intercity_Bus_Station %>% 
+  filter(LocationCityCode == "HUA")
+# 做空間套疊：找到站點所屬鄉鎮
+Hualien_intercity_bus_station_with_Town <- st_join(Hualien_intercity_bus_station, towns %>% select(COUNTYNAME, TOWNNAME))
+# 取出RouteID
+Hualien_intercity_bus_station_routeid <- unique(Hualien_intercity_bus_station_with_Town$RouteID)
+# 建立一個空的結果資料框
+Hualien_intercity_bus_station_with_distance <- Bus_Distance(access_token, "Intercity", unique(Hualien_intercity_bus_station_with_Town$RouteID))
+
+# 依序處理每一個路線
+for (route in Hualien_intercity_bus_station_routeid) {
+  
+  # 取得該路線的里程資訊
+  bus_dist <- Bus_Distance(access_token, "Intercity", route)
+  
+  # 篩選出對應站點
+  bus_stops <- Hualien_intercity_bus_station_with_Town %>%
+    filter(RouteID == route)
+  
+  # 加上里程資訊（站間距離）
+  bus_stops <- bus_stops %>%
+    mutate(Distance_m = bus_dist$Distance)
+  
+  # 合併回總結果
+  Hualien_intercity_bus_station_with_distance <- rbind(Hualien_intercity_bus_station_with_distance, bus_stops)
+}
+
+
+
+
+test_bus <- Bus_Distance(access_token, "Intercity", "1137")
+#====================市區公車====================
+# 介接花蓮市區公車路線站點(地理資料)
+Hualien_bus_station=Bus_StopOfRoute(access_token, "HualienCounty", dtype="sf")
+```
+
+# 台東市區公車
+```{r}
+
+# 介接台東市區公車路線站點(地理資料)
+Taitung_Bus_station=Bus_StopOfRoute(access_token, "TaitungCounty", dtype="sf")
+```
+

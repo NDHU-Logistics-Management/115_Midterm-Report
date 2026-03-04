@@ -1,0 +1,3340 @@
+---
+title: "111-113普悠瑪客運分析"
+output: html_document
+date: "2025-05-28"
+---
+
+## 套件
+```{r message=FALSE, warning=FALSE}
+# library
+library(readr)
+library(data.table)
+library(dplyr)
+library(lubridate)
+library(tidyr)
+library(purrr)
+library(ggplot2)
+library(readxl)
+library(pbapply)
+library(stringr)
+library(openxlsx)
+library(hms)
+```
+
+
+## 普悠瑪客運 abbr. puyuma
+
+```{r message=FALSE}
+# 設定年度與主目錄
+base_path <- "../資料集/107-11407_普悠瑪客運_台東市區客運"
+years <- c("111", "112", "113", "114")
+
+# 1. 自動化讀檔與欄位補齊
+import_and_align <- function(year, base_path) {
+  data_path <- file.path(base_path, year)
+  file_list <- list.files(data_path, full.names = TRUE)
+  if(length(file_list) == 0) return(NULL)
+  df_list <- map(file_list, read_excel)
+  all_columns <- Reduce(union, lapply(df_list, names))
+  df_list <- map(df_list, function(df) {
+    missing_cols <- setdiff(all_columns, names(df))
+    df[missing_cols] <- NA
+    df[all_columns]
+  })
+  bind_rows(df_list)
+}
+
+# 2. 合併所有年度資料
+combined_df <- map_dfr(years, import_and_align, base_path = base_path)
+
+# 3. 時間處理：合併日期與時間欄位
+combined_df <- combined_df %>%
+  mutate(
+    上車交易日期 = as.Date(上車交易日期, format = "%Y%m%d"),
+    下車交易日期 = as.Date(下車交易日期, format = "%Y%m%d"),
+    年月 = format(上車交易日期, "%Y%m"),
+    上車時間 = as.POSIXct(paste0(上車交易日期, " ", sprintf("%06d", as.integer(上車交易時間))),
+                           format = "%Y-%m-%d %H%M%S"),
+    下車時間 = as.POSIXct(paste0(下車交易日期, " ", sprintf("%06d", as.integer(下車交易時間))),
+                           format = "%Y-%m-%d %H%M%S")
+  )
+
+# 4. 轉成巢狀list（年月 > 路線名稱）
+make_nested_list <- function(df, year_month_col = "年月", route_col = "路線編號") {
+  year_months <- unique(df[[year_month_col]])
+  result <- setNames(vector("list", length(year_months)), year_months)
+  for (ym in year_months) {
+    sub_df <- df %>% filter(.data[[year_month_col]] == ym)
+    routes <- unique(sub_df[[route_col]])
+    result[[ym]] <- setNames(
+      lapply(routes, function(rn) sub_df %>% filter(.data[[route_col]] == rn)),
+      routes
+    )
+  }
+  result
+}
+
+nested_list <- make_nested_list(combined_df)
+
+# 5. 檢查結構
+# names(nested_list)             # "202401" "202402" ...
+# names(nested_list[["202401"]]) # "301" "302" ...
+# str(nested_list, max.level = 2)
+
+sort_and_complete_list <- function(nested_list, start_year = 2022, end_year = 2024) {
+  # 生成完整年月
+  all_months <- format(seq.Date(
+    as.Date(paste0(start_year, "-01-01")),
+    as.Date(paste0(end_year, "-12-01")),
+    by = "month"
+  ), "%Y%m")
+  
+  # 排序與補齊
+  sorted_list <- lapply(all_months, function(ym) {
+    if (ym %in% names(nested_list)) {
+      # 排序路線名稱（支援數字與文字混合）
+      routes <- names(nested_list[[ym]]) %>%
+        gsub("[^0-9]", "", .) %>%  # 移除非數字字元（若存在）
+        as.numeric() %>%
+        sort() %>%
+        as.character()
+      nested_list[[ym]][routes]
+    } else {
+      list()
+    }
+  }) %>% setNames(all_months)
+  
+  # 移除 NA
+  Filter(Negate(is.null), sorted_list)
+}  
+
+# 使用範例
+df <- sort_and_complete_list(nested_list)
+
+# rename
+puyuma_df <- df
+puyuma_combined_df <- combined_df
+rm(df, combined_df)
+
+# 增加欄位：路線名稱
+## 建立一個對應表 (你可以依需求擴充)
+route_map <- c(
+  "9801" = "市區循環",
+  "9803" = "陸海空線A",
+  "9805" = "陸海空線B",
+  "9806" = "陸海空線C"
+)
+
+# 在 df 裡轉換
+puyuma_combined_df <- puyuma_combined_df %>%
+  mutate(
+    路線名稱 = recode(路線編號, !!!route_map)  # !!! 解包 named vector
+  )
+```
+
+## 興東客運 abbr. sdbus
+
+```{r}
+# 設定年度與主目錄
+base_path <- "../資料集/11001-11403_興東客運_鼎東海線_公路客運_花蓮市區客運"
+
+# 指定要讀取的路徑（檔案或資料夾）
+targets <- c(
+  "11101-11202",
+  "11203-11302",
+  "11303-11312",
+  "11401-11403",
+  "11404-11408"
+)
+```
+
+
+```{r warning=FALSE}
+# suppressPackageStartupMessages({
+#   library(readxl)   # 讀 Excel
+#   library(dplyr)    # 資料框操作
+#   library(purrr)    # map 系列函數
+#   library(stringr)  # str_detect / fixed
+#   library(hms)  # 時間轉換
+# })
+
+# 🧩 可調控的欄位過濾器：在重新命名/合併前先修剪 -----------------------
+# 極簡欄位修剪：只支援 drop / drop_contains
+prune_columns_simple <- function(df, rules) {
+  nm <- names(df)
+
+  # 1) 精確名稱刪除
+  drop_exact <- if (!is.null(rules$drop)) nm %in% rules$drop else FALSE
+
+  # 2) 關鍵字包含刪除（不分大小寫；以 contains/FIXED 方式）
+  drop_contains <- if (!is.null(rules$drop_contains) && length(rules$drop_contains) > 0) {
+    Reduce(`|`, lapply(rules$drop_contains, function(pat) {
+      str_detect(nm, fixed(pat, ignore_case = TRUE))
+    }))
+  } else {
+    rep(FALSE, length(nm))
+  }
+
+  to_drop <- drop_exact | drop_contains
+  df[, !to_drop, drop = FALSE]
+}
+
+# 🔧 這是你可以隨時調整的「控制區塊」（示範） ------------------------
+# 規則依據你資料集調整；下方只是常見預設
+prune_rules <- list(
+  # 精確欄名要刪除
+  drop = c("period",
+           "source_file",
+           "列標籤",
+           "駕駛員",
+           "車輛",
+           "票種",
+           "開班時間"),
+  # 關鍵字包含就刪
+  drop_contains = c("Textbox",
+                    "類別",
+                    "計費站",
+                    "清分狀態",
+                    "交易類別",
+                    "場站",
+                    "餘額",
+                    "票價",
+                    "金額",
+                    "小時",
+                    "分鐘",
+                    "秒")
+)
+
+# 1. 匯入+刪減欄位
+import_all <- function(base_path) {
+  files <- list.files(file.path(base_path), pattern = "\\.xls[x]?$",
+                      full.names = TRUE, recursive = TRUE)
+  if (length(files) == 0) return(NULL)
+
+  dfs <- map(files, read_excel)
+  
+  map_dfr(dfs, ~ prune_columns_simple(.x, prune_rules))
+}
+
+dfs_pruned <- import_all(base_path = base_path)
+
+# 2. 時間處理
+dfs_pruned <- dfs_pruned %>%
+  mutate(
+    營運日期 = as.Date(營運日期, format = "%Y%m%d"),
+    年月 = format(營運日期, "%Y%m"),
+    上車時間 = as_hms(dfs_pruned$上車時間),
+    下車時間 = as_hms(dfs_pruned$下車時間)
+  )
+
+# 3. 刪除na
+dfs_pruned <- dfs_pruned %>%
+   filter(!is.na(營運日期))
+
+# Rename
+sdbus_df <- dfs_pruned
+
+mytable <- table(year(sdbus_df$營運日期), sdbus_df$路線)
+addmargins(mytable, margin = 2)
+```
+
+Tips: `skim()` to check NA for each column.
+
+## 東台灣客運 abbr. ett
+
+```{r}
+# 設定年度與主目錄
+base_path <- "../資料集/107-11403_東台灣客運_鼎東山線公路客運"
+
+# 指定要讀取的路徑（檔案或資料夾）
+targets <- c(
+  "111",
+  "112",
+  "113",
+  "114",
+  "11106_11102"
+)
+```
+
+
+```{r}
+# suppressPackageStartupMessages({
+#   library(readxl)   # 讀 Excel
+#   library(readr)    # 讀 csv
+#   library(dplyr)    # 資料框操作
+#   library(purrr)    # map 系列函數
+#   library(stringr)  # str_detect / fixed
+#   library(hms)  # 時間轉換
+# })
+
+# 🧩 可調控的欄位過濾器：在重新命名/合併前先修剪 -----------------------
+# 極簡欄位修剪：只支援 drop / drop_contains
+prune_columns_simple <- function(df, rules) {
+  nm <- names(df)
+
+  # 1) 精確名稱刪除
+  drop_exact <- if (!is.null(rules$drop)) nm %in% rules$drop else FALSE
+
+  # 2) 關鍵字包含刪除（不分大小寫；以 contains/FIXED 方式）
+  drop_contains <- if (!is.null(rules$drop_contains) && length(rules$drop_contains) > 0) {
+    Reduce(`|`, lapply(rules$drop_contains, function(pat) {
+      str_detect(nm, fixed(pat, ignore_case = TRUE))
+    }))
+  } else {
+    rep(FALSE, length(nm))
+  }
+
+  to_drop <- drop_exact | drop_contains
+  df[, !to_drop, drop = FALSE]
+}
+
+# 🔧 這是你可以隨時調整的「控制區塊」（示範） ------------------------
+# 規則依據你資料集調整；下方只是常見預設
+prune_rules <- list(
+  # 精確欄名要刪除
+  drop = c("period",
+           "source_file",
+           "列標籤",
+           "駕駛員",
+           "車輛",
+           "票種",
+           "開班時間"),
+  # 關鍵字包含就刪
+  drop_contains = c("Textbox",
+                    "類別",
+                    "計費站",
+                    "清分狀態",
+                    "交易類別",
+                    "場站",
+                    "餘額",
+                    "票價",
+                    "金額",
+                    "小時",
+                    "分鐘",
+                    "秒")
+)
+
+# 1. 匯入+刪減欄位
+import_all <- function(base_path) {
+  # 找 CSV 檔案
+  files_csv <- list.files(base_path, pattern = "\\.csv$",
+                          full.names = TRUE, recursive = TRUE)
+  if (length(files_csv) == 0) return(NULL)
+  
+  # 定義讀取器
+  read_any <- function(file) {
+    df <- read.csv(file,
+                   fileEncoding = "BIG5",
+                   stringsAsFactors = FALSE,
+                   colClasses = "character")
+  }
+  
+  dfs <- map(files_csv, read_any)
+  map_dfr(dfs, ~ prune_columns_simple(.x, prune_rules))
+}
+
+dfs_pruned <- import_all(base_path = base_path)
+dfs_pruned <- dfs_pruned[, -((ncol(dfs_pruned)-1):ncol(dfs_pruned))]
+
+# 2. 時間處理
+dfs_pruned <- dfs_pruned %>%
+  mutate(
+    營運日期 = as.Date(營運日期, format = "%Y/%m/%d"),
+    年月 = format(營運日期, "%Y%m"),
+    上車時間 = readr::parse_time(上車時間, format = "%H:%M:%S"),
+    下車時間 = readr::parse_time(下車時間, format = "%H:%M:%S")
+  )
+
+# 3. 刪除na
+# dfs_pruned <- dfs_pruned %>%
+#    filter(!is.na(營運日期))
+
+# 4. 處理上下車站
+dfs_pruned <- dfs_pruned %>%
+  mutate(
+    上車站 = gsub("[^\\p{Han}]", "", 上車站, perl = TRUE),
+    下車站 = gsub("[^\\p{Han}]", "", 下車站, perl = TRUE)
+  )
+
+# 5. 處理路線
+dfs_pruned <- dfs_pruned %>%
+  mutate(
+    路線 = paste0("81", 路線)
+  )
+
+# 6. 統一變數類型
+cols_to_num <- c("路線", "去返")
+dfs_pruned <- dfs_pruned %>%
+  mutate(across(all_of(cols_to_num), as.numeric))
+
+# 7. 增加欄位：路線名稱
+## 尾數對應表 (0 是空字串，其餘是 A~I)
+suffix_map <- c("0" = "", "1" = "A", "2" = "B", "3" = "C", "4" = "D")
+
+## 轉換函數
+convert_route <- function(x) {
+  x_str <- as.character(x)
+  prefix <- substr(x_str, 1, nchar(x_str) - 1)      # 去掉最後一位
+  suffix <- substr(x_str, nchar(x_str), nchar(x_str)) # 取最後一位
+  
+  # 根據 mapping 轉換
+  if (suffix %in% names(suffix_map)) {
+    return(paste0(prefix, suffix_map[suffix]))
+  } else {
+    return(x_str) # 如果不是 0~9，就保留原始值
+  }
+}
+
+dfs_pruned$路線名稱 <- sapply(dfs_pruned$路線, convert_route)
+
+# Rename
+ett_df <- dfs_pruned
+
+# mytable <- table(year(ett_df$營運日期), ett_df$路線)
+# addmargins(mytable, margin = 2)
+```
+
+
+## 函數
+
+```{r}
+library(pbapply)
+# simple summary for every variables
+df_summary <- function(data) {
+  res <- list()
+  
+  # 使用 pblapply 取代 for 迴圈，自動顯示進度條
+  temp_res <- pblapply(colnames(data), function(col) {
+    # 計算每個 unique 值出現次數
+    tbl <- data.frame(table(data[[col]], useNA = "ifany"), stringsAsFactors = FALSE)
+    colnames(tbl) <- c("values", "times")
+    
+    list(
+      unique = tbl,
+      NAs = sum(is.na(data[[col]])),
+      type = class(data[[col]])[1]
+    )
+  })
+  
+  # 將結果組回 list，欄位名稱對應原欄位
+  names(temp_res) <- colnames(data)
+  res <- temp_res
+  
+  return(res)
+}
+
+
+# check the save path
+check_path <- function(path) {
+  if (!dir.exists(path)) {
+    dir.create(path, recursive = TRUE, showWarnings = FALSE)
+  }
+}
+```
+
+### 匯出table成excel
+
+```{r}
+# 匯出多個 table 到同一個 Excel 檔，分不同工作表（修正版）
+export_tables_to_excel <- function(tables,
+                                   file = "tables_output.xlsx",
+                                   sheet_names = NULL,
+                                   method = c("openxlsx", "writexl"),
+                                   overwrite = TRUE,
+                                   row_names = TRUE,
+                                   add_index_sheet = TRUE) {
+  method <- match.arg(method)
+
+  # ---- 驗證與標準化輸入 ----
+  if (is.table(tables)) {
+    tables <- list(tables)
+  }
+  if (!is.list(tables) || length(tables) == 0) {
+    stop("❌ 'tables' 必須是非空的 list，或是一個 table 物件。")
+  }
+  if (!all(vapply(tables, is.table, logical(1)))) {
+    stop("❌ 'tables' 的每個元素都必須是 table。")
+  }
+
+  # ---- 產生/清洗工作表名稱 ----
+  default_names <- names(tables)
+  if (is.null(default_names) || any(default_names == "")) {
+    default_names <- paste0("Table_", seq_along(tables))
+  }
+  if (!is.null(sheet_names)) {
+    if (length(sheet_names) != length(tables)) {
+      stop("❌ 'sheet_names' 長度必須等於 tables 的數量。")
+    }
+  } else {
+    sheet_names <- default_names
+  }
+
+  sanitize_sheet_name <- function(x) {
+    x <- gsub("[\\[\\]\\:\\*\\?/\\\\]", "_", x, perl = TRUE)
+    x <- trimws(x)
+    if (nchar(x) == 0) x <- "Sheet"
+    substr(x, 1, 31)
+  }
+  sheet_names <- vapply(sheet_names, sanitize_sheet_name, character(1))
+
+  make_unique_names <- function(nms) {
+    out <- character(length(nms))
+    for (i in seq_along(nms)) {
+      base <- nms[i]
+      cand <- base
+      k <- 1L
+      while (cand %in% out) {
+        k <- k + 1L
+        suffix <- paste0(" (", k, ")")
+        max_base_len <- 31 - nchar(suffix)
+        cand <- paste0(substr(base, 1, max_base_len), suffix)
+      }
+      out[i] <- cand
+    }
+    out
+  }
+  sheet_names <- make_unique_names(sheet_names)
+
+  # ---- 將 table 轉為可寫入的 data.frame（修正 cbind 問題）----
+  to_df <- function(tb) {
+    dm <- dim(tb)
+    if (length(dm) == 2L) {
+      dfm <- as.data.frame.matrix(tb, stringsAsFactors = FALSE)
+      # 這裡用 data.frame 而不是 cbind，避免 check.names 重複傳遞
+      data.frame(rownames = rownames(dfm), dfm,
+                 check.names = FALSE, stringsAsFactors = FALSE)
+    } else {
+      as.data.frame(tb, stringsAsFactors = FALSE)
+    }
+  }
+
+  dfs <- lapply(tables, to_df)
+  names(dfs) <- sheet_names
+
+  # ---- 實作輸出 ----
+  if (method == "writexl") {
+    if (!requireNamespace("writexl", quietly = TRUE)) {
+      stop("請先安裝 writexl：install.packages('writexl')")
+    }
+    writexl::write_xlsx(dfs, path = file)
+    message("✅ 匯出完成 (使用 writexl)：", file)
+    return(invisible(list(file = file, sheets = sheet_names)))
+  }
+
+  if (!requireNamespace("openxlsx", quietly = TRUE)) {
+    stop("請先安裝 openxlsx：install.packages('openxlsx')")
+  }
+
+  wb <- openxlsx::createWorkbook()
+  header_style <- openxlsx::createStyle(textDecoration = "bold")
+
+  if (isTRUE(add_index_sheet)) {
+    openxlsx::addWorksheet(wb, "Index")
+    for (i in seq_along(sheet_names)) {
+      openxlsx::writeFormula(
+        wb, "Index",
+        x = sprintf('=HYPERLINK("#\'%s\'!A1","%s")', sheet_names[i], sheet_names[i]),
+        startCol = 1, startRow = i
+      )
+    }
+    openxlsx::addStyle(wb, "Index", header_style, rows = 1, cols = 1, gridExpand = TRUE)
+    openxlsx::setColWidths(wb, "Index", cols = 1, widths = "auto")
+  }
+
+  for (i in seq_along(dfs)) {
+    sh <- sheet_names[i]
+    openxlsx::addWorksheet(wb, sh)
+    openxlsx::writeData(wb, sh, dfs[[i]], rowNames = FALSE)
+    openxlsx::addStyle(wb, sh, header_style, rows = 1, cols = 1:ncol(dfs[[i]]), gridExpand = TRUE)
+    openxlsx::setColWidths(wb, sh, cols = 1:ncol(dfs[[i]]), widths = "auto")
+    openxlsx::freezePane(wb, sh, firstActiveRow = 2, firstActiveCol = 2)
+  }
+
+  openxlsx::saveWorkbook(wb, file, overwrite = overwrite)
+  message("✅ 匯出完成 (使用 openxlsx)：", file, " [", length(dfs), " sheets]")
+
+  invisible(list(file = file, sheets = sheet_names))
+}
+
+# -----------------------
+# 🔨🤖🔧 範例使用
+# -----------------------
+
+# 兩個 2x2 交叉表
+# t1 <- table(cyl = mtcars$cyl, gear = mtcars$gear)
+# t2 <- table(vs = mtcars$vs, am = mtcars$am)
+# 
+# # 一個 3 維範例（會自動轉為長表）
+# set.seed(1)
+# arr <- array(sample(0:3, 2*3*4, replace = TRUE), dim = c(2,3,4),
+#              dimnames = list(A = c("a1","a2"), B = c("b1","b2","b3"), C = c("c1","c2","c3","c4")))
+# t3 <- as.table(arr)
+
+# 1) 使用 openxlsx（含索引頁、格式化）
+# export_tables_to_excel(
+#   tables = list(`Cyl vs Gear` = t1, `VS:AM` = t2, `3D Example*` = t3),
+#   file = "multi_tables_openxlsx.xlsx",
+#   method = "openxlsx",
+#   add_index_sheet = TRUE
+# )
+# 
+# # 2) 使用 writexl（輕量快速）
+# export_tables_to_excel(
+#   tables = list(T1 = t1, T2 = t2),
+#   file = "multi_tables_writexl.xlsx",
+#   method = "writexl"
+# )
+```
+
+## 區分路線類別
+
+```{r}
+# 區分路線
+# https://bus.taitung.gov.tw/driving-map
+# http://ett333023.com.tw/page3.htm
+# https://www.taiwanbus.tw/eBUSPage/Query/RouteQuery.aspx?lan=C
+
+route_type = list()
+
+## sdbus
+### 縱谷線
+route_type$sdbus$valley <- c(8117, 8118)
+
+### 海岸線
+route_type$sdbus$coast <- c(
+  1145,
+  8101,
+  8102,
+  8103,
+  8105,
+  8107,
+  8109,
+  8119,
+  8120,
+  8122,
+  8125,
+  8881,
+  8882,
+  8883,
+  8884,
+  8888)
+
+### 山海線
+route_type$sdbus$cross <- c(309,
+                            8110,
+                            8111,
+                            8181)
+
+### 市區線
+route_type$sdbus$city <- c(8113,
+                           8115,
+                           8128)
+
+## ett
+### 縱谷線
+route_type$ett$valley <- c(
+  81610,
+  81630,
+  81631,
+  81632,
+  81650,
+  81651,
+  81660,
+  81661,
+  81670,
+  81671,
+  81672,
+  81680,
+  81681,
+  81682,
+  81683,
+  81700,
+  81701,
+  81702,
+  81710,
+  81711,
+  81712,
+  81730,
+  81780)
+
+### 知本線
+route_type$ett$zhiben <- c(
+  81290,
+  81291,
+  81300,
+  81301,
+  81310,
+  81311,
+  81312,
+  81800,
+  81801
+  )
+
+### 南迴線
+route_type$ett$south <- c(
+  81320,
+  81330,
+  81350,
+  81360,
+  81370,
+  81380,
+  81500,
+  81510,
+  81511,
+  81512,
+  81520,
+  81521,
+  81522,
+  81530,
+  81550,
+  81560,
+  81570,
+  81580,
+  81590
+  )
+
+### 市區線
+route_type$ett$city <- c(81720)
+
+
+sdbus_df <- sdbus_df %>%
+    mutate(
+      路線類別 = case_when(
+        路線 %in% route_type$sdbus$cross ~ "山海線",
+        路線 %in% route_type$sdbus$coast ~ "海岸線",
+        路線 %in% route_type$sdbus$valley ~ "縱谷線",
+        路線 %in% route_type$sdbus$city ~ "市區線"
+      )
+    )
+
+ett_df <- ett_df %>%
+    mutate(
+      路線類別 = case_when(
+        路線 %in% route_type$ett$south ~ "南迴線",
+        路線 %in% route_type$ett$zhiben ~ "知本線",
+        路線 %in% route_type$ett$valley ~ "縱谷線",
+        路線 %in% route_type$ett$city ~ "市區線"
+      )
+    )
+```
+
+
+## 年運量
+
+```{r}
+# road bus
+temp <- data.frame(營運日期 = c(ett_df$營運日期, sdbus_df$營運日期),
+                   路線類別 = c(ett_df$路線類別, sdbus_df$路線類別))
+mytable <- table(year(temp$營運日期), temp$路線類別)
+mytable <- mytable[,!(colnames(mytable) %in% c("市區線"))] # 扣除市區縣
+roadbus_temp <- addmargins(mytable, margin = 2)
+
+# sdbus
+temp <- table(year(sdbus_df$營運日期), sdbus_df$路線類別)
+sdbus_temp <- addmargins(temp, margin = 2)
+
+# ett
+temp <- table(year(ett_df$營運日期), ett_df$路線類別)
+ett_temp <- addmargins(temp, margin = 2)
+
+cat("=== 公路客運 ===\n")
+roadbus_temp
+cat("=== 興東客運 ===\n")
+sdbus_temp
+cat("=== 東台灣客運 ===\n")
+ett_temp
+```
+
+### 公路客運
+
+```{r}
+roadbus_table <- roadbus_temp[!(rownames(roadbus_temp) %in% c("2025")),] # 扣除2025年
+years <- 2022:2024
+
+volumebyyearfig <- function(df){
+  color <- gray.colors(ncol(df))
+  idx_sort <- names(sort(df["2024",], decreasing = TRUE))
+  n <- df[,idx_sort[1]]
+  
+  par(family = "Kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
+  
+  plot(x = years,
+       y = n,
+       type = "o",
+       lwd = 2,
+       pch = 16,
+       col = color[1],
+       xlab = "年",
+       ylab = "搭乘次數",
+       ylim = c(min(df) * 0.9 , max(df) * 1.1),
+       cex.main = 2,
+       cex.lab = 2,
+       cex.axis = 1.5,
+       cex = 1.5,
+       xaxt = "n",
+       yaxt = "n",
+       bty = "n")
+  
+  lines(x = years,
+        y = df[,idx_sort[2]],
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        col = color[2],
+        cex.main = 2,
+        cex.lab = 2,
+        cex.axis = 1.5,
+        cex = 1.5,
+        )
+  
+  lines(x = years,
+        y = df[,idx_sort[3]],
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        col = color[3],
+        cex.main = 2,
+        cex.lab = 2,
+        cex.axis = 1.5,
+        cex = 1.5,
+        )
+
+  lines(x = years,
+        y = df[,idx_sort[4]],
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        col = color[4],
+        cex.main = 2,
+        cex.lab = 2,
+        cex.axis = 1.5,
+        cex = 1.5,
+        )
+  
+  lines(x = years,
+        y = df[,idx_sort[5]],
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        col = color[5],
+        cex.main = 2,
+        cex.lab = 2,
+        cex.axis = 1.5,
+        cex = 1.5,
+        )
+  
+  lines(x = years,
+        y = df[,idx_sort[6]],
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        col = color[6],
+        cex.main = 2,
+        cex.lab = 2,
+        cex.axis = 1.5,
+        cex = 1.5,
+        )
+  
+  title(main = paste0(min(years) - 1911, '年', '至', max(years) - 1911,
+                      '年臺東縣公路客運年總運量折線圖'),
+        cex.main = 2, 
+        adj = 0)
+
+  # x 軸
+  axis(side = 1, at = years, labels = c(years - 1911), cex.axis = 1.5)
+  
+  # y 軸
+  # axis(side = 2, labels = FALSE, las = 1, tcl = -0.3, line = 0.5)
+  
+  grid()  # 網格線
+  
+  text(x = years,
+     y = n + max(n) * 0.02,
+     labels = n,
+     pos = 3,            # 文字顯示在點上方
+     cex = 1.5,          # 文字大小
+     col = "black"
+  )
+  
+  # 圖例
+  legend("topright", 
+         legend = c("總運量", idx_sort[-1]), 
+         col = color, 
+         lwd = 2, 
+         pch = 16,
+         bty = "n",
+         inset = c(-0.15, 0),
+         xpd = TRUE,
+         cex = 1.5
+         )
+}
+
+# 繪圖 (在 R中呈現)
+# volumebyyearfig(roadbus_table)
+
+# 儲存圖片
+path = paste0("images/line_chart/")
+check_path(path)
+main = paste0(min(years) - 1911, '年', '至', max(years) - 1911, '年臺東縣公路年總運量')
+png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "Kai")
+volumebyyearfig(roadbus_table)
+dev.off()
+```
+
+### 興東客運
+
+```{r eval=FALSE, include=FALSE}
+sdbus_table <- sdbus_temp[!(rownames(sdbus_temp) %in% c("2025")),] # 扣除2025年
+years <- 2022:2024
+
+volumebyyearfig <- function(df){
+  color <- gray.colors(ncol(df))
+  idx_sort <- names(sort(df["2024",], decreasing = TRUE))
+  n <- df[,idx_sort[1]]
+  
+  par(family = "Kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
+  
+  plot(x = years,
+       y = n,
+       type = "o",
+       lwd = 2,
+       pch = 16,
+       col = color[1],
+       xlab = "年",
+       ylab = "搭乘次數",
+       ylim = c(min(df) * 0.9 , max(df) * 1.1),
+       cex.main = 2,
+       cex.lab = 2,
+       cex.axis = 1.5,
+       cex = 1.5,
+       xaxt = "n",
+       yaxt = "n",
+       bty = "n")
+  
+  lines(x = years,
+        y = df[,idx_sort[2]],
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        col = color[2],
+        cex.main = 2,
+        cex.lab = 2,
+        cex.axis = 1.5,
+        cex = 1.5,
+        )
+  
+  lines(x = years,
+        y = df[,idx_sort[3]],
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        col = color[3],
+        cex.main = 2,
+        cex.lab = 2,
+        cex.axis = 1.5,
+        cex = 1.5,
+        )
+
+  lines(x = years,
+        y = df[,idx_sort[4]],
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        col = color[4],
+        cex.main = 2,
+        cex.lab = 2,
+        cex.axis = 1.5,
+        cex = 1.5,
+        )
+  
+  lines(x = years,
+        y = df[,idx_sort[5]],
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        col = color[5],
+        cex.main = 2,
+        cex.lab = 2,
+        cex.axis = 1.5,
+        cex = 1.5,
+        )
+  
+  title(main = paste0(min(years) - 1911, '年', '至', max(years) - 1911,
+                      '年興東客運年總運量折線圖'),
+        cex.main = 2, 
+        adj = 0)
+
+  # x 軸
+  axis(side = 1, at = years, labels = c(years - 1911), cex.axis = 1.5)
+  
+  # y 軸
+  # axis(side = 2, labels = FALSE, las = 1, tcl = -0.3, line = 0.5)
+  
+  grid()  # 網格線
+  
+  text(x = years,
+     y = n + max(n) * 0.02,
+     labels = n,
+     pos = 3,            # 文字顯示在點上方
+     cex = 1.5,          # 文字大小
+     col = "black"
+  )
+  
+  # 圖例
+  legend("topright",
+         legend = idx_sort,
+         col = color, 
+         lwd = 2, 
+         pch = 16,
+         bty = "n",
+         inset = c(-0.15, 0),
+         xpd = TRUE,
+         cex = 1.5
+         )
+}
+
+# 繪圖 (在 R中呈現)
+# volumebyyearfig(sdbus_table)
+
+# 儲存圖片
+path = paste0("images/line_chart/")
+check_path(path)
+main = paste0(min(years) - 1911, '年', '至', max(years) - 1911, '年興東客運年總運量')
+png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "Kai")
+volumebyyearfig(sdbus_table)
+dev.off()
+```
+
+
+### 東台灣客運
+
+```{r eval=FALSE, include=FALSE}
+ett_table <- ett_temp[!(rownames(ett_temp) %in% c("2025")),] # 扣除2025年
+years <- 2022:2024
+
+volumebyyearfig <- function(df){
+  color <- gray.colors(ncol(df))
+  idx_sort <- names(sort(df["2024",], decreasing = TRUE))
+  n <- df[,idx_sort[1]]
+  
+  par(family = "Kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
+  
+  plot(x = years,
+       y = n,
+       type = "o",
+       lwd = 2,
+       pch = 16,
+       col = color[1],
+       xlab = "年",
+       ylab = "搭乘次數",
+       ylim = c(min(df) * 0.9 , max(df) * 1.1),
+       cex.main = 2,
+       cex.lab = 2,
+       cex.axis = 1.5,
+       cex = 1.5,
+       xaxt = "n",
+       yaxt = "n",
+       bty = "n")
+  
+  lines(x = years,
+        y = df[,idx_sort[2]],
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        col = color[2],
+        cex.main = 2,
+        cex.lab = 2,
+        cex.axis = 1.5,
+        cex = 1.5,
+        )
+  
+  lines(x = years,
+        y = df[,idx_sort[3]],
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        col = color[3],
+        cex.main = 2,
+        cex.lab = 2,
+        cex.axis = 1.5,
+        cex = 1.5,
+        )
+
+  lines(x = years,
+        y = df[,idx_sort[4]],
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        col = color[4],
+        cex.main = 2,
+        cex.lab = 2,
+        cex.axis = 1.5,
+        cex = 1.5,
+        )
+  
+  lines(x = years,
+        y = df[,idx_sort[5]],
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        col = color[5],
+        cex.main = 2,
+        cex.lab = 2,
+        cex.axis = 1.5,
+        cex = 1.5,
+        )
+  
+  title(main = paste0(min(years) - 1911, '年', '至', max(years) - 1911,
+                      '年東台灣客運年總運量折線圖'),
+        cex.main = 2, 
+        adj = 0)
+
+  # x 軸
+  axis(side = 1, at = years, labels = c(years - 1911), cex.axis = 1.5)
+  
+  # y 軸
+  # axis(side = 2, labels = FALSE, las = 1, tcl = -0.3, line = 0.5)
+  
+  grid()  # 網格線
+  
+  text(x = years,
+     y = n + max(n) * 0.02,
+     labels = n,
+     pos = 3,            # 文字顯示在點上方
+     cex = 1.5,          # 文字大小
+     col = "black"
+  )
+  
+  # 圖例
+  legend("topright", 
+         legend = idx_sort, 
+         col = color, 
+         lwd = 2, 
+         pch = 16,
+         bty = "n",
+         inset = c(-0.15, 0),
+         xpd = TRUE,
+         cex = 1.5
+         )
+}
+
+# 繪圖 (在 R中呈現)
+# volumebyyearfig(ett_table)
+
+# 儲存圖片
+path = paste0("images/line_chart/")
+check_path(path)
+main = paste0(min(years) - 1911, '年', '至', max(years) - 1911, '年東台灣客運年總運量')
+png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "Kai")
+volumebyyearfig(ett_table)
+dev.off()
+```
+
+匯出table成excel
+
+```{r eval=FALSE, include=FALSE}
+export_tables_to_excel(
+  tables = list(`公路合計` = roadbus_table, `興東` = sdbus_table, `東台灣` = ett_table),
+  file = "路線統計.xlsx",
+  method = "openxlsx",
+  add_index_sheet = TRUE
+)
+```
+
+
+## 票種處理及分析
+
+```{r}
+# 票種分類函式 -------------------------------------------------------------
+classify_ticket_type <- function(df, col = "票種") {
+  
+  df %>%
+    mutate(
+      大票種 = case_when(
+        # 學生票關鍵字
+        str_detect(!!sym(col), regex("學生", ignore_case = TRUE)) ~ "學生票",
+        
+        # 敬老票關鍵字
+        str_detect(!!sym(col), regex("敬老", ignore_case = TRUE)) ~ "敬老票",
+        
+        # 愛心票關鍵字
+        str_detect(!!sym(col), regex("陪伴|愛心|身障|博愛|仁愛|童", ignore_case = TRUE)) ~ "愛心票",
+        
+        # 其他優待票關鍵字（例：愛心、身心障礙）
+        str_detect(!!sym(col), regex("優待|優惠|半票", ignore_case = TRUE)) ~ "其他優待票",
+        
+        # TPASS (通勤月票等)
+        str_detect(!!sym(col), regex("TPASS|月票|方案|區|台東區", ignore_case = TRUE)) ~ "TPASS",
+        
+        # 其餘全部歸類一般票
+        TRUE ~ "一般票"
+      )
+    )
+}
+
+
+sdbus_temp <- classify_ticket_type(sdbus_df, col = "卡種")
+ett_temp <- classify_ticket_type(ett_df, col = "卡種")
+puyuma_combined_temp <- classify_ticket_type(puyuma_combined_df, col = "交易票種")
+
+ticket_df <- data.frame(營運日期 = c(sdbus_temp$營運日期, ett_temp$營運日期),
+                        年份 = c(year(sdbus_temp$營運日期), year(ett_temp$營運日期))-1911,
+                        年月 = as.numeric(c(sdbus_temp$年月, ett_temp$年月))-191100,
+                        大票種 = c(sdbus_temp$大票種, ett_temp$大票種),
+                        路線 = c(sdbus_temp$路線, ett_temp$路線),
+                        路線類別 = c(sdbus_temp$路線類別, ett_temp$路線類別))
+
+roadbus_df <- ticket_df %>%
+  filter(!(路線類別 %in% c("市區線")))
+
+temp <- table(roadbus_df$年份, roadbus_df$大票種)
+ticket_table <- addmargins(temp, margin = 2)
+ticket_prop <- round(prop.table(temp, margin = 1)*100, 1)
+ticket_table
+ticket_prop
+```
+
+匯出table成excel
+
+```{r}
+export_tables_to_excel(
+  tables = list(`公路票種數量` = ticket_table, `公路票種占比` = ticket_prop),
+  file = "票種統計.xlsx",
+  method = "openxlsx",
+  add_index_sheet = TRUE
+)
+```
+
+### 公路hist
+
+```{r}
+tab <- ticket_table[rownames(ticket_table) %in% c("111", "112", "113"), ][,-ncol(ticket_table)] # del Sum
+
+# 路線搭車票種長條圖
+ticket_hist <- function(tab, yr) {
+  color <- gray.colors(ncol(tab))
+  counts <- sort(tab[yr,], decreasing = TRUE)
+  counts_no0 <- counts[counts > 0] # 過濾掉 0
+  
+  par(family = "Kai", mar = c(5, 6, 4, 3))  # 字體與圖寬
+  
+  bp <- barplot(height = counts_no0,
+                col = color,
+                ylab = "數量",
+                las = 1,
+                cex.main = 2,
+                cex.lab = 2,
+                cex.axis = 1.5,
+                cex = 1.5,
+                yaxt = "n",
+                main = "",
+                ylim = c(0, max(counts_no0) * 1.1)
+                )
+
+  title(main = paste0(yr, '年臺東縣公路客運搭車票種'), cex.main = 2, adj = 0)
+  
+  # x 軸
+  #axis(side = 1, at = 1:length(df_ticket), labels = c(names(df_ticket)), cex.axis = 1.5)
+  
+  # y 軸
+  axis(side = 2, labels = FALSE, las = 1, cex.axis = 1.5, line = -1)
+  
+  text(x = bp, 
+       y = counts_no0, 
+       labels = counts_no0, 
+       pos = 3,
+       cex = 1.5)
+}
+
+for (yr in rownames(tab)){
+  # 儲存圖片
+  path = paste0("images/barplot/")
+  check_path(path)
+  img_filename = paste0(yr, '年臺東縣公路客運搭車票種')
+  png(filename = paste0(path, "/", img_filename, ".png"), width = 13.79, height = 8.25, units = "in", res = 300, family = "Kai")
+  ticket_hist(tab, yr)
+  dev.off()
+}
+```
+
+### TPASS
+
+11307-11406
+
+#### 公路
+
+```{r}
+temp <- roadbus_df %>% 
+  filter(營運日期 >= as.Date("2024-07-01") & 營運日期 <= as.Date("2025-06-30"),
+         !路線類別 %in% c("市區線"))
+
+tpass_prop_road <- round(prop.table(table(temp$年月, temp$大票種), margin = 1)*100, 1)
+tpass_prop_road
+```
+
+
+```{r}
+tpass_prop_plot <- function(tpass_prop_table){
+  color <- gray.colors(2)
+  tpass_prop = tpass_prop_table[,"TPASS"]
+  x_idx = 1:length(tpass_prop_table[,"TPASS"])
+  x_label = names(tpass_prop_table[,"TPASS"])
+  
+  par(family = "Kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
+  
+  plot(x = x_idx,
+       y = tpass_prop,
+       type = "o",
+       lwd = 2,
+       pch = 16,
+       col = color[1],
+       xlab = "月份",
+       ylab = "比例",
+       ylim = c(min(tpass_prop) * 0.9, max(tpass_prop) * 1.2),
+       cex.main = 2,
+       cex.lab = 2,
+       cex.axis = 1.5,
+       cex = 1.5,
+       xaxt = "n",
+       yaxt = "n",
+       bty = "n"
+       )
+  
+  title(main = paste0('113年7月至114年6月臺東縣市區客運TPASS使用比例折線圖'), cex.main = 2, adj = 0)
+  
+  # x 軸
+  axis(side = 1,
+       at = x_idx,
+       labels = rownames(tpass_prop_table),
+       cex.axis = 1.5)
+  
+  # y 軸
+  axis(side = 2, las = 1, cex.axis = 1.5, line = 0)
+  
+  text(x = x_idx,
+       y = tpass_prop + max(tpass_prop) * 0.02,
+       labels = paste0(round(tpass_prop, 2), "%"),
+       pos = 3,            # 文字顯示在點上方
+       cex = 1.5,          # 文字大小
+       col = "black"
+      )
+  
+  grid()  # 網格線
+  
+  # 圖例
+  legend("topright", 
+         legend = c("TPASS使用比例"), 
+         col = color[1], 
+         lwd = 2, 
+         pch = 16,
+         bty = "n",
+         inset = c(-0.17, 0),
+         xpd = TRUE,
+         cex = 1.5
+         )
+}
+
+generate_intercity_bus_tpass_prop_plot <- function(tpass_prop_table) {
+  # 儲存圖片
+  path = paste0("images/line_chart/")
+  check_path(path)
+  img_filename = paste0('113年7月至114年6月臺東縣市區客運TPASS使用比例折線圖')
+  png(filename = paste0(path, "/", img_filename, ".png"), width = 15, height = 5, units = "in", res = 300, family = "Kai")
+  tpass_prop_plot(tpass_prop_table)
+  dev.off()
+}
+
+# 存圖
+generate_intercity_bus_tpass_prop_plot(tpass_prop_road)
+```
+
+#### 市區
+
+```{r}
+puyuma_temp <- puyuma_combined_df %>% 
+  classify_ticket_type(., col = "交易票種") %>% # 分類票種
+  filter(上車交易日期 >= as.Date("2024-07-01") & 上車交易日期 <= as.Date("2025-06-30")) %>% 
+  mutate(年月 = as.numeric(年月) - 191100) %>% 
+  dplyr::select(年月, 大票種)
+
+other_temp <- ticket_df %>% 
+  filter(路線類別 == "市區線",
+         營運日期 >= as.Date("2024-07-01") & 營運日期 <= as.Date("2025-06-30")) %>% 
+  dplyr::select(年月, 大票種)
+
+city_temp <- rbind(puyuma_temp, other_temp)
+
+tpass_prop_city <- round(prop.table(table(city_temp$年月, city_temp$大票種), margin = 1)*100, 1)
+tpass_prop_city
+```
+
+繪圖
+
+```{r}
+# 先改generate_intercity_bus_tpass_prop_plot函數的title、filename
+generate_intercity_bus_tpass_prop_plot(tpass_prop_table = tpass_prop_city)
+```
+
+
+## 重要站點分析
+
+按年統計特定站點下車人數
+
+```{r}
+# important spots data frame
+
+impSpots_df <- data.frame(
+  營運日期 = c(
+    sdbus_temp$營運日期,
+    ett_temp$營運日期,
+    puyuma_combined_temp$上車交易日期),
+  年份 = c(
+    year(sdbus_temp$營運日期),
+    year(ett_temp$營運日期),
+    year(puyuma_combined_temp$上車交易日期))-1911,
+  路線 = c(
+    sdbus_temp$路線,
+    ett_temp$路線,
+    as.numeric(puyuma_combined_temp$路線編號)),
+  路線名稱 = c(
+    as.character(sdbus_temp$路線),
+    ett_temp$路線名稱,
+    puyuma_combined_temp$路線名稱
+  ),
+  上車站 = c(
+    sdbus_temp$上車站,
+    ett_temp$上車站,
+    puyuma_combined_temp$上車票價站名稱),
+  下車站 = c(
+    sdbus_temp$下車站,
+    ett_temp$下車站,
+    puyuma_combined_temp$下車票價站名稱)
+  )
+```
+
+### 1. 台東轉運站
+
+關鍵字：東轉運
+
+> unique(temp$下車站)
+[1] "台東轉運站(返)"  "臺東轉運站"      "台東轉運站"      "台東轉運站(返))"
+
+```{r}
+temp <- impSpots_df[grepl("東轉運", impSpots_df$下車站),]
+temp1 <- table(temp$年份, temp$路線)
+temp1 <- temp1[!(rownames(temp1) %in% "114"),]
+temp2 <- addmargins(temp1, margin = 2)
+# 按年
+ttstn <- temp2[,colnames(temp2) %in% "Sum"]
+
+
+temp3 <- addmargins(temp1, margin = 1)
+temp4 <- temp3[rownames(temp3) %in% "Sum",]
+temp5 <- temp4[!(temp4 == 0)]
+# 下車，路線占比
+ttstn_down <- sort(temp5, decreasing = TRUE)[c(1:3, (length(temp5)-8):(length(temp5)-6))]
+ttstn_prop_down <- sort(temp5/sum(temp5)*100, decreasing = TRUE)[c(1:3, (length(temp5)-8):(length(temp5)-6))] %>% round(.,3)
+ttstn_down
+ttstn_prop_down
+```
+
+### 2. 台東車站
+
+關鍵字：台東火車站
+
+> unique(temp$下車站)
+[1] "台東火車站"     "台東火車站(返)"
+
+```{r}
+temp <- impSpots_df[grepl("台東火車站", impSpots_df$下車站),]
+temp1 <- table(temp$年份, temp$路線)
+temp1 <- temp1[!(rownames(temp1) %in% "114"),]
+temp2 <- addmargins(temp1, margin = 2)
+# 按年
+ttstn <- temp2[,colnames(temp2) %in% "Sum"]
+ttstn
+
+temp3 <- addmargins(temp1, margin = 1)
+temp4 <- temp3[rownames(temp3) %in% "Sum",]
+temp5 <- temp4[!(temp4 == 0)]
+# 下車，路線占比
+ttstn_down <- sort(temp5, decreasing = TRUE)[c(1:3, (length(temp5)-9):(length(temp5)-6))]
+ttstn_prop_down <- sort(temp5/sum(temp5)*100, decreasing = TRUE)[c(1:3, (length(temp5)-9):(length(temp5)-6))] %>% round(.,3)
+ttstn_down
+ttstn_prop_down
+```
+
+### 3. 富岡漁港
+
+```{r}
+temp <- impSpots_df %>% 
+  filter(下車站 %in% c("富岡新村", "富岡漁港"))
+temp1 <- table(temp$年份, temp$路線)
+temp1 <- temp1[!(rownames(temp1) %in% "114"),]
+temp2 <- addmargins(temp1, margin = 2)
+# 按年
+ttstn <- temp2[,colnames(temp2) %in% "Sum"]
+ttstn
+
+temp3 <- addmargins(temp1, margin = 1)
+temp4 <- temp3[rownames(temp3) %in% "Sum",]
+temp5 <- temp4[!(temp4 == 0)]
+# 下車，路線占比
+ttstn_down <- sort(temp5, decreasing = TRUE)[c(1:3, (length(temp5)-2):(length(temp5)))]
+ttstn_prop_down <- sort(temp5/sum(temp5)*100, decreasing = TRUE)[c(1:3, (length(temp5)-2):(length(temp5)))] %>% round(.,3)
+ttstn_down
+ttstn_prop_down
+```
+
+
+### 4. 台東航空站
+
+> unique(temp$下車站)
+[1] "航空站"     "台東航空站"
+
+```{r}
+temp <- impSpots_df[grepl("航空", impSpots_df$下車站),]
+temp1 <- table(temp$年份, temp$路線)
+temp1 <- temp1[!(rownames(temp1) %in% "114"),]
+temp2 <- addmargins(temp1, margin = 2)
+# 按年
+ttstn <- temp2[,colnames(temp2) %in% "Sum"]
+ttstn
+
+temp3 <- addmargins(temp1, margin = 1)
+temp4 <- temp3[rownames(temp3) %in% "Sum",]
+temp5 <- temp4[!(temp4 == 0)]
+# 下車，路線占比
+ttstn_down <- sort(temp5, decreasing = TRUE)[c(1:3, (length(temp5)-2):(length(temp5)))]
+ttstn_prop_down <- sort(temp5/sum(temp5)*100, decreasing = TRUE)[c(1:3, (length(temp5)-2):(length(temp5)))] %>% round(.,3)
+ttstn_down
+ttstn_prop_down
+```
+
+### 5. 池上車站
+
+```{r}
+temp <- impSpots_df %>% filter(下車站 %in% c("池上"))
+temp1 <- table(temp$年份, temp$路線)
+temp1 <- temp1[!(rownames(temp1) %in% "114"),]
+temp2 <- addmargins(temp1, margin = 2)
+# 按年
+ttstn <- temp2[,colnames(temp2) %in% "Sum"]
+ttstn
+
+temp3 <- addmargins(temp1, margin = 1)
+temp4 <- temp3[rownames(temp3) %in% "Sum",]
+temp5 <- temp4[!(temp4 == 0)]
+# 下車，路線占比
+ttstn_down <- sort(temp5, decreasing = TRUE)[c(1:3, (length(temp5)-2):(length(temp5)))]
+ttstn_prop_down <- sort(temp5/sum(temp5)*100, decreasing = TRUE)[c(1:3, (length(temp5)-2):(length(temp5)))] %>% round(.,3)
+ttstn_down
+ttstn_prop_down
+```
+
+### 6. 小野柳及加路蘭
+
+```{r}
+temp <- impSpots_df %>% 
+  filter(下車站 %in% c("富岡國小","小野柳", "加路蘭遊憩區"))
+temp1 <- table(temp$年份, temp$路線)
+temp1 <- temp1[!(rownames(temp1) %in% "114"),]
+temp2 <- addmargins(temp1, margin = 2)
+# 按年
+ttstn <- temp2[,colnames(temp2) %in% "Sum"]
+ttstn
+
+temp3 <- addmargins(temp1, margin = 1)
+temp4 <- temp3[rownames(temp3) %in% "Sum",]
+temp5 <- temp4[!(temp4 == 0)]
+# 下車，路線占比
+ttstn_down <- sort(temp5, decreasing = TRUE)[c(1:3, (length(temp5)-2):(length(temp5)))]
+ttstn_prop_down <- sort(temp5/sum(temp5)*100, decreasing = TRUE)[c(1:3, (length(temp5)-2):(length(temp5)))] %>% round(.,3)
+ttstn_down
+ttstn_prop_down
+```
+
+### 7. 都蘭遊憩區
+
+```{r}
+temp <- impSpots_df %>% 
+  filter(下車站 %in% c("都蘭B", "水往上流"))
+temp1 <- table(temp$年份, temp$路線)
+temp1 <- temp1[!(rownames(temp1) %in% "114"),]
+temp2 <- addmargins(temp1, margin = 2)
+# 按年
+ttstn <- temp2[,colnames(temp2) %in% "Sum"]
+ttstn
+
+temp3 <- addmargins(temp1, margin = 1)
+temp4 <- temp3[rownames(temp3) %in% "Sum",]
+temp5 <- temp4[!(temp4 == 0)]
+# 下車，路線占比
+ttstn_down <- sort(temp5, decreasing = TRUE)[c(1:3, (length(temp5)-2):(length(temp5)))]
+ttstn_prop_down <- sort(temp5/sum(temp5)*100, decreasing = TRUE)[c(1:3, (length(temp5)-2):(length(temp5)))] %>% round(.,3)
+ttstn_down
+ttstn_prop_down
+```
+
+### 8. 卑南初鹿
+
+```{r}
+temp <- impSpots_df %>% 
+  filter(下車站 %in% c("初鹿", "明峰","卑南遺址公園"))
+temp1 <- table(temp$年份, temp$路線)
+temp1 <- temp1[!(rownames(temp1) %in% "114"),]
+temp2 <- addmargins(temp1, margin = 2)
+# 按年
+ttstn <- temp2[,colnames(temp2) %in% "Sum"]
+ttstn
+
+temp3 <- addmargins(temp1, margin = 1)
+temp4 <- temp3[rownames(temp3) %in% "Sum",]
+temp5 <- temp4[!(temp4 == 0)]
+# 下車，路線占比
+ttstn_down <- sort(temp5, decreasing = TRUE)[c(1:3, (length(temp5)-2):(length(temp5)))]
+ttstn_prop_down <- sort(temp5/sum(temp5)*100, decreasing = TRUE)[c(1:3, (length(temp5)-2):(length(temp5)))] %>% round(.,3)
+ttstn_down
+ttstn_prop_down
+```
+
+
+### 9. 三仙台遊憩區
+
+> unique(impSpots_df$下車站[grepl("三仙台", impSpots_df$下車站)])
+[1] "三仙台"       "三仙台遊憩區"
+
+```{r}
+temp <- impSpots_df %>% 
+  filter(下車站 %in% c("三仙台遊憩區", "三仙台"))
+temp1 <- table(temp$年份, temp$路線)
+temp1 <- temp1[!(rownames(temp1) %in% "114"),]
+temp2 <- addmargins(temp1, margin = 2)
+# 按年
+ttstn <- temp2[,colnames(temp2) %in% "Sum"]
+ttstn
+
+temp3 <- addmargins(temp1, margin = 1)
+temp4 <- temp3[rownames(temp3) %in% "Sum",]
+temp5 <- temp4[!(temp4 == 0)]
+# 下車，路線占比
+ttstn_down <- sort(temp5, decreasing = TRUE)[c(1:3, (length(temp5)-3):(length(temp5)-1))]
+ttstn_prop_down <- sort(temp5/sum(temp5)*100, decreasing = TRUE)[c(1:3, (length(temp5)-3):(length(temp5)-1))] %>% round(.,3)
+ttstn_down
+ttstn_prop_down
+```
+
+
+### 10. 鹿野高臺
+
+```{r}
+temp <- impSpots_df %>% 
+  filter(下車站 %in% c("鹿野高台"))
+temp1 <- table(temp$年份, temp$路線)
+temp1 <- temp1[!(rownames(temp1) %in% "114"),]
+temp2 <- addmargins(temp1, margin = 2)
+# 按年
+ttstn <- temp2[,colnames(temp2) %in% "Sum"]
+ttstn
+
+temp3 <- addmargins(temp1, margin = 1)
+temp4 <- temp3[rownames(temp3) %in% "Sum",]
+temp5 <- temp4[!(temp4 == 0)]
+# 下車，路線占比
+ttstn_down <- sort(temp5, decreasing = TRUE)[c(1:3, (length(temp5)-3):(length(temp5)-1))]
+ttstn_prop_down <- sort(temp5/sum(temp5)*100, decreasing = TRUE)[c(1:3, (length(temp5)-3):(length(temp5)-1))] %>% round(.,3)
+ttstn_down
+ttstn_prop_down
+```
+
+### hist
+
+```{r}
+# 設定檔案路徑
+file_path <- "./tables/重要站點統計.xlsx"
+
+# 讀取第一個 sheet
+df <- read_excel(path = file_path, sheet = 1)[-1]
+df <- as.data.frame(df)
+rownames(df) <- c("111", "112", "113")
+```
+
+```{r}
+# ---- 套件 ----
+library(tidyverse)
+library(scales)
+
+# ---- 資料整理：寬轉長 ----
+df_long <- df %>%
+  rownames_to_column("年") %>%             # 把 rownames 變成欄位
+  pivot_longer(-年,                        # 其他欄位都是景點
+               names_to = "景點", 
+               values_to = "人數") %>%
+  mutate(
+    年 = factor(年, levels = c("111", "112", "113")),
+    # 讓景點順序按照原欄位順序呈現
+    景點 = factor(景點, levels = colnames(df))
+  )
+```
+
+```{r}
+windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
+
+tourist_attraction_visitor_statistics_histgram = function(){
+  color <- gray.colors(4)
+  
+  p <- ggplot(df_long, aes(x = 景點, y = 人數, fill = 年)) +
+    geom_col(position = "dodge", width = 0.8) +
+    # 分組長條圖 # 調小長條寬度 → gap 變大
+    scale_fill_manual(values = color) +     # 使用自訂灰階色
+    scale_y_continuous(
+      trans = "sqrt",               # 對柱子高度做 sqrt 變換
+      breaks = scales::pretty_breaks(n = 6),   # 刻度
+      labels = scales::comma       # 顯示原始數字
+    ) +
+    labs(x = "", 
+         y = "人數", 
+         fill = "年度", 
+         title = paste0("111年至113年臺東縣重要交通觀光景點下車人數統計")
+         ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    theme(
+      text = element_text(family = "Kai", size = 16),          # 基本文字大小
+      axis.title = element_text(size = 18),                    # x, y 軸標題
+      axis.text = element_text(size = 14),                     # x, y 軸文字
+      plot.title = element_text(size = 20),                    # 圖標題
+      legend.title = element_text(size = 16),                  # 圖例標題
+      legend.text = element_text(size = 14),                   # 圖例文字
+      panel.grid.major.y = element_line(color = "gray80"),     # 僅保留橫線
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      panel.background = element_rect(fill = "white", color = NA),  # 面板背景白色
+      plot.background = element_rect(fill = "white", color = NA)    # 圖片背景白色
+    )
+}
+# 儲存圖片
+path = paste0("images/barplot/")
+check_path(path)
+img_filename = paste0("111年至113年臺東縣重要交通觀光景點下車人數統計")
+p = tourist_attraction_visitor_statistics_histgram()
+ggsave(filename = paste0(path, "/", img_filename, ".png"), plot = p, width = 15, height = 5, units = "in", dpi = 300)
+```
+
+
+## 檢查
+
+檢查公路客運路線資料，按月
+
+```{r}
+# temp <- as.data.frame(table(ticket_df$年月, ticket_df$路線))
+# colnames(temp) <- c("年月", "路線", "次數")
+# temp$年月 <- as.character(temp$年月)
+# temp$路線 <- as.character(temp$路線)
+# temp_wide <- pivot_wider(temp, names_from = 路線, values_from = 次數, values_fill = 0)
+# write.csv(temp_wide, file = "temp_wide.csv", row.names = FALSE)
+```
+
+平假日分析
+
+```{r}
+# define the stations near by the spots
+spt <-list(
+  台東轉運站 = c(
+    "台東轉運站(返)",
+    "臺東轉運站",
+    "台東轉運站",
+    "台東轉運站(返))"
+    ),
+  台東車站 = c("台東火車站", "台東火車站(返)"),
+  富岡漁港 = c("富岡新村", "富岡漁港"),
+  台東航空站 = c("航空站", "台東航空站"),
+  池上車站 = c("池上"),
+  小野柳及加路蘭 = c("富岡國小","小野柳", "加路蘭遊憩區"),
+  都蘭遊憩區 = c("都蘭B", "水往上流"),
+  卑南初鹿 = c("初鹿", "明峰","卑南遺址公園"),
+  三仙台遊憩區 = c("三仙台遊憩區", "三仙台"),
+  鹿野高臺 = c("鹿野高台")
+)
+```
+
+## 區分平假日
+
+```{r}
+impSpots_df <- impSpots_df %>%
+  mutate(平假日 = if_else(wday(營運日期) %in% c(1,7), "假日", "平日"))
+```
+
+
+```{r}
+weekdf <- matrix(1, nrow = 2, ncol = 10)
+colnames(weekdf) <- names(spt)
+rownames(weekdf) <- c("平日", "假日")
+year.from = 2022
+year.to = 2025
+
+temp <- impSpots_df %>%
+  filter(
+    營運日期 >= as.Date(paste0(year.from, "-01-01")),
+    營運日期 <= as.Date(paste0(year.to, "-12-31"))
+  )
+
+for (spotname in names(spt)) {
+  temp1 <- temp %>% filter(下車站 %in% spt[[spotname]])
+  temp2 <- as.numeric(table(temp1$平假日))
+  weekdf[,spotname] <- temp2
+}
+
+weektab <- prop.table(addmargins(as.table(weekdf), margin = 2), margin = 2)*100 %>% 
+  round(., 1)
+
+export_tables_to_excel(
+  tables = list(`weektab` = weektab),
+  file = "./tables/重要站點平假日.xlsx",
+  method = "openxlsx",
+  add_index_sheet = TRUE
+)
+```
+
+## 上下車鄉鎮熱力圖
+
+### 示意圖
+
+```{r}
+library(tidyverse)
+library(reshape2)  # 用於數據重塑
+
+# 原始數據處理流程 (保持不變)
+processed_data <- impSpots_df %>%
+  filter(路線 == "9801",
+         year(營運日期) == "2024") %>%
+  filter(!is.na(上車站), !is.na(下車站)) %>%
+  select(上車站, 下車站) %>% 
+  count(上車站, 下車站) %>% 
+  arrange(desc(n))
+
+ggplot(processed_data, aes(x = 下車站, y = 上車站)) +
+  geom_tile(aes(fill = n), color = "white") +
+  geom_text(aes(label = n), color = "black", size = 3) +  # 顯示數值標籤
+  scale_fill_gradient(low = "white", high = "red") +
+  labs(
+    title = "上下車站熱力圖",
+    x = "下車站名稱",
+    y = "上車站名稱",
+    fill = "乘客數量"
+  ) +
+  theme_minimal() +
+  theme(
+    # axis.text.x = element_blank(),  # 隱藏X軸標籤
+    # axis.text.y = element_blank(),  # 隱藏Y軸標籤
+    axis.text.x = element_text(angle = 45, hjust = 1),  # X軸標籤傾斜
+    plot.title = element_text(hjust = 0.5)              # 標題居中
+  )
+```
+
+```{r}
+processed_data2 <- processed_data %>%
+  mutate(
+    上車站 = str_replace(上車站, "^台", "臺"),
+    下車站 = str_replace(下車站, "^台", "臺")
+  )
+
+lab_map <- c(
+  "臺東森林公園" = "吉安",
+  "基督教醫院"   = "花蓮",
+  "臺東轉運站"   = "志學",
+  "臺東火車站"   = "富里"
+)
+
+ggplot(processed_data2, aes(x = 下車站, y = 上車站)) +
+  geom_tile(aes(fill = n), color = "white") +
+  scale_fill_gradient(low = "white", high = "red") +
+  scale_x_discrete(labels = function(x) dplyr::recode(x, !!!lab_map, .default = x)) +
+  scale_y_discrete(labels = function(x) dplyr::recode(x, !!!lab_map, .default = x)) +
+  labs(title = "花蓮縣客運鄉鎮際之需求分析示意圖", x = "下車鄉鎮", y = "上車鄉鎮", fill = "乘客數量") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title  = element_text(hjust = 0.5))
+```
+
+去除多餘變數
+
+```{r}
+rm(list = setdiff(ls(), c("impSpots_df",
+                          "sdbus_temp",
+                          "ett_temp",
+                          "puyuma_combined_df")))
+```
+
+### Step 1. 載入鄉鎮對照表
+
+```{r message=FALSE}
+library(readr)
+TaiTown <- read_csv("../TDX/公路客運_花蓮市區公車_台東市區公車站點鄉鎮.csv", 
+                    locale = locale(encoding = "BIG5"))
+```
+
+The columns we only need in TaiTown:
+
+1. StopName
+2. Direction (0: 去程, 1: 返程)
+3. LocationCityCode
+4. TOWNNAME
+
+Check the columns above
+
+```{r}
+# temp <- TaiTown %>% 
+#   select(StopName, Direction, LocationCityCode, TOWNNAME)
+# 
+# apply(temp, 2, anyNA)
+```
+
+Handling the NA above
+
+```{r}
+TaiTown$TOWNNAME[is.na(TaiTown$TOWNNAME)] = "花蓮市"
+TaiTown$LocationCityCode[is.na(TaiTown$TOWNNAME)] = "HUA"
+```
+
+### Step 2. 資料處裡
+
+#### 統一去返程定義
+
+> anyNA(sdbus_temp$去返)
+[1] FALSE
+> anyNA(ett_temp$去返)
+[1] FALSE
+
+統一多家客運公司的去返程定義
+
+0: 去程
+1: 返程
+
+```{r}
+# sdbus
+temp1 <- ifelse(sdbus_temp$去返 == 1, 0, 1)
+
+# ett
+temp2 <- ifelse(ett_temp$去返 == 1, 0, 1)
+
+# puyuma
+temp3 <- ifelse(
+  puyuma_combined_df$去返程 == "里程去程", 0,
+  ifelse(puyuma_combined_df$去返程 == "里程返程", 1, NA)
+)
+
+impSpots_df$去返程 <- c(temp1, temp2, temp3)
+```
+
+1. 決定畫熱力圖的時間範圍
+2. Remove NA in 上車站、下車站、去返程
+3. 刪除非固定班次
+
+```{r}
+# 要刪除的非固定班次路線
+rm_routes <- c(61, 8881, 8882, 8883, 8884, 81320, 81330)
+
+impSpots_df_113 <- impSpots_df %>% 
+  filter(年份 == "113", 
+         !is.na(上車站),
+         !is.na(下車站),
+         !is.na(去返程),
+         !(路線 %in% rm_routes))
+dim(impSpots_df_113)
+```
+
+> apply(impSpots_df_113, 2, anyNA)
+營運日期     年份     路線   上車站   下車站   平假日   去返程 
+   FALSE    FALSE    FALSE    FALSE    FALSE    FALSE    FALSE 
+
+
+#### 統一站點名稱
+
+```{r}
+# "舊名稱" = "新名稱"
+new_site_name <- list(
+  "長濱農拓中心" = "金剛好事館",
+  "寧浦" = "寧埔",
+  "台東專科" = "台東專校",
+  "花蓮文創園區(中" = "花蓮文創園區(中正)",
+  "大峰村" = "大?村",
+  "東河休憩區" = "東河遊憩區",
+  "長濱衛生所" = "長濱鄉衛生所",
+  "臺東轉運站" = "台東轉運站",
+  "原生植物園" = "原生應用植物園",
+  "公教會館站" = "公教會館",
+  "娜路彎酒店" = "娜路彎大酒店",
+  "賓茂號橋" = "賓茂3號橋",
+  "三和" = "三和A",
+  "金鋒入口" = "金峰入口",
+  "富里" = "富里農會",
+  "鼎東山線保養廠" = "鼎東山線保養場",
+  "臺東森林公園" = "台東森林公園",
+  "富岡漁港" = "富岡港口",
+  "台東火車站(回)" = "台東火車站"
+)
+
+impSpots_df_113 <- impSpots_df_113 %>%
+  mutate(上車站 = recode(上車站, !!!new_site_name),
+         下車站 = recode(下車站, !!!new_site_name))
+```
+
+#### 分割對照表
+
+對照表也分割成0(去程)、1(返程)兩組
+
+```{r}
+# Taitung
+temp <- TaiTown %>%
+  filter(LocationCityCode %in% "TTT") %>% 
+  select(StopName, Direction, TOWNNAME) %>%
+  unique()
+
+TaiTown_TTT_0 <- temp[temp$Direction == 0,]
+TaiTown_TTT_1 <- temp[temp$Direction == 1,]
+
+# Hualien
+temp <- TaiTown %>%
+  filter(LocationCityCode %in% "HUA") %>% 
+  select(StopName, Direction, TOWNNAME) %>%
+  unique()
+
+TaiTown_HUA_0 <- temp[temp$Direction == 0,]
+TaiTown_HUA_1 <- temp[temp$Direction == 1,]
+```
+
+發現對照表有同一站點在固定去返程下還劃分兩個鄉鎮區
+
+```{r}
+cat("台東對照表需要處理的站點：\n")
+names(table(TaiTown_TTT_0$StopName))[as.numeric(table(TaiTown_TTT_0$StopName))>1]
+names(table(TaiTown_TTT_1$StopName))[as.numeric(table(TaiTown_TTT_1$StopName))>1]
+
+cat("\n花蓮對照表需要處理的站點：\n")
+names(table(TaiTown_HUA_0$StopName))[as.numeric(table(TaiTown_HUA_0$StopName))>1]
+names(table(TaiTown_HUA_1$StopName))[as.numeric(table(TaiTown_HUA_1$StopName))>1]
+```
+
+
+無傷大雅的偷吃步：
+
+當同一站點在固定去返程下還劃分兩個鄉鎮區時，直接給定成其中一個鄉鎮
+
+簡單方式(給定成第一列的鄉鎮)
+
+`.keep_all = TRUE`: 保留整列資料，但只取唯一組合的第一筆
+
+```{r}
+# 去程
+TaiTown_TTT_0 <- TaiTown_TTT_0 %>%
+  distinct(`StopName`, .keep_all = TRUE)
+TaiTown_HUA_0 <- TaiTown_HUA_0 %>%
+  distinct(`StopName`, .keep_all = TRUE)
+
+# 返程
+TaiTown_TTT_1 <- TaiTown_TTT_1 %>%
+  distinct(`StopName`, .keep_all = TRUE)
+TaiTown_HUA_1 <- TaiTown_HUA_1 %>%
+  distinct(`StopName`, .keep_all = TRUE)
+```
+
+
+複雜方式(一個一個給定)
+
+```{r}
+# # Taitung
+# TaiTown_TTT_0 <- TaiTown_TTT_0[!((TaiTown_TTT_0$站名 == "萬應公祠")&(TaiTown_TTT_0$TOWNNAME == "大武鄉")),]
+# 
+# TaiTown_TTT_1 <- TaiTown_TTT_1[!((TaiTown_TTT_1$站名 == "萬應公祠")&(TaiTown_TTT_1$TOWNNAME == "達仁鄉")),]
+# 
+# # Hualien
+# TaiTown_HUA_0 <- TaiTown_HUA_0[!((TaiTown_HUA_0$站名 == "三角市場")&(TaiTown_HUA_0$TOWNNAME == "吉安鄉")),]
+# 
+# TaiTown_HUA_1 <- TaiTown_HUA_1[!((TaiTown_HUA_1$站名 == "三角市場")&(TaiTown_HUA_1$TOWNNAME == "花蓮市")),]
+# 
+# TaiTown_HUA_0 <- TaiTown_HUA_0[!((TaiTown_HUA_0$站名 == "東華大學美崙校區")&(TaiTown_HUA_0$TOWNNAME == "新城鄉")),]
+# 
+# TaiTown_HUA_1 <- TaiTown_HUA_1[!((TaiTown_HUA_1$站名 == "東華大學美崙校區")&(TaiTown_HUA_1$TOWNNAME == "花蓮市")),]
+# 
+# TaiTown_HUA_0 <- TaiTown_HUA_0[!((TaiTown_HUA_0$站名 == "南三棧")&(TaiTown_HUA_0$TOWNNAME == "新城鄉")),]
+# 
+# TaiTown_HUA_1 <- TaiTown_HUA_1[!((TaiTown_HUA_1$站名 == "南三棧")&(TaiTown_HUA_1$TOWNNAME == "秀林鄉")),]
+# 
+# TaiTown_HUA_0 <- TaiTown_HUA_0[!((TaiTown_HUA_0$站名 == "莊敬路")&(TaiTown_HUA_0$TOWNNAME == "吉安鄉")),]
+# 
+# TaiTown_HUA_1 <- TaiTown_HUA_1[!((TaiTown_HUA_1$站名 == "莊敬路")&(TaiTown_HUA_1$TOWNNAME == "花蓮市")),]
+# 
+# TaiTown_HUA_0 <- TaiTown_HUA_0[!((TaiTown_HUA_0$站名 == "富田")&(TaiTown_HUA_0$TOWNNAME == "光復鄉")),]
+# 
+# TaiTown_HUA_1 <- TaiTown_HUA_1[!((TaiTown_HUA_1$站名 == "富田")&(TaiTown_HUA_1$TOWNNAME == "富里鄉")),]
+# 
+# TaiTown_HUA_0 <- TaiTown_HUA_0[!((TaiTown_HUA_0$站名 == "慈濟大學(建國校區)")&(TaiTown_HUA_0$TOWNNAME == "吉安鄉")),]
+# 
+# TaiTown_HUA_1 <- TaiTown_HUA_1[!((TaiTown_HUA_1$站名 == "慈濟大學(建國校區)")&(TaiTown_HUA_1$TOWNNAME == "花蓮市")),]
+```
+
+再檢查一次
+
+```{r}
+cat("台東對照表需要處理的站點：\n")
+names(table(TaiTown_TTT_0$StopName))[as.numeric(table(TaiTown_TTT_0$StopName))>1]
+names(table(TaiTown_TTT_1$StopName))[as.numeric(table(TaiTown_TTT_1$StopName))>1]
+
+cat("\n花蓮對照表需要處理的站點：\n")
+names(table(TaiTown_HUA_0$StopName))[as.numeric(table(TaiTown_HUA_0$StopName))>1]
+names(table(TaiTown_HUA_1$StopName))[as.numeric(table(TaiTown_HUA_1$StopName))>1]
+```
+
+
+#### 判斷鄉鎮
+
+兩階段判斷鄉鎮：
+
+1. 去返程分開判斷
+2. 合併去返程新df
+
+去程df: impSpots_df_113_0
+去程對應表: TaiTown_TTT_0, TaiTown_HUA_0
+
+返程df: impSpots_df_113_1
+返程對應表: TaiTown_TTT_1, TaiTown_HUA_1
+
+判斷完鄉鎮，新資料的維度應改要相同與原資料相同
+
+Split data to 0(去程) and 1(返程) two groups
+
+```{r}
+impSpots_df_113_0 <- impSpots_df_113 %>% 
+  filter(去返程 == 0)
+
+impSpots_df_113_1 <- impSpots_df_113 %>% 
+  filter(去返程 == 1)
+
+dim(impSpots_df_113_0)
+dim(impSpots_df_113_1)
+```
+
+判斷去程df
+
+```{r}
+temp <- impSpots_df_113_0 %>%
+  # 先接台東
+  left_join(TaiTown_TTT_0, by = c("下車站" = "StopName")) %>%
+  rename(TOWNNAME_TTT = TOWNNAME) %>% 
+  
+  # 再接花蓮（只用來補缺）
+  left_join(TaiTown_HUA_0, by = c("下車站" = "StopName")) %>%
+  rename(TOWNNAME_HUA = TOWNNAME) %>% 
+  
+  # 用 TTT 優先，補不到再用 HUA
+  mutate(下車鄉鎮 = coalesce(TOWNNAME_TTT, TOWNNAME_HUA)) %>%
+  select(-TOWNNAME_TTT, -TOWNNAME_HUA) %>% 
+  
+  # 先接台東
+  left_join(TaiTown_TTT_0, by = c("上車站" = "StopName")) %>%
+  rename(TOWNNAME_TTT = TOWNNAME) %>% 
+  
+  # 再接花蓮（只用來補缺）
+  left_join(TaiTown_HUA_0, by = c("上車站" = "StopName")) %>%
+  rename(TOWNNAME_HUA = TOWNNAME) %>% 
+  
+  # 用 TTT 優先，補不到再用 HUA
+  mutate(上車鄉鎮 = coalesce(TOWNNAME_TTT, TOWNNAME_HUA)) %>%
+  select(-Direction.x,
+         -Direction.y,
+         -Direction.x.x,
+         -Direction.y.y,
+         -TOWNNAME_TTT,
+         -TOWNNAME_HUA)
+  
+Taitung_0 <- temp %>% 
+  # 直接捨去無法被辨識的舊站名，約占0.3%
+  filter(!is.na(上車鄉鎮), !is.na(下車鄉鎮)) %>% 
+  
+  # 概括花蓮
+  mutate(下車鄉鎮 = case_when(
+   下車鄉鎮 %in% c("吉安鄉","壽豐鄉","富里鄉",
+                   "玉里鎮","花蓮市","豐濱鄉") ~ "花蓮縣",
+   TRUE ~ 下車鄉鎮
+  )) %>% 
+  mutate(上車鄉鎮 = case_when(
+   上車鄉鎮 %in% c("吉安鄉","壽豐鄉","富里鄉",
+                   "玉里鎮","花蓮市","豐濱鄉") ~ "花蓮縣",
+   TRUE ~ 上車鄉鎮
+  ))
+```
+
+判斷返程df
+
+```{r}
+temp <- impSpots_df_113_1 %>%
+  # 先接台東
+  left_join(TaiTown_TTT_1, by = c("下車站" = "StopName")) %>%
+  rename(TOWNNAME_TTT = TOWNNAME) %>% 
+  
+  # 再接花蓮（只用來補缺）
+  left_join(TaiTown_HUA_1, by = c("下車站" = "StopName")) %>%
+  rename(TOWNNAME_HUA = TOWNNAME) %>% 
+  
+  # 用 TTT 優先，補不到再用 HUA
+  mutate(下車鄉鎮 = coalesce(TOWNNAME_TTT, TOWNNAME_HUA)) %>%
+  select(-TOWNNAME_TTT, -TOWNNAME_HUA) %>% 
+  
+  # 先接台東
+  left_join(TaiTown_TTT_1, by = c("上車站" = "StopName")) %>%
+  rename(TOWNNAME_TTT = TOWNNAME) %>% 
+  
+  # 再接花蓮（只用來補缺）
+  left_join(TaiTown_HUA_1, by = c("上車站" = "StopName")) %>%
+  rename(TOWNNAME_HUA = TOWNNAME) %>% 
+  
+  # 用 TTT 優先，補不到再用 HUA
+  mutate(上車鄉鎮 = coalesce(TOWNNAME_TTT, TOWNNAME_HUA)) %>%
+  select(-Direction.x,
+         -Direction.y,
+         -Direction.x.x,
+         -Direction.y.y,
+         -TOWNNAME_TTT,
+         -TOWNNAME_HUA)
+  
+Taitung_1 <- temp %>% 
+  # 直接捨去無法被辨識的舊站名，約占0.3%
+  filter(!is.na(上車鄉鎮), !is.na(下車鄉鎮)) %>% 
+  
+  # 概括花蓮
+  mutate(下車鄉鎮 = case_when(
+   下車鄉鎮 %in% c("吉安鄉","壽豐鄉","富里鄉",
+                   "玉里鎮","花蓮市","豐濱鄉") ~ "花蓮縣",
+   TRUE ~ 下車鄉鎮
+  )) %>% 
+  mutate(上車鄉鎮 = case_when(
+   上車鄉鎮 %in% c("吉安鄉","壽豐鄉","富里鄉",
+                   "玉里鎮","花蓮市","豐濱鄉") ~ "花蓮縣",
+   TRUE ~ 上車鄉鎮
+  ))
+```
+
+合併去返程df
+
+```{r}
+Taitung_df <- rbind(Taitung_0, Taitung_1)
+```
+
+
+### Step 3. 畫圖
+
+```{r}
+# library(tidyverse)
+# library(reshape2)  # 用於數據重塑
+# library(scales)
+
+windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
+
+# 原始數據處理流程 (保持不變)
+processed_data <- Taitung_df %>%
+  group_by(上車鄉鎮, 下車鄉鎮) %>%
+  summarise(Count = n()) %>%
+  arrange(desc(Count))
+  # ungroup() %>%
+  # pivot_wider(.,
+  #             names_from = 下車鄉鎮,
+  #             values_from = Count,
+  #             values_fill = 0)
+
+south_north_order <- c(
+  "達仁鄉", "大武鄉", "金峰鄉", "太麻里鄉", "臺東市", "卑南鄉",
+  "延平鄉", "鹿野鄉", "關山鎮", "海端鄉", "池上鄉",
+  "東河鄉", "成功鎮", "長濱鄉", "花蓮縣"
+)
+
+processed_data <- processed_data %>%
+  mutate(
+    上車鄉鎮 = factor(上車鄉鎮, levels = south_north_order),
+    下車鄉鎮 = factor(下車鄉鎮, levels = south_north_order)
+  )
+
+p <- ggplot(processed_data, aes(x = 下車鄉鎮, y = 上車鄉鎮)) +
+  geom_tile(aes(fill = Count), color = "white") + 
+  scale_fill_gradient(
+    trans = "sqrt",                      # ✅ 填色開根號變換
+    # low = "white", high = "red",
+    low = "grey90",          # 幾乎白
+    high = "grey10",         # 幾乎黑
+    labels = scales::comma                  # ✅ 格式化數字
+  ) +
+  labs(
+    title = "臺東縣113年客運鄉鎮搭乘需求熱力圖",
+    x = "下車鄉鎮",
+    y = "上車鄉鎮",
+    fill = "乘客數量"
+  ) +
+  theme_minimal(base_family = "Kai") +   
+  theme(
+    axis.text.x  = element_text(angle = 45,
+                                hjust = 1,
+                                family = "Kai",
+                                size = 12), # X軸字體大小
+    axis.text.y  = element_text(family = "Kai",
+                                size = 12), # Y軸字體大小
+    axis.title.x = element_text(family = "Kai",
+                                size = 14), # X軸標題大小
+    axis.title.y = element_text(family = "Kai",
+                                size = 14), # Y軸標題大小
+    plot.title   = element_text(hjust = 0,
+                                family = "Kai",
+                                size = 18,
+                                face = "bold"),
+    legend.title = element_text(family = "Kai", size = 14),
+    legend.text  = element_text(family = "Kai", size = 12)
+  )
+
+# 儲存圖片
+path = paste0("images/heatmap/")
+check_path(path)
+img_filename = paste0("臺東縣113年客運鄉鎮搭乘需求熱力圖")
+ggsave(filename = paste0(path, "/", img_filename, ".png"),
+       plot = p,
+       bg = "white",
+       width = 15,
+       height = 10,
+       units = "in",
+       dpi = 600)
+```
+
+## 平均搭乘里程
+
+### 加入去返程欄位
+
+```{r}
+# sdbus_temp
+sdbus_temp <- sdbus_temp %>% 
+  mutate(去返代碼 = ifelse(去返 == 1, 0, 1))
+
+# ett_temp
+ett_temp <- ett_temp %>% 
+  mutate(去返代碼 = ifelse(去返 == 1, 0, 1))
+
+# puyuma_combined_df
+puyuma_combined_temp <- puyuma_combined_temp %>% 
+  mutate(
+    去返代碼 = ifelse(去返程 == "里程去程", 0, ifelse(去返程 == "里程返程", 1, 2)),
+    路線類別 = "市區線"
+  )
+
+# 統一去返程代碼、增加需要的欄位、限制時間範圍
+compMile_df <- impSpots_df %>% 
+  mutate(
+    去返代碼 = c(
+      sdbus_temp$去返代碼,
+      ett_temp$去返代碼,
+      puyuma_combined_temp$去返代碼
+    ),
+    年月 = as.numeric(c(sdbus_temp$年月, ett_temp$年月, puyuma_combined_temp$年月))-191100,
+    大票種 = c(sdbus_temp$大票種, ett_temp$大票種, puyuma_combined_temp$大票種),
+    路線類別 = c(sdbus_temp$路線類別, ett_temp$路線類別, puyuma_combined_temp$路線類別)
+  ) %>% 
+  filter(營運日期 >= as.Date("2024-07-01") & 營運日期 <= as.Date("2025-06-30")) %>% 
+  filter(!is.na(上車站), !is.na(下車站))
+```
+
+
+```{r}
+# write.csv(compMile_df, "compMile_df.csv")
+rm(list = setdiff(ls(), c("compMile_df",
+                          "city_mile_ttt_df",
+                          "road_mile_df",
+                          "impSpots_df",
+                          "sdbus_temp",
+                          "ett_temp",
+                          "puyuma_combined_temp",
+                          "Mile_df")))
+```
+
+### 加入累積里程欄位
+
+```{r}
+# 匯入里程對照表
+city_mile_ttt_df <- read_csv("../TDX/臺東市區公車站點里程.csv",
+                             locale = locale(encoding = "BIG5"))
+road_mile_df <- read_csv("../TDX/公路客運站點里程.csv", 
+                         locale = locale(encoding = "BIG5"))
+
+city_mile_ttt_use <- city_mile_ttt_df %>% 
+  select(SubRouteName, Direction, StopName, Dist_Cum)
+road_mile_use <- road_mile_df %>% 
+  select(SubRouteName, Direction, StopName, Dist_Cum)
+```
+
+
+```{r}
+# 統一站名
+compMile_df <- compMile_df %>%
+  mutate(上車站 = recode(上車站, !!!new_site_name),
+         下車站 = recode(下車站, !!!new_site_name))
+```
+
+multiple = "first"：假設沒有人在終點站上車
+multiple = "last"：假設沒有人在起點站下車
+
+```{r}
+# 併入市區客運里程
+temp <- compMile_df %>% 
+  # 併入上車站累積里程
+  left_join(city_mile_ttt_use,
+            by = c("路線名稱" = "SubRouteName",
+                   "去返代碼" = "Direction",
+                   "上車站" = "StopName"),
+            multiple = "first"
+  ) %>% 
+  rename(上車站累積里程 = Dist_Cum) %>% 
+  # 併入下車站累積里程
+  left_join(city_mile_ttt_use,
+            by = c("路線名稱" = "SubRouteName",
+                   "去返代碼" = "Direction",
+                   "下車站" = "StopName"),
+            multiple = "last"
+  ) %>% 
+  rename(下車站累積里程 = Dist_Cum)
+
+# 併入公路客運里程
+temp <- temp %>% 
+  # 併入上車站累積里程
+  left_join(road_mile_use,
+            by = c("路線名稱" = "SubRouteName",
+                   "去返代碼" = "Direction",
+                   "上車站" = "StopName"),
+            multiple = "first"
+  ) %>% 
+  # 併入下車站累積里程
+  left_join(road_mile_use,
+            by = c("路線名稱" = "SubRouteName",
+                   "去返代碼" = "Direction",
+                   "下車站" = "StopName"),
+            multiple = "last"
+  )
+```
+
+
+```{r}
+# check the negative
+# 504, 72 negative
+# sum(na.omit(ifelse((temp$下車站累積里程 - temp$上車站累積里程) < 0, 1, 0)))
+# 
+# temp %>% 
+#   filter(下車站累積里程 - 上車站累積里程 < 0) %>% 
+#   select(路線名稱, 去返代碼, 上車站, 下車站, 上車站累積里程, 下車站累積里程) %>% 
+#   View()
+```
+
+
+```{r}
+# those have not mile information
+temp %>% 
+  filter(
+    is.na(上車站累積里程),
+    is.na(下車站累積里程),
+    is.na(Dist_Cum.x),
+    !is.na(Dist_Cum.y)) %>%
+  # count(路線名稱, sort = TRUE)
+  filter(路線名稱 == "8168A") %>% 
+  select(去返代碼, 上車站, 下車站) %>% 
+  distinct(上車站)
+```
+
+損失8%的票證，因為對照表沒有資訊
+
+
+### 計算里程
+
+```{r}
+# 整合
+temp1 <- temp %>%
+  mutate(
+    上車站累積里程 = coalesce(上車站累積里程, Dist_Cum.x),
+    下車站累積里程 = coalesce(下車站累積里程, Dist_Cum.y)
+  ) %>% 
+  select(
+    -Dist_Cum.x,
+    -Dist_Cum.y
+  ) %>% 
+  filter(
+    !(is.na(上車站累積里程) | is.na(下車站累積里程))
+  )
+
+# 計算里程
+Mile_df <- temp1 %>% 
+  mutate(
+    搭乘里程公尺 = 下車站累積里程 - 上車站累積里程)
+  # 搭乘里程公里 = 搭乘里程公尺 / 1000
+```
+
+### 圖：逐月平均搭乘里程
+
+```{r}
+milebymonth_df <- Mile_df %>% 
+  filter(
+    !(路線類別 == "市區線")
+  ) %>% 
+  group_by(年月) %>% 
+  summarise(  
+    月搭乘人次 = n(),
+    平均搭乘里程公尺 = mean(搭乘里程公尺)
+  ) %>% 
+  mutate(
+    平均搭乘里程公里 = 平均搭乘里程公尺 / 1000
+  )
+
+# write.csv(milebymonth_df,
+#           file = "./excels/11307-11406臺東縣公路客運平均搭乘里程.csv")
+```
+
+
+```{r}
+windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
+
+mile_plot <- function(milebymonth_df){
+  color <- gray.colors(2)
+  x_idx = 1:nrow(milebymonth_df)
+  mon <- milebymonth_df$年月
+  mean_mile <- milebymonth_df$平均搭乘里程公里
+  
+  par(family = "Kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
+  
+  plot(x = x_idx,
+       y = mean_mile,
+       type = "o",
+       lwd = 2,
+       pch = 16,
+       col = color[1],
+       xlab = "月份",
+       ylab = "",
+       ylim = c(min(mean_mile) * 0.9, max(mean_mile) * 1.2),
+       cex.main = 2,
+       cex.lab = 2,
+       cex.axis = 1.5,
+       cex = 1.5,
+       xaxt = "n",
+       yaxt = "n",
+       bty = "n"
+       )
+  
+  title(main = paste0('113年7月至114年6月臺東縣市區客運平均搭乘里程折線圖'), cex.main = 2, adj = 0)
+  
+  # x 軸
+  axis(side = 1,
+       at = x_idx,
+       labels = mon,
+       cex.axis = 1.5)
+  
+  # y 軸
+  # axis(side = 2, labels = FALSE, las = 1, cex.axis = 1.5, line = 0)
+  
+  text(x = x_idx,
+       y = mean_mile + max(mean_mile) * 0.02,
+       labels = paste0(round(mean_mile, 1)),
+       pos = 3,            # 文字顯示在點上方
+       cex = 1.5,          # 文字大小
+       col = "black"
+      )
+  
+  grid()  # 網格線
+  
+  # 圖例
+  legend("topright", 
+         legend = c("公里"), 
+         col = color[1], 
+         lwd = 2, 
+         pch = 16,
+         bty = "n",
+         inset = c(-0.17, 0),
+         xpd = TRUE,
+         cex = 1.5
+         )
+}
+
+save_mile_plot <- function(milebymonth_df) {
+  # 儲存圖片
+  path = paste0("images/line_chart/")
+  check_path(path)
+  img_filename = paste0('113年7月至114年6月臺東縣市區客運平均搭乘里程折線圖')
+  png(filename = paste0(path, "/", img_filename, ".png"), width = 15, height = 5, units = "in", res = 300, family = "Kai")
+  mile_plot(milebymonth_df)
+  dev.off()
+}
+
+# 存圖
+save_mile_plot(milebymonth_df)
+```
+
+## 每月使用次數族群
+
+### 探索卡號
+
+```{r}
+# sum(!is.na(sdbus_temp$卡號)) / dim(sdbus_temp)[1] * 100
+# sum(!is.na(ett_temp$卡號)) / dim(ett_temp)[1] * 100
+# sum(!is.na(puyuma_combined_temp$卡號)) / dim(puyuma_combined_temp)[1] * 100
+```
+
+[1] 100
+[1] 100
+[1] 99.99857
+
+卡號看起來很完整
+
+```{r}
+length(unique(sdbus_temp$卡號)) / dim(sdbus_temp)[1] * 100
+length(unique(ett_temp$卡號)) / dim(ett_temp)[1] * 100
+length(unique(puyuma_combined_temp$卡號)) / dim(puyuma_combined_temp)[1] * 100
+```
+
+```{r}
+# 調資料
+card_df <- data.frame(
+  營運日期 = c(
+    sdbus_temp$營運日期,
+    ett_temp$營運日期,
+    puyuma_combined_temp$上車交易日期
+  ),
+  路線名稱 = c(
+    as.character(sdbus_temp$路線),
+    ett_temp$路線名稱,
+    puyuma_combined_temp$路線名稱
+  ),
+  路線類別 = c(sdbus_temp$路線類別, ett_temp$路線類別, puyuma_combined_temp$路線類別),
+  年月 = as.numeric(
+    c(sdbus_temp$年月, ett_temp$年月, puyuma_combined_temp$年月)
+  ) - 191100,
+  大票種 = c(
+    sdbus_temp$大票種,
+    ett_temp$大票種,
+    puyuma_combined_temp$大票種
+  ),
+  卡號 = c(
+    sdbus_temp$卡號,
+    ett_temp$卡號,
+    puyuma_combined_temp$卡號
+  )
+)
+
+# 設定資料時間範圍
+card_df <- card_df %>% 
+  filter(營運日期 >= as.Date("2024-07-01") & 營運日期 <= as.Date("2025-06-30"))
+```
+
+
+```{r}
+sdbus_temp %>% 
+  select(營運日期, 年月, 卡號) %>% 
+  filter(營運日期 >= as.Date("2024-07-01") & 營運日期 <= as.Date("2025-06-30")) %>% 
+  # count(卡號, sort = T)
+  filter(卡號 == "7260B401") %>%
+  count(年月)
+```
+
+```{r}
+ett_temp %>% 
+  select(營運日期, 年月, 卡號) %>% 
+  filter(營運日期 >= as.Date("2024-07-01") & 營運日期 <= as.Date("2025-06-30")) %>% 
+  # count(卡號, sort = T)
+  filter(卡號 == "7.11423E+15") %>% 
+  count(年月)
+```
+
+### 逐月族群變化
+
+
+#### 客運公司
+
+```{r}
+# 定義變數
+temp1 <- sdbus_temp %>% 
+  select(營運日期, 年月, 卡號) %>% 
+  filter(營運日期 >= as.Date("2024-07-01") & 營運日期 <= as.Date("2025-06-30")) %>%
+  group_by(年月) %>% 
+  count(卡號, sort = T, name = "搭乘次數") %>% 
+  mutate(
+    次數區間 = cut(
+      搭乘次數,
+      breaks = c(-Inf, 1, 4, Inf),   # 分界點
+      labels = c("1", "2~4", "5~"), # 區間名稱
+    )
+  ) %>% 
+  count(次數區間)
+
+# 同家客運的卡號跨月看起來是可以追蹤的
+# temp1
+
+temp2 <- ett_temp %>% 
+  select(營運日期, 年月, 卡號) %>% 
+  filter(營運日期 >= as.Date("2024-07-01") & 營運日期 <= as.Date("2025-06-30")) %>%
+  group_by(年月) %>% 
+  count(卡號, sort = T, name = "搭乘次數") %>% 
+  mutate(
+    次數區間 = cut(
+      搭乘次數,
+      breaks = c(-Inf, 1, 2, 3, 4, 5, 10, Inf),   # 分界點
+      labels = c("1", "2", "3", "4", "5", "6~10", "11~"), # 區間名稱
+    )
+  ) %>% 
+  count(次數區間) %>% 
+  pivot_wider(names_from = 年月, values_from = n)
+
+temp3 <- puyuma_combined_temp %>% 
+  select(上車交易日期, 年月, 卡號) %>% 
+  filter(上車交易日期 >= as.Date("2024-07-01") & 上車交易日期 <= as.Date("2025-06-30")) %>%
+  group_by(年月) %>% 
+  count(卡號, sort = T, name = "搭乘次數") %>% 
+  mutate(
+    次數區間 = cut(
+      搭乘次數,
+      breaks = c(-Inf, 1, 2, 3, 4, 5, 10, Inf),   # 分界點
+      labels = c("1", "2", "3", "4", "5", "6~10", "11~"), # 區間名稱
+    )
+  ) %>% 
+  count(次數區間)
+
+# 畫圖
+ggplot(temp1, aes(x = 年月, y = n, color = 次數區間, group = 次數區間)) +
+  geom_line(linewidth = 1) +   # ✅ 改成 linewidth
+  geom_point(size = 2) +
+  labs(
+    x = "月份",
+    y = "人數",
+    color = "次數區間",
+    title = "興東各搭乘次數區間 - 月人數變化"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "right"
+  )
+
+ggplot(temp2, aes(x = 年月, y = n, color = 次數區間, group = 次數區間)) +
+  geom_line(linewidth = 1) +   # ✅ 改成 linewidth
+  geom_point(size = 2) +
+  labs(
+    x = "月份",
+    y = "人數",
+    color = "次數區間",
+    title = "東台灣各搭乘次數區間 - 月人數變化"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "right"
+  )
+
+ggplot(temp3, aes(x = 年月, y = n, color = 次數區間, group = 次數區間)) +
+  geom_line(linewidth = 1) +   # ✅ 改成 linewidth
+  geom_point(size = 2) +
+  labs(
+    x = "月份",
+    y = "人數",
+    color = "次數區間",
+    title = "普悠瑪各搭乘次數區間 - 月人數變化"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "right"
+  )
+```
+
+#### 畫圖
+
+```{r}
+group_monthly_ridership_lineplot <- function(
+    route_type = NULL, # "市區" "公路"
+    ticket_type = NULL # "TPASS", "非月票"
+    ) {
+  
+  temp <- card_df %>% 
+    select(營運日期, 年月, 路線類別, 大票種, 卡號) %>% 
+    filter(營運日期 >= as.Date("2024-07-01") & 營運日期 <= as.Date("2025-06-30"))
+  
+  # 路線類別篩選（NULL 則不篩）
+  if (!is.null(route_type)) {
+    temp <- switch(
+      route_type,
+      "市區" = temp %>% filter(路線類別 == "市區線"),
+      "公路" = temp %>% filter(路線類別 != "市區線"),
+      stop('error: only "市區" or "公路" allow.')
+    )
+  }
+
+  # 票種篩選（NULL 則不篩）
+  if (!is.null(ticket_type)) {
+    temp <- switch(
+      ticket_type,
+      "TPASS"  = temp %>% filter(大票種 == "TPASS"),
+      "非月票" = temp %>% filter(大票種 != "TPASS"),
+      stop('error: only "TPASS" or "非月票" allow.')
+    )
+  }
+  
+  temp <- temp %>% 
+    group_by(年月) %>% 
+    count(卡號, sort = T, name = "搭乘次數") %>% 
+    mutate(
+      次數區間 = cut(
+        搭乘次數,
+        breaks = c(-Inf, 1, 4, Inf),   # 分界點
+        labels = c("僅一次", "二至四次", "五次以上"), # 區間名稱
+      )
+    ) %>% 
+    count(次數區間)
+  
+  windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
+  color <- gray.colors(4)
+  titles <<- paste0("113年7月至114年6月臺東縣",
+                   route_type,
+                   "客運",
+                   ticket_type,
+                   "乘客各搭乘次數區間月人數變化折線圖")
+  
+  p <- ggplot(
+    temp,
+    aes(
+      x = as.character(年月),
+      y = n,
+      color = 次數區間,
+      group = 次數區間
+    )) +
+    geom_line(linewidth = 1) +
+    geom_point(size = 2) +
+    scale_color_manual(values = color) +     # 使用自訂灰階色
+    scale_y_continuous(
+        trans = "log10",               # 對柱子高度做 sqrt 變換
+        breaks = scales::pretty_breaks(n = 6),   # 刻度
+        labels = scales::comma       # 顯示原始數字
+    ) +
+    labs(
+      x = "月份",
+      y = "人數",
+      color = "搭乘次數",
+      title = titles
+    ) +
+    theme_minimal() +
+    theme(
+      text = element_text(family = "Kai"),          # 基本文字大小
+      axis.title = element_text(size = 18),                    # x, y 軸標題
+      axis.text = element_text(size = 14),                     # x, y 軸文字
+      plot.title = element_text(size = 20),                    # 圖標題
+      legend.title = element_text(size = 16),                  # 圖例標題
+      legend.text = element_text(size = 14),                   # 圖例文字
+      panel.grid.major.y = element_line(color = "gray80"),
+      panel.grid.minor = element_blank(),
+      # axis.text.x = element_text(angle = 45, hjust = 1),
+      panel.background = element_rect(fill = "white", color = NA),  # 面板背景白色
+      plot.background = element_rect(fill = "white", color = NA)    # 圖片背景白色
+    )
+  
+  return(p)
+}
+
+# 儲存圖片
+path = paste0("images/line_chart/")
+check_path(path)
+
+# 市區
+p = group_monthly_ridership_lineplot("市區")
+img_filename = titles
+ggsave(
+  filename = paste0(path, "/", img_filename, ".png"),
+  plot = p,
+  width = 15,
+  height = 5,
+  units = "in",
+  dpi = 300
+)
+
+# 公路
+p = group_monthly_ridership_lineplot("公路")
+img_filename = titles
+ggsave(
+  filename = paste0(path, "/", img_filename, ".png"),
+  plot = p,
+  width = 15,
+  height = 5,
+  units = "in",
+  dpi = 300
+)
+
+# 市區 + tpass
+p = group_monthly_ridership_lineplot("市區", "TPASS")
+img_filename = titles
+ggsave(
+  filename = paste0(path, "/", img_filename, ".png"),
+  plot = p,
+  width = 15,
+  height = 5,
+  units = "in",
+  dpi = 300
+)
+
+# 公路 + TPASS
+p = group_monthly_ridership_lineplot("公路", "TPASS")
+img_filename = titles
+ggsave(
+  filename = paste0(path, "/", img_filename, ".png"),
+  plot = p,
+  width = 15,
+  height = 5,
+  units = "in",
+  dpi = 300
+)
+```
+
+#### excels
+
+```{r}
+# temp <- card_df %>% 
+#   select(營運日期, 年月, 路線類別, 大票種, 卡號) %>% 
+#   filter(營運日期 >= as.Date("2024-07-01") & 營運日期 <= as.Date("2025-06-30")) %>% 
+#   filter(路線類別 != "市區線",
+#          大票種 == "TPASS") %>% 
+#   group_by(年月) %>% 
+#   count(卡號, sort = T, name = "搭乘次數") %>% 
+#   mutate(
+#     次數區間 = cut(
+#       搭乘次數,
+#       breaks = c(-Inf, 1, 4, Inf),   # 分界點
+#       labels = c("僅一次", "二至四次", "五次以上"), # 區間名稱
+#     )
+#   )
+# 
+# road_tpass_tbls <- round(addmargins(table(temp$年月, temp$次數區間), 2), 1)
+# road_prop_tpass_tbls <- round(addmargins(prop.table(table(temp$年月, temp$次數區間), 1), 2)*100, 1)
+
+
+# export_tables_to_excel(
+#   tables = list(`city` = city_tbls,
+#                 `city_prop` = city_prop_tbls,
+#                 `city_tpass` = city_tpass_tbls,
+#                 `city_prop_tpass` = city_prop_tpass_tbls,
+#                 `road` = road_tbls,
+#                 `road_prop` = road_prop_tbls,
+#                 `road_tpass` = road_tpass_tbls,
+#                 `road_prop_tpass` = road_prop_tpass_tbls),
+#   file = "./excels/multi_tables_openxlsx.xlsx",
+#   method = "openxlsx",
+#   add_index_sheet = TRUE
+# )
+```
+
+## 平均每日使用次數
+
+```{r}
+temp <- card_df %>% 
+  select(營運日期, 年月, 路線類別, 大票種, 卡號) %>% 
+  filter(營運日期 >= as.Date("2024-07-01") & 營運日期 <= as.Date("2025-06-30")) %>% 
+  filter(路線類別 == "市區線") %>% 
+  group_by(年月) %>% 
+  summarise(搭乘次數 = n(), 人數 = n_distinct(卡號)) %>% 
+  mutate(
+    # 取出民國年與月份
+    年 = as.integer(substr(年月, 1, nchar(年月)-2)) + 1911,
+    月 = as.integer(substr(年月, nchar(年月)-1, nchar(年月))),
+    # 計算該年月天數
+    天數 = days_in_month(make_date(年, 月, 1)),
+    日平均 = 搭乘次數 / 人數 / 天數,
+  ) %>%
+  select(-年, -月)  # 刪掉輔助欄位
+
+# write.csv(temp,
+#           file = "./excels/113年7月至114年6月臺東縣公路客運平均每日使用次數折線圖.csv")
+```
+
+
+```{r}
+title_ <-  "113年7月至114年6月臺東縣市區客運平均每日使用次數折線圖"
+
+daily_mean_plot <- function(){
+  
+  windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
+  color <- gray.colors(2)
+  par(family = "Kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
+  
+  plot(x = 1:length(temp$年月),
+       y = temp$日平均,
+       type = "o",
+       lwd = 2,
+       pch = 16,
+       col = color[1],
+       xlab = "月份",
+       ylab = "日均使用次數",
+       ylim = c(min(temp$日平均) * 0.9 , max(temp$日平均) * 1.2),
+       cex.main = 2,
+       cex.lab = 2,
+       cex.axis = 1.5,
+       cex = 1.5,
+       xaxt = "n",
+       yaxt = "n",
+       bty = "n"
+       )
+  
+  title(main = title_, cex.main = 2, adj = 0)
+  
+  # x 軸
+  axis(side = 1, at = 1:length(temp$年月), labels = temp$年月, cex.axis = 1.5)
+  
+  # y 軸
+  axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
+
+  grid()  # 網格線
+  
+  # 圖例
+  legend("topright", 
+         legend = "日均使用次數", 
+         col = color[1], 
+         lwd = 2, 
+         pch = 16,
+         bty = "n",
+         inset = c(-0.15, 0),
+         xpd = TRUE,
+         cex = 1.5
+         )
+}
+
+# 儲存圖片
+path <- paste0("images/line_chart/平均每日使用次數/")
+check_path(path)
+
+img_filename = title_
+png(filename = paste0(path, "/", img_filename, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
+daily_mean_plot()
+dev.off()
+```
+
+## 轉乘次數
+
+```{r}
+# 去蕪存菁
+rm(list = setdiff(ls(), c("sdbus_temp",
+                          "ett_temp",
+                          "puyuma_combined_temp",
+                          "df_1011")))
+
+# 調資料
+df_1011 <- data.frame(
+  營運日期 = c(
+    sdbus_temp$營運日期,
+    ett_temp$營運日期,
+    puyuma_combined_temp$上車交易日期
+  ),
+  上車時間 = c(
+    sdbus_temp$上車時間,
+    ett_temp$上車時間,
+    as_hms(puyuma_combined_temp$上車時間)
+  ),
+  下車時間 = c(
+    sdbus_temp$下車時間,
+    ett_temp$下車時間,
+    as_hms(puyuma_combined_temp$下車時間)
+  ),
+  路線名稱 = c(
+    as.character(sdbus_temp$路線),
+    ett_temp$路線名稱,
+    puyuma_combined_temp$路線名稱
+  ),
+  年月 = as.numeric(
+    c(sdbus_temp$年月, ett_temp$年月, puyuma_combined_temp$年月)
+  ) - 191100,
+  大票種 = c(
+    sdbus_temp$大票種,
+    ett_temp$大票種,
+    puyuma_combined_temp$大票種
+  ),
+  卡號 = c(
+    sdbus_temp$卡號,
+    ett_temp$卡號,
+    puyuma_combined_temp$卡號
+  )
+)
+
+# 設定資料時間範圍
+df_1011 <- df_1011 %>% 
+  filter(營運日期 >= as.Date("2024-07-01") & 營運日期 <= as.Date("2025-06-30"))
+
+# del NA in 上下車時間
+df_1011 <- df_1011 %>% 
+  filter(!is.na(上車時間), !is.na(下車時間))
+```
+
+### 計算每月轉乘次數
+
+轉乘定義：兩次搭乘間隔時間在120分鐘內
+
+```{r}
+start_time <- Sys.time()
+temp1 <- df_1011 %>% 
+  arrange(卡號, 營運日期, 上車時間) %>% 
+  group_by(卡號, 營運日期) %>% 
+  mutate(
+    前次下車時間 = lag(下車時間),
+    前次路線名稱 = lag(路線名稱),
+    時間差 = as.numeric(difftime(上車時間, 前次下車時間, units = "mins"))
+  )
+end_time <- Sys.time()
+difftime(end_time - start_time, units = "mins")  # 2.5 mins for 1.7 mil recs
+
+# 逐月之轉乘次數
+temp2 <- temp1 %>% 
+  mutate(是否轉乘 = ifelse(!is.na(時間差) & 時間差 <= 120, 1, 0)) %>% 
+  # 不包含同路線轉乘
+  # mutate(是否轉乘 = ifelse(!is.na(時間差) & 時間差 & 路線名稱 != 前次路線名稱 <= 120, 1, 0)) %>% 
+  filter(是否轉乘 == 1) %>% 
+  group_by(年月) %>% 
+  summarise(轉乘次數 = n())
+```
+
+### 計算轉乘率
+
+```{r}
+temp3 <- df_1011 %>% 
+  group_by(年月) %>% 
+  summarise(總搭乘次數 = n()) %>% 
+  left_join(temp2, by = "年月") %>% 
+  mutate(
+    轉乘次數 = ifelse(is.na(轉乘次數), 0, 轉乘次數),
+    轉乘率 = round(轉乘次數 / 總搭乘次數 * 100, 2)
+  )
+```
+
+
+```{r}
+df_temp <- df_temp <- df_1011 %>% filter(路線名稱 %in% ett_temp$路線名稱)
+
+start_time <- Sys.time()
+
+analyze_transfer_rate_by_ticket_type(
+    df = df_temp,
+    ticket_type_col = "大票種",
+    target_ticket_type = "TPASS",
+    transfer_window_mins = 120,
+    exclude_same_route = TRUE
+  )
+
+end_time <- Sys.time()
+end_time - start_time
+```
+
+### 函數
+
+畫圖呈現轉乘率的逐月變化
+比較TPASS與其他票種的轉乘率差異
+
+```{r}
+
+#' 依票種分析公車轉乘率並繪製比較圖表
+#'
+#' 此函數計算並比較「總體」、「特定票種」與「其他票種」的每月轉乘率，
+#' 並使用 Base R 繪圖系統生成風格一致的比較折線圖。
+#'
+#' @param df 資料框，包含公車搭乘紀錄。
+#'           必須包含以下欄位：
+#'           - 卡號, 營運日期, 上車時間, 下車時間, 路線名稱, 年月
+#' @param ticket_type_col 字串，指定包含票種資訊的欄位名稱 (例如 "票種分類")。
+#' @param target_ticket_type 字串，您想單獨分析的票種名稱 (例如 "TPASS")。
+#' @param transfer_window_mins 整數，定義轉乘的有效時間窗口（分鐘）。預設為 120。
+#' @param exclude_same_route 布林值，是否排除同路線轉乘。預設為 FALSE。
+#'
+#' @return 回傳一個 tibble，包含各票種類別的每月總搭乘次數、轉乘次數和轉乘率。
+
+analyze_transfer_rate_by_ticket_type <- function(df, 
+                                                 ticket_type_col, 
+                                                 target_ticket_type, 
+                                                 transfer_window_mins = 120, 
+                                                 exclude_same_route = FALSE) {
+  
+  # --- 步驟 1: 計算時間差並識別轉乘 ---
+  transfer_data <- df %>%
+    arrange(卡號, 營運日期, 上車時間) %>%
+    group_by(卡號, 營運日期) %>%
+    # slow
+    mutate(
+      前次下車時間 = lag(下車時間),
+      前次路線名稱 = lag(路線名稱),
+      時間差 = as.numeric(difftime(上車時間, 前次下車時間, units = "mins"))
+    ) %>%
+    ungroup() %>%
+    mutate(
+      # 根據條件，標記每一筆紀錄是否為一次成功的轉乘
+      是否轉乘 = if_else(
+        !is.na(時間差) & 時間差 <= transfer_window_mins & 
+        # 如果 exclude_same_route 為 TRUE，則增加 路線名稱 != 前次路線名稱 的條件
+        if(exclude_same_route) 路線名稱 != 前次路線名稱 else TRUE,
+        1, 0, missing = 0
+      )
+    )
+
+  # --- 步驟 2: 按票種計算每月搭乘次數 ---
+  monthly_ridership <- transfer_data %>%
+    group_by(年月) %>%
+    summarise(
+      總搭乘次數 = n(),
+      目標票種搭乘次數 = sum(.data[[ticket_type_col]] == target_ticket_type, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    mutate(其他票種搭乘次數 = 總搭乘次數 - 目標票種搭乘次數)
+
+  # --- 步驟 3: 按票種計算每月轉乘次數 ---
+  monthly_transfers <- transfer_data %>%
+    filter(是否轉乘 == 1) %>% # 只篩選成功的轉乘紀錄
+    group_by(年月) %>%
+    summarise(
+      總轉乘次數 = n(),
+      目標票種轉乘次數 = sum(.data[[ticket_type_col]] == target_ticket_type, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    mutate(其他票種轉乘次數 = 總轉乘次數 - 目標票種轉乘次數)
+    
+  # --- 步驟 4: 合併數據並計算各類別轉乘率 ---
+  transfer_summary <- monthly_ridership %>%
+    left_join(monthly_transfers, by = "年月") %>%
+    # 將 NA 替換為 0，避免計算錯誤
+    mutate(across(starts_with("總轉乘"), ~ifelse(is.na(.), 0, .)),
+           across(starts_with("目標票種轉乘"), ~ifelse(is.na(.), 0, .)),
+           across(starts_with("其他票種轉乘"), ~ifelse(is.na(.), 0, .))
+           ) %>%
+    mutate(
+      # 計算轉乘率，並處理分母為0的情況
+      轉乘比值 = if_else(總搭乘次數 == 0, 0, 總轉乘次數 / 總搭乘次數),
+      目標票種轉乘比值 = if_else(目標票種搭乘次數 == 0, 0, 目標票種轉乘次數 / 目標票種搭乘次數),
+      其他票種轉乘比值 = if_else(其他票種搭乘次數 == 0, 0, 其他票種轉乘次數 / 其他票種搭乘次數),
+      轉乘率 = round(轉乘比值 * 100, 2),
+      目標票種轉乘率 = round(目標票種轉乘比值 * 100, 2),
+      其他票種轉乘率 = round(其他票種轉乘比值 * 100, 2)
+    ) %>%
+    arrange(年月)
+
+  # --- 步驟 5: 使用 Base R 繪製比較圖表 ---
+  old_par <- par(no.readonly = TRUE) # 備份當前設定
+  on.exit(par(old_par)) # 預約還原指令
+  
+  windowsFonts(kai = windowsFont("Microsoft JhengHei"))
+  par(family = "kai", mar = c(5, 6, 4, 10))
+  
+  # 使用 4 種灰色，與目標函數一致
+  color <- gray.colors(4)
+  
+  # 決定 Y 軸最大值，確保所有線條都能顯示
+  y_max <- max(c(transfer_summary$轉乘比值, transfer_summary$目標票種轉乘比值, transfer_summary$其他票種轉乘比值), na.rm = TRUE)
+  
+  # 繪製第一條線 (總轉乘率)
+  plot(x = 1:nrow(transfer_summary),
+       y = transfer_summary$轉乘比值,
+       type = "o",
+       lwd = 2,
+       pch = 16,
+       col = color[1],
+       xlab = "月份",
+       ylab = "",
+       ylim = c(0, y_max * 1.2),
+       cex.main = 2,
+       cex.lab = 2,
+       cex.axis = 1.5,
+       cex = 1.5,
+       xaxt = "n",
+       yaxt = "n",
+       bty = "n"
+       )
+
+  # 疊加第二條線 (目標票種)
+  lines(x = 1:nrow(transfer_summary),
+        y = transfer_summary$目標票種轉乘比值,
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        cex = 1.5,
+        col = color[2]
+        )
+        
+  # 疊加第三條線 (其他票種)
+  lines(x = 1:nrow(transfer_summary),
+        y = transfer_summary$其他票種轉乘比值,
+        type = "o",
+        lwd = 2,
+        pch = 16,
+        cex = 1.5,
+        col = color[3]
+        )
+  
+  # 加上圖表標題
+  # title_text <- paste0("每月公車轉乘率趨勢比較圖 (", min(transfer_summary$年月), " - ", max(transfer_summary$年月), ")")
+  title_text <- paste0("113年7月至114年6月臺東縣", owner,  "平均轉乘次數折線圖")
+  title(main = title_text, cex.main = 2, adj = 0)
+  
+  # 加上座標軸
+  # x 軸
+  axis(side = 1, at = 1:nrow(transfer_summary), labels = transfer_summary$年月, cex.axis = 1.5)
+  
+  # y 軸
+  axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
+
+  # 加上網格線
+  grid()
+  
+  # 加上圖例
+  legend_labels <- c("平均轉乘次數", paste0(target_ticket_type), "其他票種")
+  legend("topright", 
+         legend = legend_labels, 
+         col = color[1:3], 
+         lwd = 2,
+         pch = 16,
+         bty = "n",
+         inset = c(-0.15, 0),
+         xpd = TRUE,
+         cex = 1.5
+         )
+         
+  return(transfer_summary)
+}
+```
+
+### 主程式
+
+```{r}
+# 主程式
+start_time <- Sys.time()
+
+for (owner in c("ALL", "東臺灣客運", "興東客運", "普悠瑪客運")) {
+  if (owner == "ALL") {
+    owner = "客運"
+    df_temp <- df_1011
+  } else if (owner == "東臺灣客運") {
+    df_temp <- df_1011 %>% filter(路線名稱 %in% ett_temp$路線名稱)
+  } else if (owner == "興東客運") {
+    df_temp <- df_1011 %>% filter(路線名稱 %in% sdbus_temp$路線)
+  } else if (owner == "普悠瑪客運") {
+    df_temp <- df_1011 %>% filter(路線名稱 %in% puyuma_combined_temp$路線名稱)
+  }
+  
+  # 儲存圖片
+  path <- paste0("images/line_chart/轉乘率/")
+  check_path(path)
+  # img_filename <- paste0(owner, "_每月公車轉乘率趨勢比較圖")
+  img_filename <- paste0("113年7月至114年6月臺東縣", owner,  "平均轉乘次數折線圖")
+  png(filename = paste0(path, "/", img_filename, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
+  transfer_summary <- analyze_transfer_rate_by_ticket_type(
+    df = df_temp,
+    ticket_type_col = "大票種",
+    target_ticket_type = "TPASS",
+    transfer_window_mins = 120,
+    exclude_same_route = TRUE
+  )
+  dev.off()
+  
+  # 儲存結果
+  path <- paste0("excels/轉乘率/")
+  check_path(path)
+  write.csv(transfer_summary, file = paste0(path, owner, "_轉乘率分析.csv"), row.names = FALSE)
+}
+
+end_time <- Sys.time()
+end_time - start_time
+```
+
