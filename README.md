@@ -100,8 +100,8 @@
 | 8105 | 存在 |
 | 8107 | 存在 |
 | 8109 | 存在 |
-| 8110 | **基本已停駛(預約制)** |
-| 8111 | **基本已停駛(預約制)** |
+| 8110 | https://tour.taitung.gov.tw/zh-tw/news/details/4896 |
+| 8111 | https://tour.taitung.gov.tw/zh-tw/news/details/4896 |
 | 8113 | 存在 |
 | 8115 | 存在 |
 | 8117 | 存在 |
