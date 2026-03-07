@@ -73,8 +73,7 @@
 | 1122 | 存在 |
 | 1123 | **以拆分為311、311A(市區客運)** |
 | 1125 | 存在 |
-| 1126 | **停駛**
-https://zh.wikiversity.org/zh-tw/%E5%85%AC%E8%B7%AF%E5%AE%A2%E9%81%8B1126%E8%B7%AF%E7%B7%9A |
+| 1126 | **停駛** https://zh.wikiversity.org/zh-tw/%E5%85%AC%E8%B7%AF%E5%AE%A2%E9%81%8B1126%E8%B7%AF%E7%B7%9A |
 | 1128 | 存在 |
 | 1129 | 存在 |
 | 1130 | 存在 |
