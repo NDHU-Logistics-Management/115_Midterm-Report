@@ -1,4 +1,4 @@
----
+`---
 title: "111-113普悠瑪客運分析"
 output: html_document
 date: "2025-05-28"
@@ -13,7 +13,7 @@ library(readxl)
 library(dplyr)
 library(purrr)
 
-start_time = Sys.time()  # 紀錄程式開始時間
+start_time <- Sys.time() # 紀錄程式開始時間
 
 # 設定年度與主目錄
 base_path <- "C:/Users/user/OneDrive/Documents/運籌報告資料/大數據組需要分析的資料/107-114.03普悠瑪客運_台東市區客運"
@@ -23,7 +23,9 @@ years <- c("111", "112", "113")
 import_and_align <- function(year, base_path) {
   data_path <- file.path(base_path, year)
   file_list <- list.files(data_path, full.names = TRUE)
-  if(length(file_list) == 0) return(NULL)
+  if (length(file_list) == 0) {
+    return(NULL)
+  }
   df_list <- map(file_list, read_excel)
   all_columns <- Reduce(union, lapply(df_list, names))
   df_list <- map(df_list, function(df) {
@@ -44,9 +46,11 @@ combined_df <- combined_df %>%
     下車交易日期 = as.Date(下車交易日期, format = "%Y%m%d"),
     年月 = format(上車交易日期, "%Y%m"),
     上車時間 = as.POSIXct(paste0(上車交易日期, " ", sprintf("%06d", as.integer(上車交易時間))),
-                           format = "%Y-%m-%d %H%M%S"),
+      format = "%Y-%m-%d %H%M%S"
+    ),
     下車時間 = as.POSIXct(paste0(下車交易日期, " ", sprintf("%06d", as.integer(下車交易時間))),
-                           format = "%Y-%m-%d %H%M%S")
+      format = "%Y-%m-%d %H%M%S"
+    )
   )
 
 # 4. 轉成巢狀list（年月 > 路線名稱）
@@ -67,7 +71,7 @@ make_nested_list <- function(df, year_month_col = "年月", route_col = "路線�
 nested_list <- make_nested_list(combined_df)
 
 # 5. 檢查結構
-names(nested_list)             # "202401" "202402" ...
+names(nested_list) # "202401" "202402" ...
 names(nested_list[["202401"]]) # "301" "302" ...
 str(nested_list, max.level = 2)
 
@@ -78,13 +82,13 @@ sort_and_complete_list <- function(nested_list, start_year = 2022, end_year = 20
     as.Date(paste0(end_year, "-12-01")),
     by = "month"
   ), "%Y%m")
-  
+
   # 排序與補齊
   sorted_list <- lapply(all_months, function(ym) {
     if (ym %in% names(nested_list)) {
       # 排序路線名稱（支援數字與文字混合）
       routes <- names(nested_list[[ym]]) %>%
-        gsub("[^0-9]", "", .) %>%  # 移除非數字字元（若存在）
+        gsub("[^0-9]", "", .) %>% # 移除非數字字元（若存在）
         as.numeric() %>%
         sort() %>%
         as.character()
@@ -93,7 +97,7 @@ sort_and_complete_list <- function(nested_list, start_year = 2022, end_year = 20
       list()
     }
   }) %>% setNames(all_months)
-  
+
   # 移除 NA
   Filter(Negate(is.null), sorted_list)
 }
@@ -106,10 +110,10 @@ df <- sort_and_complete_list(nested_list)
 
 ```{r}
 # simple summary for every variables
-data_summary <- function(df){
-  df_summary = list()
+data_summary <- function(df) {
+  df_summary <- list()
   pb <- txtProgressBar(min = 0, max = length(months), style = 3)
-  for (month_index in 1:length(months)){
+  for (month_index in 1:length(months)) {
     df_summary[[months[month_index]]] <- lapply(df[[month_index]], function(data) {
       lapply(names(data), function(col) {
         data %>% count(.data[[col]])
@@ -123,16 +127,16 @@ data_summary <- function(df){
 }
 
 # check the amounts of weekends and weekdays
-monthly_weekday_and_weekend <- function(year, month){
-  # build all dates 
+monthly_weekday_and_weekend <- function(year, month) {
+  # build all dates
   dates <- seq(ymd(sprintf("%d-%02d-01", year, month)),
-               ceiling_date(ymd(sprintf("%d-%02d-01", year, month)), "month") - days(1),
-               by = "day"
-               )
-  
+    ceiling_date(ymd(sprintf("%d-%02d-01", year, month)), "month") - days(1),
+    by = "day"
+  )
+
   # is it weekend?
-  is_weekend <- wday(dates) %in% c(1, 7)  # 1: Sunday, 7: Saturday
-  
+  is_weekend <- wday(dates) %in% c(1, 7) # 1: Sunday, 7: Saturday
+
   # output
   result <- table(ifelse(is_weekend, "weekend", "weekday")) %>% data.frame()
   return(result)
@@ -147,7 +151,9 @@ check_path <- function(path) {
 
 # generate the specified month interval
 generate_months <- function(year.from, year.to, month.from = 1, month.to = 12) {
-  months = unlist(lapply(year.from:year.to, function(y) {sprintf("%04d%02d", y, month.from:month.to)}))
+  months <- unlist(lapply(year.from:year.to, function(y) {
+    sprintf("%04d%02d", y, month.from:month.to)
+  }))
   return(months)
 }
 
@@ -248,11 +254,11 @@ convert_stopnames <- function(stopnames) {
 
 ```{r}
 # config
-year.from = 2022  # 西元
-year.to = 2024
-month.from = 1
-month.to = 12
-buses = c("9801", "9803", "9805", "9806")
+year.from <- 2022 # 西元
+year.to <- 2024
+month.from <- 1
+month.to <- 12
+buses <- c("9801", "9803", "9805", "9806")
 
 windowsFonts(kai = windowsFont("Microsoft JhengHei"))
 ```
@@ -271,33 +277,33 @@ windowsFonts(kai = windowsFont("Microsoft JhengHei"))
 # 是指下車分鐘減去上車分鐘
 library(lubridate)
 
-month.from = 1
-month.to = 12
-months = generate_months(year.from, year.to, month.from, month.to)
+month.from <- 1
+month.to <- 12
+months <- generate_months(year.from, year.to, month.from, month.to)
 
 for (month_index in months) {
   for (bus_index in buses) {
     if (!bus_index %in% names(df[[month_index]])) {
-      next  # 如果該公車路線不存在，則跳過
+      next # 如果該公車路線不存在，則跳過
     }
     df[[month_index]][[bus_index]] <- df[[month_index]][[bus_index]] |>
       mutate(
         BoardingParsed = ymd_hms(上車時間),
         DeboardingParsed = ymd_hms(下車時間),
-        
+
         # 星期幾
         Weekday = weekdays(coalesce(BoardingParsed, DeboardingParsed)),
-        
+
         # 上車分鐘
         BoardingTimeInMinutes = hour(BoardingParsed) * 60 + minute(BoardingParsed) + second(BoardingParsed) / 60,
-        
+
         # 下車分鐘
         DeboardingTimeInMinutes = hour(DeboardingParsed) * 60 + minute(DeboardingParsed) + second(DeboardingParsed) / 60,
-        
+
         # 搭乘時間
         TravelTime = DeboardingTimeInMinutes - BoardingTimeInMinutes
       ) |>
-      select(-BoardingParsed, -DeboardingParsed)  # 清除中間欄位
+      select(-BoardingParsed, -DeboardingParsed) # 清除中間欄位
   }
 }
 ```
@@ -306,12 +312,12 @@ for (month_index in months) {
 
 ```{r}
 # simple summary for every variables
-month.from = 1
-month.to = 12
-months = generate_months(year.from, year.to, month.from, month.to)
-df_summary = data_summary(df)
+month.from <- 1
+month.to <- 12
+months <- generate_months(year.from, year.to, month.from, month.to)
+df_summary <- data_summary(df)
 
-#df_summary  
+# df_summary
 ```
 
 ## 生成月成長資料
@@ -328,16 +334,16 @@ for (bus_index in buses) {
     成長百分比 = numeric(),
     stringsAsFactors = FALSE
   )
-  
-  if (year.from > (year.to - 1)){
+
+  if (year.from > (year.to - 1)) {
     break
   }
-  
+
   for (year in year.from:(year.to - 1)) {
     for (month_index in month.from:month.to) {
       ym_current <- sprintf("%04d%02d", year, month_index)
       ym_next <- sprintf("%04d%02d", year + 1, month_index)
-      
+
       if (!is.null(df[[ym_current]][[bus_index]]) && !is.null(df[[ym_next]][[bus_index]])) {
         a <- nrow(df[[ym_current]][[bus_index]])
         b <- nrow(df[[ym_next]][[bus_index]])
@@ -363,7 +369,7 @@ for (bus_index in buses) {
       }
     }
   }
-  
+
   # 儲存到對應 bus 的 list 中
   df_grow.month[[bus_index]] <- df_grow.month.temp
 }
@@ -386,48 +392,46 @@ for (bus_index in buses) {
     成長百分比 = numeric(),
     stringsAsFactors = FALSE
   )
-        
-# 平假日名稱
-weekday_names <- c("星期一", "星期二", "星期三", "星期四", "星期五")
-weekend_names <- c("星期六", "星期日")
-  
+
+  # 平假日名稱
+  weekday_names <- c("星期一", "星期二", "星期三", "星期四", "星期五")
+  weekend_names <- c("星期六", "星期日")
+
   for (year in year.from:(year.to - 1)) {
     for (month in month.from:month.to) {
       ym_current <- sprintf("%04d%02d", year, month)
       ym_next <- sprintf("%04d%02d", year + 1, month)
-      
+
       # 檢查該月該車資料是否存在
       if (!is.null(df_summary[[ym_current]][[bus_index]]) && !is.null(df_summary[[ym_next]][[bus_index]])) {
-        
         # 取得每月的平假日總人次
-        wd_current <- df_summary[[ym_current]][[bus_index]][['Weekday']]
-        wd_next <- df_summary[[ym_next]][[bus_index]][['Weekday']]
-        
+        wd_current <- df_summary[[ym_current]][[bus_index]][["Weekday"]]
+        wd_next <- df_summary[[ym_next]][[bus_index]][["Weekday"]]
+
         # 平日與假日人次總和
         total_weekday_current <- sum(wd_current$n[wd_current$Weekday %in% weekday_names])
         total_weekday_next <- sum(wd_next$n[wd_next$Weekday %in% weekday_names])
         total_weekend_current <- sum(wd_current$n[wd_current$Weekday %in% weekend_names])
         total_weekend_next <- sum(wd_next$n[wd_next$Weekday %in% weekend_names])
-        
+
         # 平假日天數
-        freq_current <- monthly_weekday_and_weekend(year, month)[['Freq']]
-        freq_next <- monthly_weekday_and_weekend(year + 1, month)[['Freq']]
-        
+        freq_current <- monthly_weekday_and_weekend(year, month)[["Freq"]]
+        freq_next <- monthly_weekday_and_weekend(year + 1, month)[["Freq"]]
+
         if (length(freq_current) == 2 && length(freq_next) == 2 && freq_next[1] > 0 && freq_next[2] > 0) {
-          
           # 平均值
           avg_weekday_current <- total_weekday_current / freq_current[1]
           avg_weekday_next <- total_weekday_next / freq_next[1]
           avg_weekend_current <- total_weekend_current / freq_current[2]
           avg_weekend_next <- total_weekend_next / freq_next[2]
-          
+
           # 成長量與百分比
           growth_weekday <- avg_weekday_next - avg_weekday_current
           growth_rate_weekday <- growth_weekday / avg_weekday_current
-          
+
           growth_weekend <- avg_weekend_next - avg_weekend_current
           growth_rate_weekend <- growth_weekend / avg_weekend_current
-          
+
           # 寫入資料框
           week_grow_df <- rbind(week_grow_df, data.frame(
             年份 = year + 1,
@@ -437,7 +441,7 @@ weekend_names <- c("星期六", "星期日")
             成長百分比 = round(growth_rate_weekday, 2),
             stringsAsFactors = FALSE
           ))
-          
+
           week_grow_df <- rbind(week_grow_df, data.frame(
             年份 = year + 1,
             月份 = month,
@@ -457,7 +461,7 @@ weekend_names <- c("星期六", "星期日")
           成長百分比 = NA,
           stringsAsFactors = FALSE
         ))
-        
+
         week_grow_df <- rbind(week_grow_df, data.frame(
           年份 = year + 1,
           月份 = month,
@@ -469,7 +473,7 @@ weekend_names <- c("星期六", "星期日")
       }
     }
   }
-  
+
   # 儲存至該 bus_index 的結果
   df_grow.week[[bus_index]] <- week_grow_df
 }
@@ -490,45 +494,49 @@ https://www.taiwanbus.tw/eBUSPage/Query/CustomerQuery.aspx?lan=C
 ```{r}
 # 定義站點
 
-bus_stops = list()
-bus_stops[['9801']] = c("台東火車站",
-                        "拖吊場",
-                        "棒球場",
-                        "寶桑國中",
-                        "浙江路口",
-                        "台東森林公園",
-                        "天天來",
-                        "吳外科",
-                        "中華會館",
-                        "海濱公園",
-                        "大同路郵局",
-                        "中華正氣路口",
-                        "台東轉運站",
-                        "體育場(鐵花村)",
-                        "馬偕醫院",
-                        "後期聖徒教會",
-                        "台東高商",
-                        "聖母醫院",
-                        "縣民服務中心",
-                        "美術館(地檢署)",
-                        "基督教醫院",
-                        "開封長安街口",
-                        "新生郵局",
-                        "台東糖廠",
-                        "東方大鎮",
-                        "娜路彎大酒店",
-                        "卑南入口",
-                        "棒球場",
-                        "拖吊場",
-                        "台東火車站")
+bus_stops <- list()
+bus_stops[["9801"]] <- c(
+  "台東火車站",
+  "拖吊場",
+  "棒球場",
+  "寶桑國中",
+  "浙江路口",
+  "台東森林公園",
+  "天天來",
+  "吳外科",
+  "中華會館",
+  "海濱公園",
+  "大同路郵局",
+  "中華正氣路口",
+  "台東轉運站",
+  "體育場(鐵花村)",
+  "馬偕醫院",
+  "後期聖徒教會",
+  "台東高商",
+  "聖母醫院",
+  "縣民服務中心",
+  "美術館(地檢署)",
+  "基督教醫院",
+  "開封長安街口",
+  "新生郵局",
+  "台東糖廠",
+  "東方大鎮",
+  "娜路彎大酒店",
+  "卑南入口",
+  "棒球場",
+  "拖吊場",
+  "台東火車站"
+)
 
-bus_stops[['9803']] = c("台東火車站",
-                        "拖吊場",
-                        "棒球場",
-                        "寶桑國中",
-                        "浙江路口",
-                        "台東森林公園",
-                        "富岡港口")
+bus_stops[["9803"]] <- c(
+  "台東火車站",
+  "拖吊場",
+  "棒球場",
+  "寶桑國中",
+  "浙江路口",
+  "台東森林公園",
+  "富岡港口"
+)
 # 返程
 # "富岡港口",
 # "小野柳",
@@ -540,30 +548,34 @@ bus_stops[['9803']] = c("台東火車站",
 # "拖吊場",
 # "台東火車站"
 
-bus_stops[['9805']] = c("台東火車站",
-                        "拖吊場",
-                        "棒球場",
-                        "寶桑國中",
-                        "浙江路口",
-                        "台東森林公園",
-                        "天天來",
-                        "吳外科",
-                        "中央市場",
-                        "台東轉運站")
+bus_stops[["9805"]] <- c(
+  "台東火車站",
+  "拖吊場",
+  "棒球場",
+  "寶桑國中",
+  "浙江路口",
+  "台東森林公園",
+  "天天來",
+  "吳外科",
+  "中央市場",
+  "台東轉運站"
+)
 
-bus_stops[['9806']] = c("台東航空站",
-                        "陽明山莊",
-                        "康樂國小",
-                        "專科學校",
-                        "縣議會",
-                        "東方大鎮",
-                        "台東糖廠",
-                        "公東高工",
-                        "馬蘭榮家",
-                        "卑南入口",
-                        "棒球場",
-                        "拖吊場",
-                        "台東火車站")
+bus_stops[["9806"]] <- c(
+  "台東航空站",
+  "陽明山莊",
+  "康樂國小",
+  "專科學校",
+  "縣議會",
+  "東方大鎮",
+  "台東糖廠",
+  "公東高工",
+  "馬蘭榮家",
+  "卑南入口",
+  "棒球場",
+  "拖吊場",
+  "台東火車站"
+)
 ```
 
 ## volume_plot: 給定路線下的月運量
@@ -571,80 +583,83 @@ bus_stops[['9806']] = c("台東航空站",
 ```{r}
 # 運量
 volume_plot <- function(bus, year) {
-  transport_volume = NULL
-  months = generate_months(year, year, month.from, month.to)
-  for (month_index in months){
-    transport_volume = c(transport_volume,
-                         ifelse (is.null(nrow(df[[month_index]][[bus]])),
-                                 0,
-                                 nrow(df[[month_index]][[bus]]))
-                         )
+  transport_volume <- NULL
+  months <- generate_months(year, year, month.from, month.to)
+  for (month_index in months) {
+    transport_volume <- c(
+      transport_volume,
+      ifelse(is.null(nrow(df[[month_index]][[bus]])),
+        0,
+        nrow(df[[month_index]][[bus]])
+      )
+    )
   }
-  
-  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
-  
-  plot(x = month.from:month.to,
-       y = transport_volume,
-       type = "o",
-       lwd = 2,
-       pch = 16,
-       col = "gray",
-       xlab = "月份",
-       ylab = "搭乘次數",
-       ylim = c(min(transport_volume) * 0.9, max(transport_volume) * 1.1),
-       cex.main = 2,
-       cex.lab = 2,
-       cex.axis = 1.5,
-       cex = 1.5,
-       xaxt = "n",
-       yaxt = "n",
-       bty = "n"
-       )
-  
-  title(main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '搭乘次數折線圖'), cex.main = 2, adj = 0)
-  
+
+  par(family = "kai", mar = c(5, 6, 4, 10)) # 字體與圖寬
+
+  plot(
+    x = month.from:month.to,
+    y = transport_volume,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = "gray",
+    xlab = "月份",
+    ylab = "搭乘次數",
+    ylim = c(min(transport_volume) * 0.9, max(transport_volume) * 1.1),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+  )
+
+  title(main = paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "搭乘次數折線圖"), cex.main = 2, adj = 0)
+
   # x 軸
   axis(side = 1, at = month.from:month.to, labels = month.from:month.to, cex.axis = 1.5)
-  
+
   # y 軸
   axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
-  
-  text(x = month.from:month.to,
-       y = transport_volume + max(transport_volume) * 0.02,
-       labels = transport_volume,
-       pos = 3,            # 文字顯示在點上方
-       cex = 1.5,          # 文字大小
-       col = "black"
+
+  text(
+    x = month.from:month.to,
+    y = transport_volume + max(transport_volume) * 0.02,
+    labels = transport_volume,
+    pos = 3, # 文字顯示在點上方
+    cex = 1.5, # 文字大小
+    col = "black"
   )
-  
-  grid()  # 網格線
-  
+
+  grid() # 網格線
+
   # 圖例
-  legend("topright", 
-         legend = paste0(bus, '路線'), 
-         col = "gray", 
-         lwd = 2, 
-         pch = 16,
-         bty = "n",
-         inset = c(-0.15, 0),
-         xpd = TRUE,
-         cex = 1.5
-         )
+  legend("topright",
+    legend = paste0(bus, "路線"),
+    col = "gray",
+    lwd = 2,
+    pch = 16,
+    bty = "n",
+    inset = c(-0.15, 0),
+    xpd = TRUE,
+    cex = 1.5
+  )
 }
 
 # 全年
-month.from = 1
-month.to = 12
-for (year in year.from:year.to){
-  for (bus in buses){
-  
-  # 繪圖 (在 R中呈現)
+month.from <- 1
+month.to <- 12
+for (year in year.from:year.to) {
+  for (bus in buses) {
+    # 繪圖 (在 R中呈現)
     volume_plot(bus, year)
-    
-  # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+
+    # 儲存圖片
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '搭乘次數折線圖')
+    main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "搭乘次數折線圖")
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     volume_plot(bus, year)
     dev.off()
@@ -652,18 +667,17 @@ for (year in year.from:year.to){
 }
 
 # 上半
-month.from = 1
-month.to = 6
-for (year in year.from:year.to){
-  for (bus in buses){
-  
-  # 繪圖 (在 R中呈現)
+month.from <- 1
+month.to <- 6
+for (year in year.from:year.to) {
+  for (bus in buses) {
+    # 繪圖 (在 R中呈現)
     volume_plot(bus, year)
-    
-  # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+
+    # 儲存圖片
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '搭乘次數折線圖')
+    main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "搭乘次數折線圖")
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     volume_plot(bus, year)
     dev.off()
@@ -671,18 +685,17 @@ for (year in year.from:year.to){
 }
 
 # 下半
-month.from = 7
-month.to = 12
-for (year in year.from:year.to){
-  for (bus in buses){
-  
-  # 繪圖 (在 R中呈現)
+month.from <- 7
+month.to <- 12
+for (year in year.from:year.to) {
+  for (bus in buses) {
+    # 繪圖 (在 R中呈現)
     volume_plot(bus, year)
-    
-  # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+
+    # 儲存圖片
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '路線搭乘次數折線圖')
+    main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "路線搭乘次數折線圖")
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     volume_plot(bus, year)
     dev.off()
@@ -695,105 +708,108 @@ for (year in year.from:year.to){
 ```{r}
 # 平假日搭乘次數
 weekend_and_weekday_volume_plot <- function(bus, year) {
-  months = generate_months(year, year, month.from, month.to)
-  weekend.days = NULL
-  weekday.days = NULL
-  month.days = NULL
-  weekend.volume = NULL
-  weekday.volume = NULL
-  month.volume = NULL
-  color <- gray.colors(3+1)
-  
-  for (month_index in month.from:month.to){
-    week.days = monthly_weekday_and_weekend(year = year, month = month_index)[['Freq']]
-    weekday.days = c(weekday.days, week.days[1])
-    weekend.days = c(weekend.days, week.days[2])
-    month.days = c(month.days, sum(week.days))
-    
-    week.volume = df_summary[[sprintf("%04d%02d", year, month_index)]][[bus]][['Weekday']]
-    weekday.volume = c(weekday.volume, sum(week.volume$n[week.volume$Weekday %in% c("星期一", "星期二", "星期三", "星期四", "星期五")]))
-    weekend.volume = c(weekend.volume, sum(week.volume$n[week.volume$Weekday %in% c("星期六", "星期日")]))
-    month.volume = c(month.volume, sum(week.volume$n))
+  months <- generate_months(year, year, month.from, month.to)
+  weekend.days <- NULL
+  weekday.days <- NULL
+  month.days <- NULL
+  weekend.volume <- NULL
+  weekday.volume <- NULL
+  month.volume <- NULL
+  color <- gray.colors(3 + 1)
+
+  for (month_index in month.from:month.to) {
+    week.days <- monthly_weekday_and_weekend(year = year, month = month_index)[["Freq"]]
+    weekday.days <- c(weekday.days, week.days[1])
+    weekend.days <- c(weekend.days, week.days[2])
+    month.days <- c(month.days, sum(week.days))
+
+    week.volume <- df_summary[[sprintf("%04d%02d", year, month_index)]][[bus]][["Weekday"]]
+    weekday.volume <- c(weekday.volume, sum(week.volume$n[week.volume$Weekday %in% c("星期一", "星期二", "星期三", "星期四", "星期五")]))
+    weekend.volume <- c(weekend.volume, sum(week.volume$n[week.volume$Weekday %in% c("星期六", "星期日")]))
+    month.volume <- c(month.volume, sum(week.volume$n))
   }
-  
-  weekday.volume.per_day = weekday.volume / weekday.days
-  weekend.volume.per_day = weekend.volume / weekend.days
-  month.volume.per_day = month.volume / month.days
-  
-  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
-  
-  plot(x = month.from:month.to,
-       y = month.volume.per_day,
-       type = "o",
-       lwd = 2,
-       pch = 16,
-       col = color[1],
-       xlab = "月份",
-       ylab = "日均人次",
-       ylim = c(min(weekday.volume.per_day, weekend.volume.per_day, month.volume.per_day) * 0.9,
-                max(weekday.volume.per_day, weekend.volume.per_day, month.volume.per_day) * 1.1
-                ),
-       cex.main = 2,
-       cex.lab = 2,
-       cex.axis = 1.5,
-       cex = 1.5,
-       xaxt = "n",
-       yaxt = "n",
-       bty = "n"
-       )
-  
-  title(main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '日均搭乘次數折線圖'), cex.main = 2, adj = 0)
-  
+
+  weekday.volume.per_day <- weekday.volume / weekday.days
+  weekend.volume.per_day <- weekend.volume / weekend.days
+  month.volume.per_day <- month.volume / month.days
+
+  par(family = "kai", mar = c(5, 6, 4, 10)) # 字體與圖寬
+
+  plot(
+    x = month.from:month.to,
+    y = month.volume.per_day,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = color[1],
+    xlab = "月份",
+    ylab = "日均人次",
+    ylim = c(
+      min(weekday.volume.per_day, weekend.volume.per_day, month.volume.per_day) * 0.9,
+      max(weekday.volume.per_day, weekend.volume.per_day, month.volume.per_day) * 1.1
+    ),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+  )
+
+  title(main = paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "日均搭乘次數折線圖"), cex.main = 2, adj = 0)
+
   # x 軸
   axis(side = 1, at = month.from:month.to, labels = month.from:month.to, cex.axis = 1.5)
-  
+
   # y 軸
   axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
-  
-  lines(x = month.from:month.to,
-        y = weekday.volume.per_day,
-        type = "o",
-        lwd = 2,
-        pch = 16,
-        col = color[2]
-        )
-  
-  lines(x = month.from:month.to,
-        y = weekend.volume.per_day,
-        type = "o",
-        lwd = 2,
-        pch = 16,
-        col = color[3]
-        )
-  
-  grid()  # 網格線
-  
+
+  lines(
+    x = month.from:month.to,
+    y = weekday.volume.per_day,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = color[2]
+  )
+
+  lines(
+    x = month.from:month.to,
+    y = weekend.volume.per_day,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = color[3]
+  )
+
+  grid() # 網格線
+
   # 圖例
-  legend("topright", 
-         legend = c("月日均", "平日日均", "假日日均"), 
-         col = color, 
-         lwd = 2, 
-         pch = 16,
-         bty = "n",
-         inset = c(-0.16, 0),
-         xpd = TRUE,
-         cex = 1.5
-         )
+  legend("topright",
+    legend = c("月日均", "平日日均", "假日日均"),
+    col = color,
+    lwd = 2,
+    pch = 16,
+    bty = "n",
+    inset = c(-0.16, 0),
+    xpd = TRUE,
+    cex = 1.5
+  )
 }
 
 # 全年
-month.from = 1
-month.to = 12
-for (year in year.from:year.to){
-  for (bus in buses){
-  
-  # 繪圖 (在 R中呈現)
+month.from <- 1
+month.to <- 12
+for (year in year.from:year.to) {
+  for (bus in buses) {
+    # 繪圖 (在 R中呈現)
     weekend_and_weekday_volume_plot(bus, year)
-  
-  # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+
+    # 儲存圖片
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '日均搭乘次數折線圖')
+    main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "日均搭乘次數折線圖")
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     weekend_and_weekday_volume_plot(bus, year)
     dev.off()
@@ -801,18 +817,17 @@ for (year in year.from:year.to){
 }
 
 # 上半
-month.from = 1
-month.to = 6
-for (year in year.from:year.to){
-  for (bus in buses){
-  
-  # 繪圖 (在 R中呈現)
+month.from <- 1
+month.to <- 6
+for (year in year.from:year.to) {
+  for (bus in buses) {
+    # 繪圖 (在 R中呈現)
     weekend_and_weekday_volume_plot(bus, year)
-  
-  # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+
+    # 儲存圖片
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '日均搭乘次數折線圖')
+    main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "日均搭乘次數折線圖")
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     weekend_and_weekday_volume_plot(bus, year)
     dev.off()
@@ -820,18 +835,17 @@ for (year in year.from:year.to){
 }
 
 # 下半
-month.from = 7
-month.to = 12
-for (year in year.from:year.to){
-  for (bus in buses){
-  
-  # 繪圖 (在 R中呈現)
+month.from <- 7
+month.to <- 12
+for (year in year.from:year.to) {
+  for (bus in buses) {
+    # 繪圖 (在 R中呈現)
     weekend_and_weekday_volume_plot(bus, year)
-  
-  # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+
+    # 儲存圖片
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '日均搭乘次數折線圖')
+    main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "日均搭乘次數折線圖")
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     weekend_and_weekday_volume_plot(bus, year)
     dev.off()
@@ -843,120 +857,124 @@ for (year in year.from:year.to){
 
 ```{r}
 total_volume_plot <- function(buses, year) {
-  months = generate_months(year, year, month.from, month.to)
-  color <- gray.colors(length(buses)+2)
-  
-  transport_volume = NULL
-  for (bus in buses){
-    transport_each_volume = NULL
-    for (month_index in months){
-      transport_each_volume = c(transport_each_volume,
-                                ifelse (is.null(nrow(df[[month_index]][[bus]])), 
-                                        0,
-                                        nrow(df[[month_index]][[bus]]))
-                                )
-    }
-    transport_volume = c(transport_volume, list(transport_each_volume))
-  }
-  transport_volume = append(list(Reduce("+", transport_volume)), transport_volume)  # total
+  months <- generate_months(year, year, month.from, month.to)
+  color <- gray.colors(length(buses) + 2)
 
-  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
-  
-  plot(x = month.from:month.to,
-       y = transport_volume[[1]],
-       type = "o",
-       lwd = 2,
-       pch = 16,
-       col = color[1],
-       xlab = "月份",
-       ylab = "搭乘次數",
-       ylim = c(min(sapply(transport_volume, min)) * 0.9 , max(sapply(transport_volume, max)) * 1.1),
-       cex.main = 2,
-       cex.lab = 2,
-       cex.axis = 1.5,
-       cex = 1.5,
-       xaxt = "n",
-       yaxt = "n",
-       bty = "n"
-       )
-  
-  title(main = paste0(year - 1911, '年', month.from, '月至', month.to, '月普悠瑪客運總運量'), cex.main = 2, adj = 0)
-  
+  transport_volume <- NULL
+  for (bus in buses) {
+    transport_each_volume <- NULL
+    for (month_index in months) {
+      transport_each_volume <- c(
+        transport_each_volume,
+        ifelse(is.null(nrow(df[[month_index]][[bus]])),
+          0,
+          nrow(df[[month_index]][[bus]])
+        )
+      )
+    }
+    transport_volume <- c(transport_volume, list(transport_each_volume))
+  }
+  transport_volume <- append(list(Reduce("+", transport_volume)), transport_volume) # total
+
+  par(family = "kai", mar = c(5, 6, 4, 10)) # 字體與圖寬
+
+  plot(
+    x = month.from:month.to,
+    y = transport_volume[[1]],
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = color[1],
+    xlab = "月份",
+    ylab = "搭乘次數",
+    ylim = c(min(sapply(transport_volume, min)) * 0.9, max(sapply(transport_volume, max)) * 1.1),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+  )
+
+  title(main = paste0(year - 1911, "年", month.from, "月至", month.to, "月普悠瑪客運總運量"), cex.main = 2, adj = 0)
+
   # x 軸
   axis(side = 1, at = month.from:month.to, labels = month.from:month.to, cex.axis = 1.5)
-  
+
   # y 軸
   axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
-  
-  for(bus_index in 2:(length(buses)+1)){
-    lines(x = month.from:month.to,
+
+  for (bus_index in 2:(length(buses) + 1)) {
+    lines(
+      x = month.from:month.to,
       y = transport_volume[[bus_index]],
       type = "o",
       lwd = 2,
       pch = 16,
       cex = 1.5,
       col = color[bus_index]
-      )
+    )
   }
 
-  grid()  # 網格線
-  
+  grid() # 網格線
+
   # 圖例
-  legend("topright", 
-         legend = c('總人次', paste0(buses, '路線')), 
-         col = color, 
-         lwd = 2, 
-         pch = 16,
-         bty = "n",
-         inset = c(-0.15, 0),
-         xpd = TRUE,
-         cex = 1.5
-         )
+  legend("topright",
+    legend = c("總人次", paste0(buses, "路線")),
+    col = color,
+    lwd = 2,
+    pch = 16,
+    bty = "n",
+    inset = c(-0.15, 0),
+    xpd = TRUE,
+    cex = 1.5
+  )
 }
 
 # 全年
-month.from = 1
-month.to = 12
-for (year in year.from:year.to){
+month.from <- 1
+month.to <- 12
+for (year in year.from:year.to) {
   # 繪圖 (在 R中呈現)
   total_volume_plot(buses, year)
-  
+
   # 儲存圖片
-  path = paste0("images/", year - 1911, "/total/line_chart")
+  path <- paste0("images/", year - 1911, "/total/line_chart")
   check_path(path)
-  main = paste0(year - 1911, '年', month.from, '月至', month.to, '月普悠瑪客運總運量')
+  main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月普悠瑪客運總運量")
   png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
   total_volume_plot(buses, year)
   dev.off()
 }
 
 # 上半
-month.from = 1
-month.to = 6
-for (year in year.from:year.to){
+month.from <- 1
+month.to <- 6
+for (year in year.from:year.to) {
   # 繪圖 (在 R中呈現)
   total_volume_plot(buses, year)
-  
+
   # 儲存圖片
-  path = paste0("images/", year - 1911, "/total/line_chart")
+  path <- paste0("images/", year - 1911, "/total/line_chart")
   check_path(path)
-  main = paste0(year - 1911, '年', month.from, '月至', month.to, '月普悠瑪客運總運量')
+  main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月普悠瑪客運總運量")
   png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
   total_volume_plot(buses, year)
   dev.off()
 }
 
 # 下半
-month.from = 7
-month.to = 12
-for (year in year.from:year.to){
+month.from <- 7
+month.to <- 12
+for (year in year.from:year.to) {
   # 繪圖 (在 R中呈現)
   total_volume_plot(buses, year)
-  
+
   # 儲存圖片
-  path = paste0("images/", year - 1911, "/total/line_chart")
+  path <- paste0("images/", year - 1911, "/total/line_chart")
   check_path(path)
-  main = paste0(year - 1911, '年', month.from, '月至', month.to, '月普悠瑪客運總運量')
+  main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月普悠瑪客運總運量")
   png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
   total_volume_plot(buses, year)
   dev.off()
@@ -968,119 +986,121 @@ for (year in year.from:year.to){
 
 ```{r}
 month_total_volume_plot <- function(buses, year.from, year.to) {
-  years = year.from:year.to
-  color <- gray.colors(length(years)+1)
-  
+  years <- year.from:year.to
+  color <- gray.colors(length(years) + 1)
+
   # 使用lapply與sapply取代多層迴圈
   transport_volume_year <- lapply(years, function(year) {
     months <- generate_months(year, year, month.from, month.to)
     sapply(months, function(m) {
       sum(sapply(buses, function(bus) {
-        nrow(df[[m]][[bus]]) %||% 0  # 使用%||%處理NULL值
+        nrow(df[[m]][[bus]]) %||% 0 # 使用%||%處理NULL值
       }))
     })
   })
   names(transport_volume_year) <- as.character(years)
 
 
-  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
-  
-  plot(x = month.from:month.to,
-       y = transport_volume_year[[1]],
-       type = "o",
-       lwd = 2,
-       pch = 16,
-       col = color[1],
-       xlab = "月份",
-       ylab = "搭乘次數",
-       ylim = c(min(sapply(transport_volume_year, min)) * 0.9 , max(sapply(transport_volume_year, max)) * 1.1),
-       cex.main = 2,
-       cex.lab = 2,
-       cex.axis = 1.5,
-       cex = 1.5,
-       xaxt = "n",
-       yaxt = "n",
-       bty = "n"
-       )
+  par(family = "kai", mar = c(5, 6, 4, 10)) # 字體與圖寬
 
-  title(main = paste0(year.from - 1911, '年', '至', year.to - 1911, '年', month.from, '月至', month.to, '月', '普悠瑪客運月總運量'), cex.main = 2, adj = 0)
-  
+  plot(
+    x = month.from:month.to,
+    y = transport_volume_year[[1]],
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = color[1],
+    xlab = "月份",
+    ylab = "搭乘次數",
+    ylim = c(min(sapply(transport_volume_year, min)) * 0.9, max(sapply(transport_volume_year, max)) * 1.1),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+  )
+
+  title(main = paste0(year.from - 1911, "年", "至", year.to - 1911, "年", month.from, "月至", month.to, "月", "普悠瑪客運月總運量"), cex.main = 2, adj = 0)
+
   # x 軸
   axis(side = 1, at = month.from:month.to, labels = month.from:month.to, cex.axis = 1.5)
-  
+
   # y 軸
   axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
-  
-  for(year_index in 2:(length(years))){
-    lines(x = month.from:month.to,
-          y = transport_volume_year[[year_index]],
-          type = "o",
-          lwd = 2,
-          pch = 16,
-          cex = 1.5,
-          col = color[year_index]
-          )
-  }   
 
-  grid()  # 網格線
-  
+  for (year_index in 2:(length(years))) {
+    lines(
+      x = month.from:month.to,
+      y = transport_volume_year[[year_index]],
+      type = "o",
+      lwd = 2,
+      pch = 16,
+      cex = 1.5,
+      col = color[year_index]
+    )
+  }
+
+  grid() # 網格線
+
   # 圖例
-  legend("topright", 
-         legend = paste0(years - 1911, '年'), 
-         col = color, 
-         lwd = 2, 
-         pch = 16,
-         bty = "n",
-         inset = c(-0.15, 0),
-         xpd = TRUE,
-         cex = 1.5
-         )
+  legend("topright",
+    legend = paste0(years - 1911, "年"),
+    col = color,
+    lwd = 2,
+    pch = 16,
+    bty = "n",
+    inset = c(-0.15, 0),
+    xpd = TRUE,
+    cex = 1.5
+  )
 }
 
 
 # 全年
-month.from = 1
-month.to = 12
+month.from <- 1
+month.to <- 12
 
 # 繪圖 (在 R中呈現)
 month_total_volume_plot(buses, year.from, year.to)
 
 # 儲存圖片
-path = paste0("images/from_", year.from - 1911, "_to_", year.to - 1911, "/total/line_chart")
+path <- paste0("images/from_", year.from - 1911, "_to_", year.to - 1911, "/total/line_chart")
 check_path(path)
-main = paste0(year.from - 1911, '年', '至', year.to - 1911, '年', month.from, '月至', month.to, '月', '普悠瑪客運月總運量')
+main <- paste0(year.from - 1911, "年", "至", year.to - 1911, "年", month.from, "月至", month.to, "月", "普悠瑪客運月總運量")
 png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
 month_total_volume_plot(buses, year.from, year.to)
 dev.off()
 
 
 # 上半
-month.from = 1
-month.to = 6
+month.from <- 1
+month.to <- 6
 
 # 繪圖 (在 R中呈現)
 month_total_volume_plot(buses, year.from, year.to)
 
 # 儲存圖片
-path = paste0("images/from_", year.from - 1911, "_to_", year.to - 1911, "/total/line_chart")
+path <- paste0("images/from_", year.from - 1911, "_to_", year.to - 1911, "/total/line_chart")
 check_path(path)
-main = paste0(year.from - 1911, '年', '至', year.to - 1911, '年', month.from, '月至', month.to, '月', '普悠瑪客運月總運量')
+main <- paste0(year.from - 1911, "年", "至", year.to - 1911, "年", month.from, "月至", month.to, "月", "普悠瑪客運月總運量")
 png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
 month_total_volume_plot(buses, year.from, year.to)
 dev.off()
 
 
 # 下半
-month.from = 7
-month.to = 12
+month.from <- 7
+month.to <- 12
 
 # 繪圖 (在 R中呈現)
 month_total_volume_plot(buses, year.from, year.to)
 
 # 儲存圖片
-path = paste0("images/from_", year.from - 1911, "_to_", year.to - 1911, "/total/line_chart")
+path <- paste0("images/from_", year.from - 1911, "_to_", year.to - 1911, "/total/line_chart")
 check_path(path)
-main = paste0(year.from - 1911, '年', '至', year.to - 1911, '年', month.from, '月至', month.to, '月', '普悠瑪客運月總運量')
+main <- paste0(year.from - 1911, "年", "至", year.to - 1911, "年", month.from, "月至", month.to, "月", "普悠瑪客運月總運量")
 png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
 month_total_volume_plot(buses, year.from, year.to)
 dev.off()
@@ -1091,72 +1111,74 @@ dev.off()
 ```{r}
 # 太魯閣客運多年總運量(年)
 year_total_volume_plot <- function(buses, year.from, year.to) {
-  years = year.from:year.to
+  years <- year.from:year.to
   color <- gray.colors(2)
-  
+
   transport_volume_year <- sapply(years, function(year) {
     months <- generate_months(year, year, 1, 12)
     sum(sapply(buses, function(bus) {
       sum(sapply(months, function(month_index) {
-        ifelse(is.null(nrow(df[[month_index]][[bus]])), 
-               0, 
-               nrow(df[[month_index]][[bus]])
+        ifelse(is.null(nrow(df[[month_index]][[bus]])),
+          0,
+          nrow(df[[month_index]][[bus]])
         )
       }))
     }))
   }) %>% c()
-  
+
   print(transport_volume_year)
 
-  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
-  
-  plot(x = years,
-       y = transport_volume_year,
-       type = "o",
-       lwd = 2,
-       pch = 16,
-       col = color[1],
-       xlab = "年",
-       ylab = "搭乘次數",
-       ylim = c(min(sapply(transport_volume_year, min)) * 0.9 , max(sapply(transport_volume_year, max)) * 1.1),
-       cex.main = 2,
-       cex.lab = 2,
-       cex.axis = 1.5,
-       cex = 1.5,
-       xaxt = "n",
-       yaxt = "n",
-       bty = "n"
-       )
-  
-  title(main = paste0(year.from - 1911, '年', '至', year.to - 1911, '年普悠瑪客運年總運量'), cex.main = 2, adj = 0)
-  
+  par(family = "kai", mar = c(5, 6, 4, 10)) # 字體與圖寬
+
+  plot(
+    x = years,
+    y = transport_volume_year,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = color[1],
+    xlab = "年",
+    ylab = "搭乘次數",
+    ylim = c(min(sapply(transport_volume_year, min)) * 0.9, max(sapply(transport_volume_year, max)) * 1.1),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+  )
+
+  title(main = paste0(year.from - 1911, "年", "至", year.to - 1911, "年普悠瑪客運年總運量"), cex.main = 2, adj = 0)
+
   # x 軸
   axis(side = 1, at = years, labels = c(years - 1911), cex.axis = 1.5)
-  
+
   # y 軸
   axis(side = 2, las = 1, cex.axis = 1.2, line = -1.5)
 
-  grid()  # 網格線
-  
-  text(x = years,
-       y = transport_volume_year + max(transport_volume_year) * 0.02,
-       labels = transport_volume_year,
-       pos = 3,            # 文字顯示在點上方
-       cex = 1.5,          # 文字大小
-       col = "black"
+  grid() # 網格線
+
+  text(
+    x = years,
+    y = transport_volume_year + max(transport_volume_year) * 0.02,
+    labels = transport_volume_year,
+    pos = 3, # 文字顯示在點上方
+    cex = 1.5, # 文字大小
+    col = "black"
   )
-  
+
   # 圖例
-  legend("topright", 
-         legend = "總運量", 
-         col = color[1], 
-         lwd = 2, 
-         pch = 16,
-         bty = "n",
-         inset = c(-0.15, 0),
-         xpd = TRUE,
-         cex = 1.5
-         )
+  legend("topright",
+    legend = "總運量",
+    col = color[1],
+    lwd = 2,
+    pch = 16,
+    bty = "n",
+    inset = c(-0.15, 0),
+    xpd = TRUE,
+    cex = 1.5
+  )
 }
 
 
@@ -1164,9 +1186,9 @@ year_total_volume_plot <- function(buses, year.from, year.to) {
 year_total_volume_plot(buses, year.from, year.to)
 
 # 儲存圖片
-path = paste0("images/from_", year.from - 1911, "_to_", year.to - 1911, "/total/line_chart")
+path <- paste0("images/from_", year.from - 1911, "_to_", year.to - 1911, "/total/line_chart")
 check_path(path)
-main = paste0(year.from - 1911, '年', '至', year.to - 1911, '年普悠瑪客運年總運量')
+main <- paste0(year.from - 1911, "年", "至", year.to - 1911, "年普悠瑪客運年總運量")
 png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
 year_total_volume_plot(buses, year.from, year.to)
 dev.off()
@@ -1177,92 +1199,95 @@ dev.off()
 ```{r}
 # 太魯閣客運多年總運量
 volume_by_bus_plot <- function(bus, year.from, year.to) {
-  years = year.from:year.to
-  color <- gray.colors(length(years)+1)
-  
-  transport_volume_year = list()
-  for (year in years) {
-    months = generate_months(year, year, month.from, month.to)
-    transport_each_volume = NULL
-    for (month_index in months){
-      transport_each_volume = c(transport_each_volume,
-                                ifelse (is.null(nrow(df[[month_index]][[bus]])),
-                                        0,
-                                        nrow(df[[month_index]][[bus]])
-                                        )
-                                )
-    }
-    transport_volume_year[[as.character(year)]] = transport_each_volume  # total
-  }
-  
+  years <- year.from:year.to
+  color <- gray.colors(length(years) + 1)
 
-  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
-  
-  plot(x = month.from:month.to,
-       y = transport_volume_year[[1]],
-       type = "o",
-       lwd = 2,
-       pch = 16,
-       col = color[1],
-       xlab = "月份",
-       ylab = "搭乘次數",
-       ylim = c(min(sapply(transport_volume_year, min)) * 0.9 , max(sapply(transport_volume_year, max)) * 1.1),
-       cex.main = 2,
-       cex.lab = 2,
-       cex.axis = 1.5,
-       cex = 1.5,
-       xaxt = "n",
-       yaxt = "n",
-       bty = "n"
-       )
-  
-  title(main = paste0(year.from - 1911, '年至', year.to - 1911, '年', month.from, '月至', month.to, '月路線', bus, '月運量'), cex.main = 2, adj = 0)
-  
+  transport_volume_year <- list()
+  for (year in years) {
+    months <- generate_months(year, year, month.from, month.to)
+    transport_each_volume <- NULL
+    for (month_index in months) {
+      transport_each_volume <- c(
+        transport_each_volume,
+        ifelse(is.null(nrow(df[[month_index]][[bus]])),
+          0,
+          nrow(df[[month_index]][[bus]])
+        )
+      )
+    }
+    transport_volume_year[[as.character(year)]] <- transport_each_volume # total
+  }
+
+
+  par(family = "kai", mar = c(5, 6, 4, 10)) # 字體與圖寬
+
+  plot(
+    x = month.from:month.to,
+    y = transport_volume_year[[1]],
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = color[1],
+    xlab = "月份",
+    ylab = "搭乘次數",
+    ylim = c(min(sapply(transport_volume_year, min)) * 0.9, max(sapply(transport_volume_year, max)) * 1.1),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+  )
+
+  title(main = paste0(year.from - 1911, "年至", year.to - 1911, "年", month.from, "月至", month.to, "月路線", bus, "月運量"), cex.main = 2, adj = 0)
+
   # x 軸
   axis(side = 1, at = month.from:month.to, labels = month.from:month.to, cex.axis = 1.5)
-  
+
   # y 軸
   axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
-  
-  for(year_index in 2:(length(years))){
-    lines(x = month.from:month.to,
-          y = transport_volume_year[[year_index]],
-          type = "o",
-          lwd = 2,
-          pch = 16,
-          cex = 1.5,
-          col = color[year_index]
-          )
-  }   
 
-  grid()  # 網格線
-  
+  for (year_index in 2:(length(years))) {
+    lines(
+      x = month.from:month.to,
+      y = transport_volume_year[[year_index]],
+      type = "o",
+      lwd = 2,
+      pch = 16,
+      cex = 1.5,
+      col = color[year_index]
+    )
+  }
+
+  grid() # 網格線
+
   # 圖例
-  legend("topright", 
-         legend = paste0(years - 1911, '年'), 
-         col = color, 
-         lwd = 2, 
-         pch = 16,
-         bty = "n",
-         inset = c(-0.15, 0),
-         xpd = TRUE,
-         cex = 1.5
-         )
+  legend("topright",
+    legend = paste0(years - 1911, "年"),
+    col = color,
+    lwd = 2,
+    pch = 16,
+    bty = "n",
+    inset = c(-0.15, 0),
+    xpd = TRUE,
+    cex = 1.5
+  )
 }
 
 
 # 全年
-month.from = 1
-month.to = 12
+month.from <- 1
+month.to <- 12
 
-for(bus in buses){
+for (bus in buses) {
   # 繪圖 (在 R中呈現)
   volume_by_bus_plot(bus, year.from, year.to)
-  
+
   # 儲存圖片
-  path = paste0("images/from_", year.from - 1911, "_to_", year.to - 1911, "/", bus, "/line_chart")
+  path <- paste0("images/from_", year.from - 1911, "_to_", year.to - 1911, "/", bus, "/line_chart")
   check_path(path)
-  main = paste0(year.from - 1911, '年至', year.to - 1911, '年', month.from, '月至', month.to, '月路線', bus, '月運量')
+  main <- paste0(year.from - 1911, "年至", year.to - 1911, "年", month.from, "月至", month.to, "月路線", bus, "月運量")
   png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
   volume_by_bus_plot(bus, year.from, year.to)
   dev.off()
@@ -1270,17 +1295,17 @@ for(bus in buses){
 
 
 # 上半
-month.from = 1
-month.to = 6
+month.from <- 1
+month.to <- 6
 
-for(bus in buses){
+for (bus in buses) {
   # 繪圖 (在 R中呈現)
   volume_by_bus_plot(bus, year.from, year.to)
-  
+
   # 儲存圖片
-  path = paste0("images/from_", year.from - 1911, "_to_", year.to - 1911, "/", bus, "/line_chart")
+  path <- paste0("images/from_", year.from - 1911, "_to_", year.to - 1911, "/", bus, "/line_chart")
   check_path(path)
-  main = paste0(year.from - 1911, '年至', year.to - 1911, '年', month.from, '月至', month.to, '月路線', bus, '月運量')
+  main <- paste0(year.from - 1911, "年至", year.to - 1911, "年", month.from, "月至", month.to, "月路線", bus, "月運量")
   png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
   volume_by_bus_plot(bus, year.from, year.to)
   dev.off()
@@ -1288,17 +1313,17 @@ for(bus in buses){
 
 
 # 下半
-month.from = 7
-month.to = 12
+month.from <- 7
+month.to <- 12
 
-for(bus in buses){
+for (bus in buses) {
   # 繪圖 (在 R中呈現)
   volume_by_bus_plot(bus, year.from, year.to)
-  
+
   # 儲存圖片
-  path = paste0("images/from_", year.from - 1911, "_to_", year.to - 1911, "/", bus, "/line_chart")
+  path <- paste0("images/from_", year.from - 1911, "_to_", year.to - 1911, "/", bus, "/line_chart")
   check_path(path)
-  main = paste0(year.from - 1911, '年至', year.to - 1911, '年', month.from, '月至', month.to, '月路線', bus, '月運量')
+  main <- paste0(year.from - 1911, "年至", year.to - 1911, "年", month.from, "月至", month.to, "月路線", bus, "月運量")
   png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
   volume_by_bus_plot(bus, year.from, year.to)
   dev.off()
@@ -1310,78 +1335,84 @@ for(bus in buses){
 ```{r}
 monthly_gorw_up_plot <- function(bus, year) {
   color <- "gray"
-  
-  df_grow_year = df_grow.month[[bus]] %>% filter(年份 == year & 月份 %in% month.from:month.to)
+
+  df_grow_year <- df_grow.month[[bus]] %>% filter(年份 == year & 月份 %in% month.from:month.to)
   df_grow_year <- df_grow_year$成長人數
 
-  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
-  
-  plot(x = month.from:month.to,
-       y = df_grow_year,
-       type = "o",
-       lwd = 2,
-       pch = 16,
-       col = color[1],
-       xlab = "月份",
-       ylab = "成長人數",
-       ylim = c(min(df_grow_year, na.rm = T) * ifelse(min(df_grow_year, na.rm = T) > 0, 0.9, 1.1) , max(df_grow_year, na.rm = T) * 1.2),
-       cex.main = 2,
-       cex.lab = 2,
-       cex.axis = 1.5,
-       cex = 1.5,
-       xaxt = "n",
-       yaxt = "n",
-       bty = "n"
-       )
-  
-  title(main = paste0(year - 1 - 1911, '、', year - 1911, '年',
-                      month.from, '月至', month.to, '月路線',
-                      bus, '運量消長情形同期比較'), cex.main = 2, adj = 0)
-  
+  par(family = "kai", mar = c(5, 6, 4, 10)) # 字體與圖寬
+
+  plot(
+    x = month.from:month.to,
+    y = df_grow_year,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = color[1],
+    xlab = "月份",
+    ylab = "成長人數",
+    ylim = c(min(df_grow_year, na.rm = T) * ifelse(min(df_grow_year, na.rm = T) > 0, 0.9, 1.1), max(df_grow_year, na.rm = T) * 1.2),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+  )
+
+  title(main = paste0(
+    year - 1 - 1911, "、", year - 1911, "年",
+    month.from, "月至", month.to, "月路線",
+    bus, "運量消長情形同期比較"
+  ), cex.main = 2, adj = 0)
+
   # x 軸
   axis(side = 1, at = month.from:month.to, labels = month.from:month.to, cex.axis = 1.5)
-  
+
   # y 軸
   axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
 
-  grid()  # 網格線
-  
-  text(x = month.from:month.to,
-       y = df_grow_year + max(df_grow_year) * 0.01,
-       labels = df_grow_year,
-       pos = 3,            # 文字顯示在點上方
-       cex = 1.5,          # 文字大小
-       col = "black"
+  grid() # 網格線
+
+  text(
+    x = month.from:month.to,
+    y = df_grow_year + max(df_grow_year) * 0.01,
+    labels = df_grow_year,
+    pos = 3, # 文字顯示在點上方
+    cex = 1.5, # 文字大小
+    col = "black"
   )
-  
+
   # 圖例
-  legend("topright", 
-         legend = '增長量', 
-         col = color, 
-         lwd = 2, 
-         pch = 16,
-         bty = "n",
-         inset = c(-0.15, 0),
-         xpd = TRUE,
-         cex = 1.5
-         )
+  legend("topright",
+    legend = "增長量",
+    col = color,
+    lwd = 2,
+    pch = 16,
+    bty = "n",
+    inset = c(-0.15, 0),
+    xpd = TRUE,
+    cex = 1.5
+  )
 }
 
 
 # 全年
-month.from = 1
-month.to = 12
-for(bus in buses){
-  for (year in (year.from + 1):year.to){
+month.from <- 1
+month.to <- 12
+for (bus in buses) {
+  for (year in (year.from + 1):year.to) {
     # 繪圖 (在 R中呈現)
     monthly_gorw_up_plot(bus, year)
-    
+
     # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1 - 1911, '、', year - 1911, '年',
-                  month.from, '月至', month.to, '月路線',
-                  bus, '運量消長情形同期比較')
+    main <- paste0(
+      year - 1 - 1911, "、", year - 1911, "年",
+      month.from, "月至", month.to, "月路線",
+      bus, "運量消長情形同期比較"
+    )
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     monthly_gorw_up_plot(bus, year)
     dev.off()
@@ -1390,19 +1421,21 @@ for(bus in buses){
 
 
 # 上半
-month.from = 1
-month.to = 6
-for(bus in buses){
-  for (year in (year.from + 1):year.to){
+month.from <- 1
+month.to <- 6
+for (bus in buses) {
+  for (year in (year.from + 1):year.to) {
     # 繪圖 (在 R中呈現)
     monthly_gorw_up_plot(bus, year)
-    
+
     # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1 - 1911, '、', year - 1911, '年',
-                  month.from, '月至', month.to, '月路線',
-                  bus, '運量消長情形同期比較')
+    main <- paste0(
+      year - 1 - 1911, "、", year - 1911, "年",
+      month.from, "月至", month.to, "月路線",
+      bus, "運量消長情形同期比較"
+    )
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     monthly_gorw_up_plot(bus, year)
     dev.off()
@@ -1411,19 +1444,21 @@ for(bus in buses){
 
 
 # 下半
-month.from = 7
-month.to = 12
-for(bus in buses){
-  for (year in (year.from + 1):year.to){
+month.from <- 7
+month.to <- 12
+for (bus in buses) {
+  for (year in (year.from + 1):year.to) {
     # 繪圖 (在 R中呈現)
     monthly_gorw_up_plot(bus, year)
-    
+
     # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1 - 1911, '、', year - 1911, '年',
-                  month.from, '月至', month.to, '月路線',
-                  bus, '運量消長情形同期比較')
+    main <- paste0(
+      year - 1 - 1911, "、", year - 1911, "年",
+      month.from, "月至", month.to, "月路線",
+      bus, "運量消長情形同期比較"
+    )
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     monthly_gorw_up_plot(bus, year)
     dev.off()
@@ -1437,80 +1472,86 @@ for(bus in buses){
 # 月平假日增長量
 weekday_and_weekend_gorw_up_plot <- function(bus, year) {
   color <- gray.colors(3)
-  
-  df_grow_year = df_grow.week[[bus]] %>%  filter(年份 == year & 月份 %in% month.from:month.to)
-  df_grow_weekday <- (df_grow_year %>% filter(平日或假日 == '平日'))$平均成長人數
-  df_grow_weekend <- (df_grow_year %>% filter(平日或假日 == '假日'))$平均成長人數
 
-  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
-  
-  plot(x = month.from:month.to,
-       y = df_grow_weekday,
-       type = "o",
-       lwd = 2,
-       pch = 16,
-       col = color[1],
-       xlab = "月份",
-       ylab = "成長人數",
-       ylim = c(min(df_grow_year$平均成長人數, na.rm = T) * ifelse(min(df_grow_year$平均成長人數, na.rm = T) > 0, 0.9, 1.1) , max(df_grow_year$平均成長人數, na.rm = T) * 1.1),
-       cex.main = 2,
-       cex.lab = 2,
-       cex.axis = 1.5,
-       cex = 1.5,
-       xaxt = "n",
-       yaxt = "n",
-       bty = "n"
-       )
-  
-  title(main = paste0(year - 1 - 1911, '、', year - 1911, '年',
-                      month.from, '月至', month.to, '月路線',
-                      bus, '平假日日均次數消長情形'), cex.main = 2, adj = 0)
-  
+  df_grow_year <- df_grow.week[[bus]] %>% filter(年份 == year & 月份 %in% month.from:month.to)
+  df_grow_weekday <- (df_grow_year %>% filter(平日或假日 == "平日"))$平均成長人數
+  df_grow_weekend <- (df_grow_year %>% filter(平日或假日 == "假日"))$平均成長人數
+
+  par(family = "kai", mar = c(5, 6, 4, 10)) # 字體與圖寬
+
+  plot(
+    x = month.from:month.to,
+    y = df_grow_weekday,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = color[1],
+    xlab = "月份",
+    ylab = "成長人數",
+    ylim = c(min(df_grow_year$平均成長人數, na.rm = T) * ifelse(min(df_grow_year$平均成長人數, na.rm = T) > 0, 0.9, 1.1), max(df_grow_year$平均成長人數, na.rm = T) * 1.1),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+  )
+
+  title(main = paste0(
+    year - 1 - 1911, "、", year - 1911, "年",
+    month.from, "月至", month.to, "月路線",
+    bus, "平假日日均次數消長情形"
+  ), cex.main = 2, adj = 0)
+
   # x 軸
   axis(side = 1, at = month.from:month.to, labels = month.from:month.to, cex.axis = 1.5)
-  
+
   # y 軸
   axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
-  
-  lines(x = month.from:month.to,
-        y = df_grow_weekend,
-        type = "o",
-        lwd = 2,
-        pch = 16,
-        cex = 1.5,
-        col = color[2]
-        )
 
-  grid()  # 網格線
-  
+  lines(
+    x = month.from:month.to,
+    y = df_grow_weekend,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    cex = 1.5,
+    col = color[2]
+  )
+
+  grid() # 網格線
+
   # 圖例
-  legend("topright", 
-         legend = c('平日', '假日'), 
-         col = color, 
-         lwd = 2, 
-         pch = 16,
-         bty = "n",
-         inset = c(-0.15, 0),
-         xpd = TRUE,
-         cex = 1.5
-         )
+  legend("topright",
+    legend = c("平日", "假日"),
+    col = color,
+    lwd = 2,
+    pch = 16,
+    bty = "n",
+    inset = c(-0.15, 0),
+    xpd = TRUE,
+    cex = 1.5
+  )
 }
 
 
 # 全年
-month.from = 1
-month.to = 12
-for(bus in buses){
-  for (year in (year.from + 1):year.to){
+month.from <- 1
+month.to <- 12
+for (bus in buses) {
+  for (year in (year.from + 1):year.to) {
     # 繪圖 (在 R中呈現)
     weekday_and_weekend_gorw_up_plot(bus, year)
-    
+
     # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1 - 1911, '、', year - 1911, '年',
-                      month.from, '月至', month.to, '月路線',
-                      bus, '平假日日均次數消長情形')
+    main <- paste0(
+      year - 1 - 1911, "、", year - 1911, "年",
+      month.from, "月至", month.to, "月路線",
+      bus, "平假日日均次數消長情形"
+    )
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     weekday_and_weekend_gorw_up_plot(bus, year)
     dev.off()
@@ -1519,19 +1560,21 @@ for(bus in buses){
 
 
 # 上半
-month.from = 1
-month.to = 6
-for(bus in buses){
-  for (year in (year.from + 1):year.to){
+month.from <- 1
+month.to <- 6
+for (bus in buses) {
+  for (year in (year.from + 1):year.to) {
     # 繪圖 (在 R中呈現)
     weekday_and_weekend_gorw_up_plot(bus, year)
-    
+
     # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1 - 1911, '、', year - 1911, '年',
-                      month.from, '月至', month.to, '月路線',
-                      bus, '平假日日均次數消長情形')
+    main <- paste0(
+      year - 1 - 1911, "、", year - 1911, "年",
+      month.from, "月至", month.to, "月路線",
+      bus, "平假日日均次數消長情形"
+    )
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     weekday_and_weekend_gorw_up_plot(bus, year)
     dev.off()
@@ -1540,19 +1583,21 @@ for(bus in buses){
 
 
 # 下半
-month.from = 7
-month.to = 12
-for(bus in buses){
-  for (year in (year.from + 1):year.to){
+month.from <- 7
+month.to <- 12
+for (bus in buses) {
+  for (year in (year.from + 1):year.to) {
     # 繪圖 (在 R中呈現)
     weekday_and_weekend_gorw_up_plot(bus, year)
-    
+
     # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1 - 1911, '、', year - 1911, '年',
-                      month.from, '月至', month.to, '月路線',
-                      bus, '平假日日均次數消長情形')
+    main <- paste0(
+      year - 1 - 1911, "、", year - 1911, "年",
+      month.from, "月至", month.to, "月路線",
+      bus, "平假日日均次數消長情形"
+    )
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     weekday_and_weekend_gorw_up_plot(bus, year)
     dev.off()
@@ -1564,65 +1609,69 @@ for(bus in buses){
 
 ```{r}
 tick_type_histgram <- function(bus, year) {
-  months = generate_months(year, year, month.from, month.to)
-  
-  df_ticket = data.frame()
-  for(month_index in months){
-    df_ticket = rbind(df_ticket,
-                      df[[month_index]][[bus]])
+  months <- generate_months(year, year, month.from, month.to)
+
+  df_ticket <- data.frame()
+  for (month_index in months) {
+    df_ticket <- rbind(
+      df_ticket,
+      df[[month_index]][[bus]]
+    )
   }
 
   df_ticket <- convert_holder_type(df_ticket$交易票種) %>% table()
   color <- gray.colors(length(df_ticket))
-  
-  par(family = "kai", mar = c(5, 6, 4, 3))  # 字體與圖寬
-  
-  bp <- barplot(height = df_ticket,
-                col = color,
-                xlab = "票種",
-                ylab = "數量",
-                las = 1,
-                cex.main = 2,
-                cex.lab = 2,
-                cex.axis = 1.5,
-                cex = 1.5,
-                yaxt = "n",
-                main = "",
-                ylim = c(0, max(df_ticket) * 1.1)
-                )
 
-  title(main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '搭車票種'), cex.main = 2, adj = 0)
-  
+  par(family = "kai", mar = c(5, 6, 4, 3)) # 字體與圖寬
+
+  bp <- barplot(
+    height = df_ticket,
+    col = color,
+    xlab = "票種",
+    ylab = "數量",
+    las = 1,
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    yaxt = "n",
+    main = "",
+    ylim = c(0, max(df_ticket) * 1.1)
+  )
+
+  title(main = paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "搭車票種"), cex.main = 2, adj = 0)
+
   # x 軸
-  #axis(side = 1, at = 1:length(df_ticket), labels = c(names(df_ticket)), cex.axis = 1.5)
-  
+  # axis(side = 1, at = 1:length(df_ticket), labels = c(names(df_ticket)), cex.axis = 1.5)
+
   # y 軸
   axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
-  
+
   # 百分比
   labels <- paste0(round(df_ticket * 100 / sum(df_ticket)), "%")
-  
-  text(x = bp, 
-       y = df_ticket, 
-       labels = labels, 
-       pos = 3,
-       cex = 1.5)
-  
+
+  text(
+    x = bp,
+    y = df_ticket,
+    labels = labels,
+    pos = 3,
+    cex = 1.5
+  )
 }
 
 
 # 全年
-month.from = 1
-month.to = 12
-for(bus in buses){
-  for (year in year.from:year.to){
+month.from <- 1
+month.to <- 12
+for (bus in buses) {
+  for (year in year.from:year.to) {
     # 繪圖 (在 R中呈現)
     tick_type_histgram(bus, year)
-    
+
     # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/barplot")
+    path <- paste0("images/", year - 1911, "/", bus, "/barplot")
     check_path(path)
-    main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '搭車票種')
+    main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "搭車票種")
     png(filename = paste0(path, "/", main, ".png"), width = 13.79, height = 8.25, units = "in", res = 300, family = "kai")
     tick_type_histgram(bus, year)
     dev.off()
@@ -1631,17 +1680,17 @@ for(bus in buses){
 
 
 # 上半
-month.from = 1
-month.to = 6
-for(bus in buses){
-  for (year in year.from:year.to){
+month.from <- 1
+month.to <- 6
+for (bus in buses) {
+  for (year in year.from:year.to) {
     # 繪圖 (在 R中呈現)
     tick_type_histgram(bus, year)
-    
+
     # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/barplot")
+    path <- paste0("images/", year - 1911, "/", bus, "/barplot")
     check_path(path)
-    main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '搭車票種')
+    main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "搭車票種")
     png(filename = paste0(path, "/", main, ".png"), width = 13.79, height = 8.25, units = "in", res = 300, family = "kai")
     tick_type_histgram(bus, year)
     dev.off()
@@ -1650,17 +1699,17 @@ for(bus in buses){
 
 
 # 下半
-month.from = 7
-month.to = 12
-for(bus in buses){
-  for (year in year.from:year.to){
+month.from <- 7
+month.to <- 12
+for (bus in buses) {
+  for (year in year.from:year.to) {
     # 繪圖 (在 R中呈現)
     tick_type_histgram(bus, year)
-    
+
     # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/barplot")
+    path <- paste0("images/", year - 1911, "/", bus, "/barplot")
     check_path(path)
-    main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '搭車票種')
+    main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "搭車票種")
     png(filename = paste0(path, "/", main, ".png"), width = 13.79, height = 8.25, units = "in", res = 300, family = "kai")
     tick_type_histgram(bus, year)
     dev.off()
@@ -1673,72 +1722,76 @@ for(bus in buses){
 ```{r}
 # 路線搭車票種長條圖 (去程，direction = 0; 回程，direction = 1)
 tick_type_direction_histgram <- function(bus, year, direction) {
-  months = generate_months(year, year, month.from, month.to)
-  
-  df_ticket = data.frame()
-  for(month_index in months){
-    idx = ifelse (df[[month_index]][[bus]][["去返程"]] == "里程去程",
-                        0,
-                        1
-    )  # 去程為 0，回程為 1
-    df_ticket = rbind(df_ticket,
-                      df[[month_index]][[bus]][
-                        idx == direction, ]
-                      )
+  months <- generate_months(year, year, month.from, month.to)
+
+  df_ticket <- data.frame()
+  for (month_index in months) {
+    idx <- ifelse(df[[month_index]][[bus]][["去返程"]] == "里程去程",
+      0,
+      1
+    ) # 去程為 0，回程為 1
+    df_ticket <- rbind(
+      df_ticket,
+      df[[month_index]][[bus]][
+        idx == direction,
+      ]
+    )
   }
-  
+
   df_ticket <- convert_holder_type(df_ticket$交易票種) %>% table()
   color <- gray.colors(length(df_ticket))
-  
-  par(family = "kai", mar = c(5, 6, 4, 3))  # 字體與圖寬
-  
-  bp <- barplot(height = df_ticket,
-                col = color,
-                xlab = "票種",
-                ylab = "數量",
-                las = 1,
-                cex.main = 2,
-                cex.lab = 2,
-                cex.axis = 1.5,
-                cex = 1.5,
-                yaxt = "n",
-                main = "",
-                ylim = c(0, max(df_ticket) * 1.1)
-                )
 
-  title(main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, ifelse(direction == 0, '去程', '回程'), '搭車票種'), cex.main = 2, adj = 0)
-  
+  par(family = "kai", mar = c(5, 6, 4, 3)) # 字體與圖寬
+
+  bp <- barplot(
+    height = df_ticket,
+    col = color,
+    xlab = "票種",
+    ylab = "數量",
+    las = 1,
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    yaxt = "n",
+    main = "",
+    ylim = c(0, max(df_ticket) * 1.1)
+  )
+
+  title(main = paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, ifelse(direction == 0, "去程", "回程"), "搭車票種"), cex.main = 2, adj = 0)
+
   # x 軸
-  #axis(side = 1, at = 1:length(df_ticket), labels = c(names(df_ticket)), cex.axis = 1.5)
-  
+  # axis(side = 1, at = 1:length(df_ticket), labels = c(names(df_ticket)), cex.axis = 1.5)
+
   # y 軸
   axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
-  
+
   # 百分比
   labels <- paste0(round(df_ticket * 100 / sum(df_ticket)), "%")
-  
-  text(x = bp, 
-       y = df_ticket, 
-       labels = labels, 
-       pos = 3,
-       cex = 1.5)
-  
+
+  text(
+    x = bp,
+    y = df_ticket,
+    labels = labels,
+    pos = 3,
+    cex = 1.5
+  )
 }
 
 
 # 全年
-month.from = 1
-month.to = 12
-for (direction in 0:1){
-  for(bus in buses){
-    for (year in year.from:year.to){
+month.from <- 1
+month.to <- 12
+for (direction in 0:1) {
+  for (bus in buses) {
+    for (year in year.from:year.to) {
       # 繪圖 (在 R中呈現)
       tick_type_direction_histgram(bus, year, direction)
-      
+
       # 儲存圖片
-      path = paste0("images/", year - 1911, "/", bus, "/barplot")
+      path <- paste0("images/", year - 1911, "/", bus, "/barplot")
       check_path(path)
-      main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, ifelse(direction == 0, '去程', '回程'), '搭車票種')
+      main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, ifelse(direction == 0, "去程", "回程"), "搭車票種")
       png(filename = paste0(path, "/", main, ".png"), width = 13.79, height = 8.25, units = "in", res = 300, family = "kai")
       tick_type_direction_histgram(bus, year, direction)
       dev.off()
@@ -1749,18 +1802,18 @@ for (direction in 0:1){
 
 
 # 上半
-month.from = 1
-month.to = 6
-for (direction in 0:1){
-  for(bus in buses){
-    for (year in year.from:year.to){
+month.from <- 1
+month.to <- 6
+for (direction in 0:1) {
+  for (bus in buses) {
+    for (year in year.from:year.to) {
       # 繪圖 (在 R中呈現)
       tick_type_direction_histgram(bus, year, direction)
-      
+
       # 儲存圖片
-      path = paste0("images/", year - 1911, "/", bus, "/barplot")
+      path <- paste0("images/", year - 1911, "/", bus, "/barplot")
       check_path(path)
-      main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, ifelse(direction == 0, '去程', '回程'), '搭車票種')
+      main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, ifelse(direction == 0, "去程", "回程"), "搭車票種")
       png(filename = paste0(path, "/", main, ".png"), width = 13.79, height = 8.25, units = "in", res = 300, family = "kai")
       tick_type_direction_histgram(bus, year, direction)
       dev.off()
@@ -1770,18 +1823,18 @@ for (direction in 0:1){
 
 
 # 下半
-month.from = 7
-month.to = 12
-for (direction in 0:1){
-  for(bus in buses){
-    for (year in year.from:year.to){
+month.from <- 7
+month.to <- 12
+for (direction in 0:1) {
+  for (bus in buses) {
+    for (year in year.from:year.to) {
       # 繪圖 (在 R中呈現)
       tick_type_direction_histgram(bus, year, direction)
-      
+
       # 儲存圖片
-      path = paste0("images/", year - 1911, "/", bus, "/barplot")
+      path <- paste0("images/", year - 1911, "/", bus, "/barplot")
       check_path(path)
-      main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, ifelse(direction == 0, '去程', '回程'), '搭車票種')
+      main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, ifelse(direction == 0, "去程", "回程"), "搭車票種")
       png(filename = paste0(path, "/", main, ".png"), width = 13.79, height = 8.25, units = "in", res = 300, family = "kai")
       tick_type_direction_histgram(bus, year, direction)
       dev.off()
@@ -1795,126 +1848,125 @@ for (direction in 0:1){
 ```{r}
 # 平假日路線各上下車站點票種直方疊圖 (去程，direction = 0; 回程，direction = 1)
 tick_type_week_day_direction_histgram <- function(bus, year, week_day, direction, boarding) {
-  months = generate_months(year, year, month.from, month.to)
-  if (week_day == '平日'){
-    weekday = c("星期一", "星期二", "星期三", "星期四", "星期五")
+  months <- generate_months(year, year, month.from, month.to)
+  if (week_day == "平日") {
+    weekday <- c("星期一", "星期二", "星期三", "星期四", "星期五")
   } else {
-    weekday = c("星期六", "星期日")
+    weekday <- c("星期六", "星期日")
   }
   df_ticket <- data.frame()
   for (month_index in months) {
     df_month <- df[[month_index]][[bus]]
-    idx = ifelse (df_month$"去返程" == "里程去程",
-                        0,
-                        1
-    )  # 去程為 0，回程為 1
+    idx <- ifelse(df_month$"去返程" == "里程去程",
+      0,
+      1
+    ) # 去程為 0，回程為 1
     df_month <- df_month[idx == direction, ]
     df_ticket <- rbind(df_ticket, df_month)
   }
 
-  df_ticket <- df_ticket[df_ticket$Weekday %in% weekday, ]  # 抓取平假日 
-  if (boarding){
-    df_ticket <- df_ticket[!is.na(df_ticket$上車招呼站名稱), ]  #移除逃票
+  df_ticket <- df_ticket[df_ticket$Weekday %in% weekday, ] # 抓取平假日
+  if (boarding) {
+    df_ticket <- df_ticket[!is.na(df_ticket$上車招呼站名稱), ] # 移除逃票
     table_limit <- max(table(df_ticket$上車招呼站名稱))
   } else {
-    df_ticket <- df_ticket[!is.na(df_ticket$下車招呼站名稱), ]  #移除逃票
+    df_ticket <- df_ticket[!is.na(df_ticket$下車招呼站名稱), ] # 移除逃票
     table_limit <- max(table(df_ticket$下車招呼站名稱))
   }
-  
+
   df_ticket$交易票種 <- convert_holder_type(df_ticket$交易票種)
 
-  if (boarding){
+  if (boarding) {
     # 建立完整的票種統計表
     ticket_count_full <- table(df_ticket$交易票種, df_ticket$上車招呼站名稱)
-    
+
     # 將表格轉換為資料框進行處理
     ticket_df <- as.data.frame.table(ticket_count_full)
     names(ticket_df) <- c("票種", "站點", "次數")
-    
+
     # 計算各站點總運量並選取前十名（包含並列）
     station_summary <- ticket_df %>%
       group_by(站點) %>%
       summarise(總運量 = sum(次數)) %>%
-      top_n(10, 總運量) %>% 
+      top_n(10, 總運量) %>%
       arrange(總運量)
-    
+
     # 篩選原始資料
     top_stations <- station_summary$站點
     ticket_count <- ticket_count_full[, as.character(top_stations)]
-        
   } else {
     # 建立完整的票種統計表
     ticket_count_full <- table(df_ticket$交易票種, df_ticket$下車招呼站名稱)
-    
+
     # 將表格轉換為資料框進行處理
     ticket_df <- as.data.frame.table(ticket_count_full)
     names(ticket_df) <- c("票種", "站點", "次數")
-    
+
     # 計算各站點總運量並選取前十名（包含並列）
     station_summary <- ticket_df %>%
       group_by(站點) %>%
       summarise(總運量 = sum(次數)) %>%
-      top_n(10, 總運量) %>% 
+      top_n(10, 總運量) %>%
       arrange(總運量)
-    
+
     # 篩選原始資料
     top_stations <- station_summary$站點
     ticket_count <- ticket_count_full[, as.character(top_stations)]
   }
   color <- gray.colors(nrow(ticket_count))
-  #color <- rainbow(nrow(ticket_count))
-  
-  par(family = "kai", mar = c(5, 13, 2, 6))  # 字體與圖寬 c(bottom, left, top, right)
-  
-  barplot(height = ticket_count,
-          col = color,
-          xlab = "票種疊圖",
-          #ylab = "站別",
-          las = 1,
-          horiz = TRUE,
-          cex.main = 2,
-          cex.lab = 2,
-          cex.axis = 1.5,
-          cex = 1.5,
-          #yaxt = "n",
-          main = "",
-          xlim = c(0, table_limit * 1.1)
-          )
+  # color <- rainbow(nrow(ticket_count))
 
-  title(main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, ifelse(direction == 0, '去程', '回程'), ifelse(week_day == '平日', '平日', '假日'), '各', ifelse(boarding, '上', '下'), '車站點票種直方疊圖'), cex.main = 2, adj = 0)
-  
+  par(family = "kai", mar = c(5, 13, 2, 6)) # 字體與圖寬 c(bottom, left, top, right)
+
+  barplot(
+    height = ticket_count,
+    col = color,
+    xlab = "票種疊圖",
+    # ylab = "站別",
+    las = 1,
+    horiz = TRUE,
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    # yaxt = "n",
+    main = "",
+    xlim = c(0, table_limit * 1.1)
+  )
+
+  title(main = paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, ifelse(direction == 0, "去程", "回程"), ifelse(week_day == "平日", "平日", "假日"), "各", ifelse(boarding, "上", "下"), "車站點票種直方疊圖"), cex.main = 2, adj = 0)
+
   # x 軸
-  #axis(side = 1, at = 1:length(ticket_count), labels = c(names(ticket_count)), cex.axis = 1.5)
-  
-  # y 軸
-  #axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
-  
-    # 圖例
-  legend("right", 
-         legend = rownames(ticket_count), 
-         fill =  color, 
-         title = "票種",
-         cex = 1.5
-         )
+  # axis(side = 1, at = 1:length(ticket_count), labels = c(names(ticket_count)), cex.axis = 1.5)
 
+  # y 軸
+  # axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
+
+  # 圖例
+  legend("right",
+    legend = rownames(ticket_count),
+    fill = color,
+    title = "票種",
+    cex = 1.5
+  )
 }
 
 
 # 全年
-month.from = 1
-month.to = 12
-for(boarding in c(TRUE, FALSE)){
-  for (week_day in c('平日', '假日')){
-    for (direction in 0:1){
-      for(bus in buses){
-        for (year in year.from:year.to){
+month.from <- 1
+month.to <- 12
+for (boarding in c(TRUE, FALSE)) {
+  for (week_day in c("平日", "假日")) {
+    for (direction in 0:1) {
+      for (bus in buses) {
+        for (year in year.from:year.to) {
           # 繪圖 (在 R中呈現)
           tick_type_week_day_direction_histgram(bus, year, week_day, direction, boarding)
-          
+
           # 儲存圖片
-          path = paste0("images/", year - 1911, "/", bus, "/barplot")
+          path <- paste0("images/", year - 1911, "/", bus, "/barplot")
           check_path(path)
-          main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, ifelse(direction == 0, '去程', '回程'), ifelse(week_day == '平日', '平日', '假日'), '各', ifelse(boarding, '上', '下'), '車站點票種直方疊圖')
+          main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, ifelse(direction == 0, "去程", "回程"), ifelse(week_day == "平日", "平日", "假日"), "各", ifelse(boarding, "上", "下"), "車站點票種直方疊圖")
           png(filename = paste0(path, "/", main, ".png"), width = 13.79, height = 8.25, units = "in", res = 300, family = "kai")
           tick_type_week_day_direction_histgram(bus, year, week_day, direction, boarding)
           dev.off()
@@ -1926,20 +1978,20 @@ for(boarding in c(TRUE, FALSE)){
 
 
 # 上半
-month.from = 1
-month.to = 6
-for(boarding in c(TRUE, FALSE)){
-  for (week_day in c('平日', '假日')){
-    for (direction in 0:1){
-      for(bus in buses){
-        for (year in year.from:year.to){
+month.from <- 1
+month.to <- 6
+for (boarding in c(TRUE, FALSE)) {
+  for (week_day in c("平日", "假日")) {
+    for (direction in 0:1) {
+      for (bus in buses) {
+        for (year in year.from:year.to) {
           # 繪圖 (在 R中呈現)
           tick_type_week_day_direction_histgram(bus, year, week_day, direction, boarding)
-          
+
           # 儲存圖片
-          path = paste0("images/", year - 1911, "/", bus, "/barplot")
+          path <- paste0("images/", year - 1911, "/", bus, "/barplot")
           check_path(path)
-          main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, ifelse(direction == 0, '去程', '回程'), ifelse(week_day == '平日', '平日', '假日'), '各', ifelse(boarding, '上', '下'), '車站點票種直方疊圖')
+          main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, ifelse(direction == 0, "去程", "回程"), ifelse(week_day == "平日", "平日", "假日"), "各", ifelse(boarding, "上", "下"), "車站點票種直方疊圖")
           png(filename = paste0(path, "/", main, ".png"), width = 13.79, height = 8.25, units = "in", res = 300, family = "kai")
           tick_type_week_day_direction_histgram(bus, year, week_day, direction, boarding)
           dev.off()
@@ -1951,20 +2003,20 @@ for(boarding in c(TRUE, FALSE)){
 
 
 # 下半
-month.from = 7
-month.to = 12
-for(boarding in c(TRUE, FALSE)){
-  for (week_day in c('平日', '假日')){
-    for (direction in 0:1){
-      for(bus in buses){
-        for (year in year.from:year.to){
+month.from <- 7
+month.to <- 12
+for (boarding in c(TRUE, FALSE)) {
+  for (week_day in c("平日", "假日")) {
+    for (direction in 0:1) {
+      for (bus in buses) {
+        for (year in year.from:year.to) {
           # 繪圖 (在 R中呈現)
           tick_type_week_day_direction_histgram(bus, year, week_day, direction, boarding)
-          
+
           # 儲存圖片
-          path = paste0("images/", year - 1911, "/", bus, "/barplot")
+          path <- paste0("images/", year - 1911, "/", bus, "/barplot")
           check_path(path)
-          main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, ifelse(direction == 0, '去程', '回程'), ifelse(week_day == '平日', '平日', '假日'), '各', ifelse(boarding, '上', '下'), '車站點票種直方疊圖')
+          main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, ifelse(direction == 0, "去程", "回程"), ifelse(week_day == "平日", "平日", "假日"), "各", ifelse(boarding, "上", "下"), "車站點票種直方疊圖")
           png(filename = paste0(path, "/", main, ".png"), width = 13.79, height = 8.25, units = "in", res = 300, family = "kai")
           tick_type_week_day_direction_histgram(bus, year, week_day, direction, boarding)
           dev.off()
@@ -1984,79 +2036,81 @@ for(boarding in c(TRUE, FALSE)){
 ```{r}
 # 個別TPASS運量
 tpass_plot <- function(bus, year.to) {
-  months = c("202310", "202311", "202312", generate_months(2024, year.to, 1, 12))
+  months <- c("202310", "202311", "202312", generate_months(2024, year.to, 1, 12))
   x_dates <- as.Date(paste0(months, "01"), format = "%Y%m%d")
 
-  tpass = NULL
-  for(month_index in months){
-    temp = ifelse (is.null(df[[month_index]][[bus]][["交易票種"]]),
-            0,
-            table(convert_holder_type(df[[month_index]][[bus]][["交易票種"]]))[["TPASS"]])
-    tpass = c(tpass, temp)
+  tpass <- NULL
+  for (month_index in months) {
+    temp <- ifelse(is.null(df[[month_index]][[bus]][["交易票種"]]),
+      0,
+      table(convert_holder_type(df[[month_index]][[bus]][["交易票種"]]))[["TPASS"]]
+    )
+    tpass <- c(tpass, temp)
   }
-  
-  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
-  
-  plot(x = x_dates,
-       y = tpass,
-       type = "o",
-       lwd = 2,
-       pch = 16,
-       col = "gray",
-       xlab = "月份",
-       ylab = "搭乘次數",
-       ylim = c(min(tpass) * 0.9, max(tpass) * 1.1),
-       cex.main = 2,
-       cex.lab = 2,
-       cex.axis = 1.5,
-       cex = 1.5,
-       xaxt = "n",
-       yaxt = "n",
-       bty = "n"
-       )
-  months = as.character(as.numeric(months) - 191100)
-  title(main = paste0('112年10月至', year.to - 1911, '年12月路線', bus, 'TPASS搭乘次數折線圖'), cex.main = 2, adj = 0)
-  
+
+  par(family = "kai", mar = c(5, 6, 4, 10)) # 字體與圖寬
+
+  plot(
+    x = x_dates,
+    y = tpass,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = "gray",
+    xlab = "月份",
+    ylab = "搭乘次數",
+    ylim = c(min(tpass) * 0.9, max(tpass) * 1.1),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+  )
+  months <- as.character(as.numeric(months) - 191100)
+  title(main = paste0("112年10月至", year.to - 1911, "年12月路線", bus, "TPASS搭乘次數折線圖"), cex.main = 2, adj = 0)
+
   # x 軸
   axis(side = 1, at = x_dates, labels = months, cex.axis = 1.5)
-  
+
   # y 軸
   axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
-  
-  text(x = x_dates,
-       y = tpass + max(tpass) * 0.02,
-       labels = tpass,
-       pos = 3,            # 文字顯示在點上方
-       cex = 1.5,          # 文字大小
-       col = "black"
+
+  text(
+    x = x_dates,
+    y = tpass + max(tpass) * 0.02,
+    labels = tpass,
+    pos = 3, # 文字顯示在點上方
+    cex = 1.5, # 文字大小
+    col = "black"
   )
-  
-  grid()  # 網格線
-  
+
+  grid() # 網格線
+
   # 圖例
-  legend("topright", 
-         legend = paste0(bus, '路線'), 
-         col = "gray", 
-         lwd = 2, 
-         pch = 16,
-         bty = "n",
-         inset = c(-0.15, 0),
-         xpd = TRUE,
-         cex = 1.5
-         )
+  legend("topright",
+    legend = paste0(bus, "路線"),
+    col = "gray",
+    lwd = 2,
+    pch = 16,
+    bty = "n",
+    inset = c(-0.15, 0),
+    xpd = TRUE,
+    cex = 1.5
+  )
 }
 
 # 畫到至今為止的圖
-for (year in 2024:year.to){
-  for (bus in buses){
-  
-  # 繪圖 (在 R中呈現)
+for (year in 2024:year.to) {
+  for (bus in buses) {
+    # 繪圖 (在 R中呈現)
     tpass_plot(bus, year)
-    
-  # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
-    check_path(path) 
-    main = paste0('112年10月至', year.to - 1911, '年12月路線', bus, 'TPASS搭乘次數折線圖')
+
+    # 儲存圖片
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
+    check_path(path)
+    main <- paste0("112年10月至", year.to - 1911, "年12月路線", bus, "TPASS搭乘次數折線圖")
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     tpass_plot(bus, year)
     dev.off()
@@ -2069,82 +2123,85 @@ for (year in 2024:year.to){
 ```{r}
 # 個別TPASS運量
 tpass_total_plot <- function(year.to) {
-  months = c("202310", "202311", "202312", generate_months(2024, year.to, 1, 12))
+  months <- c("202310", "202311", "202312", generate_months(2024, year.to, 1, 12))
   x_dates <- as.Date(paste0(months, "01"), format = "%Y%m%d")
 
-  tpass_total = data.frame()
-  for(bus in buses){
-    tpass = NULL
-    for(month_index in months){
-      temp = ifelse (is.null(df[[month_index]][[bus]][["交易票種"]]),
-              0,
-              table(convert_holder_type(df[[month_index]][[bus]][["交易票種"]]))[["TPASS"]])
-      tpass = c(tpass, temp)
+  tpass_total <- data.frame()
+  for (bus in buses) {
+    tpass <- NULL
+    for (month_index in months) {
+      temp <- ifelse(is.null(df[[month_index]][[bus]][["交易票種"]]),
+        0,
+        table(convert_holder_type(df[[month_index]][[bus]][["交易票種"]]))[["TPASS"]]
+      )
+      tpass <- c(tpass, temp)
     }
-    tpass_total = rbind(tpass_total, tpass)
+    tpass_total <- rbind(tpass_total, tpass)
   }
-  tpass_total = unname(apply(tpass_total, 2, sum))
-  
-  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
-  
-  plot(x = x_dates,
-       y = tpass_total,
-       type = "o",
-       lwd = 2,
-       pch = 16,
-       col = "gray",
-       xlab = "月份",
-       ylab = "搭乘次數",
-       ylim = c(min(tpass_total) * 0.9, max(tpass_total) * 1.1),
-       cex.main = 2,
-       cex.lab = 2,
-       cex.axis = 1.5,
-       cex = 1.5,
-       xaxt = "n",
-       yaxt = "n",
-       bty = "n"
-       )
-  months = as.character(as.numeric(months) - 191100)
-  title(main = paste0('112年10月至', year.to - 1911, '年12月普悠瑪客運TPASS搭乘次數折線圖'), cex.main = 2, adj = 0)
-  
+  tpass_total <- unname(apply(tpass_total, 2, sum))
+
+  par(family = "kai", mar = c(5, 6, 4, 10)) # 字體與圖寬
+
+  plot(
+    x = x_dates,
+    y = tpass_total,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = "gray",
+    xlab = "月份",
+    ylab = "搭乘次數",
+    ylim = c(min(tpass_total) * 0.9, max(tpass_total) * 1.1),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+  )
+  months <- as.character(as.numeric(months) - 191100)
+  title(main = paste0("112年10月至", year.to - 1911, "年12月普悠瑪客運TPASS搭乘次數折線圖"), cex.main = 2, adj = 0)
+
   # x 軸
   axis(side = 1, at = x_dates, labels = months, cex.axis = 1.5)
-  
+
   # y 軸
   axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
-  
-  text(x = x_dates,
-       y = tpass_total + max(tpass_total) * 0.02,
-       labels = tpass_total,
-       pos = 3,            # 文字顯示在點上方
-       cex = 1.5,          # 文字大小
-       col = "black"
+
+  text(
+    x = x_dates,
+    y = tpass_total + max(tpass_total) * 0.02,
+    labels = tpass_total,
+    pos = 3, # 文字顯示在點上方
+    cex = 1.5, # 文字大小
+    col = "black"
   )
-  
-  grid()  # 網格線
-  
+
+  grid() # 網格線
+
   # 圖例
-  legend("topright", 
-         legend = "總人次", 
-         col = "gray", 
-         lwd = 2, 
-         pch = 16,
-         bty = "n",
-         inset = c(-0.15, 0),
-         xpd = TRUE,
-         cex = 1.5
-         )
+  legend("topright",
+    legend = "總人次",
+    col = "gray",
+    lwd = 2,
+    pch = 16,
+    bty = "n",
+    inset = c(-0.15, 0),
+    xpd = TRUE,
+    cex = 1.5
+  )
 }
 
 # 畫到至今為止的圖
-for (year in 2024:year.to){
-# 繪圖 (在 R中呈現)
+for (year in 2024:year.to) {
+  # 繪圖 (在 R中呈現)
   tpass_total_plot(year)
-  
-# 儲存圖片
-  path = paste0("images/", year - 1911, "/total/line_chart")
+
+  # 儲存圖片
+  path <- paste0("images/", year - 1911, "/total/line_chart")
   check_path(path)
-  main = paste0('112年10月至', year.to - 1911, '年12月普悠瑪客運TPASS搭乘次數折線圖')
+  main <- paste0("112年10月至", year.to - 1911, "年12月普悠瑪客運TPASS搭乘次數折線圖")
   png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
   tpass_total_plot(year)
   dev.off()
@@ -2156,103 +2213,108 @@ for (year in 2024:year.to){
 ```{r}
 # TPASS 運量
 tpass_volume_plot <- function(bus, year) {
-  months = generate_months(year, year, month.from, month.to)
-  transport_volume = NULL
-  tpass = NULL
-  color <- gray.colors(3+1)
-  
-  for (month_index in months){
-    temp = ifelse (is.null(df[[month_index]][[bus]]),
-            0,
-            nrow(df[[month_index]][[bus]]))
-    transport_volume = c(transport_volume, temp)
-    temp = ifelse (is.null(df[[month_index]][[bus]][["交易票種"]]),
-            0,
-            table(convert_holder_type(df[[month_index]][[bus]][["交易票種"]]))[["TPASS"]])
-    tpass = c(tpass, temp)
+  months <- generate_months(year, year, month.from, month.to)
+  transport_volume <- NULL
+  tpass <- NULL
+  color <- gray.colors(3 + 1)
+
+  for (month_index in months) {
+    temp <- ifelse(is.null(df[[month_index]][[bus]]),
+      0,
+      nrow(df[[month_index]][[bus]])
+    )
+    transport_volume <- c(transport_volume, temp)
+    temp <- ifelse(is.null(df[[month_index]][[bus]][["交易票種"]]),
+      0,
+      table(convert_holder_type(df[[month_index]][[bus]][["交易票種"]]))[["TPASS"]]
+    )
+    tpass <- c(tpass, temp)
   }
 
-  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
-  
-  plot(x = month.from:month.to,
-       y = transport_volume,
-       type = "o",
-       lwd = 2,
-       pch = 16,
-       col = color[1],
-       xlab = "月份",
-       ylab = "搭乘次數",
-       ylim = c(min(tpass) * 0.9, max(transport_volume) * 1.1),
-       cex.main = 2,
-       cex.lab = 2,
-       cex.axis = 1.5,
-       cex = 1.5,
-       xaxt = "n",
-       yaxt = "n",
-       bty = "n"
-       )
-  
-  title(main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '搭乘次數折線圖'), cex.main = 2, adj = 0)
-  
+  par(family = "kai", mar = c(5, 6, 4, 10)) # 字體與圖寬
+
+  plot(
+    x = month.from:month.to,
+    y = transport_volume,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = color[1],
+    xlab = "月份",
+    ylab = "搭乘次數",
+    ylim = c(min(tpass) * 0.9, max(transport_volume) * 1.1),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+  )
+
+  title(main = paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "搭乘次數折線圖"), cex.main = 2, adj = 0)
+
   # x 軸
   axis(side = 1, at = month.from:month.to, labels = month.from:month.to, cex.axis = 1.5)
-  
+
   # y 軸
   axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
-  
-  lines(x = month.from:month.to,
-        y = tpass,
-        type = "o",
-        lwd = 2,
-        pch = 16,
-        col = color[2]
-        )
-  
-  lines(x = month.from:month.to,
-        y = transport_volume - tpass,
-        type = "o",
-        lwd = 2,
-        pch = 16,
-        col = color[3]
-        )
-  
-  text(x = month.from:month.to,
-       y = transport_volume + max(transport_volume) * 0.02,
-       labels = transport_volume,
-       pos = 3,            # 文字顯示在點上方
-       cex = 1.5,          # 文字大小
-       col = "black"
-      )
-  
-  grid()  # 網格線
-  
+
+  lines(
+    x = month.from:month.to,
+    y = tpass,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = color[2]
+  )
+
+  lines(
+    x = month.from:month.to,
+    y = transport_volume - tpass,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = color[3]
+  )
+
+  text(
+    x = month.from:month.to,
+    y = transport_volume + max(transport_volume) * 0.02,
+    labels = transport_volume,
+    pos = 3, # 文字顯示在點上方
+    cex = 1.5, # 文字大小
+    col = "black"
+  )
+
+  grid() # 網格線
+
   # 圖例
-  legend("topright", 
-         legend = c("總運量", "TPASS旅客", "其他旅客"), 
-         col = color, 
-         lwd = 2, 
-         pch = 16,
-         bty = "n",
-         inset = c(-0.17, 0),
-         xpd = TRUE,
-         cex = 1.5
-         )
+  legend("topright",
+    legend = c("總運量", "TPASS旅客", "其他旅客"),
+    col = color,
+    lwd = 2,
+    pch = 16,
+    bty = "n",
+    inset = c(-0.17, 0),
+    xpd = TRUE,
+    cex = 1.5
+  )
 }
 
 # 全年
-month.from = 1
-month.to = 12
-year.from = 2024
-for (year in year.from:year.to){
-  for (bus in buses){
-  
-  # 繪圖 (在 R中呈現)
+month.from <- 1
+month.to <- 12
+year.from <- 2024
+for (year in year.from:year.to) {
+  for (bus in buses) {
+    # 繪圖 (在 R中呈現)
     tpass_volume_plot(bus, year)
-    
-  # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+
+    # 儲存圖片
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '月運量及TPASS搭乘次數折線圖')
+    main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "月運量及TPASS搭乘次數折線圖")
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     tpass_volume_plot(bus, year)
     dev.off()
@@ -2260,19 +2322,18 @@ for (year in year.from:year.to){
 }
 
 # 上半
-month.from = 1
-month.to = 6
-year.from = 2024
-for (year in year.from:year.to){
-  for (bus in buses){
-  
-  # 繪圖 (在 R中呈現)
+month.from <- 1
+month.to <- 6
+year.from <- 2024
+for (year in year.from:year.to) {
+  for (bus in buses) {
+    # 繪圖 (在 R中呈現)
     tpass_volume_plot(bus, year)
-    
-  # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+
+    # 儲存圖片
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '月運量及TPASS搭乘次數折線圖')
+    main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "月運量及TPASS搭乘次數折線圖")
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     tpass_volume_plot(bus, year)
     dev.off()
@@ -2280,19 +2341,18 @@ for (year in year.from:year.to){
 }
 
 # 下半
-month.from = 7
-month.to = 12
-year.from = 2024
-for (year in year.from:year.to){
-  for (bus in buses){
-  
-  # 繪圖 (在 R中呈現)
+month.from <- 7
+month.to <- 12
+year.from <- 2024
+for (year in year.from:year.to) {
+  for (bus in buses) {
+    # 繪圖 (在 R中呈現)
     tpass_volume_plot(bus, year)
-    
-  # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+
+    # 儲存圖片
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '月運量及TPASS搭乘次數折線圖')
+    main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "月運量及TPASS搭乘次數折線圖")
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     tpass_volume_plot(bus, year)
     dev.off()
@@ -2305,111 +2365,116 @@ for (year in year.from:year.to){
 ```{r}
 # TPASS 日均運量
 tpass_volume_plot <- function(bus, year) {
-  months = generate_months(year, year, month.from, month.to)
-  transport_volume = NULL
-  tpass = NULL
-  month.days = NULL
-  color <- gray.colors(3+1)
-  
-  for (month_index in months){
-    temp = ifelse (is.null(df[[month_index]][[bus]]),
-            0,
-            nrow(df[[month_index]][[bus]]))
-    transport_volume = c(transport_volume, temp)
-    temp = ifelse (is.null(df[[month_index]][[bus]][["交易票種"]]),
-            0,
-            table(convert_holder_type(df[[month_index]][[bus]][["交易票種"]]))[["TPASS"]])
-    tpass = c(tpass, temp)
+  months <- generate_months(year, year, month.from, month.to)
+  transport_volume <- NULL
+  tpass <- NULL
+  month.days <- NULL
+  color <- gray.colors(3 + 1)
+
+  for (month_index in months) {
+    temp <- ifelse(is.null(df[[month_index]][[bus]]),
+      0,
+      nrow(df[[month_index]][[bus]])
+    )
+    transport_volume <- c(transport_volume, temp)
+    temp <- ifelse(is.null(df[[month_index]][[bus]][["交易票種"]]),
+      0,
+      table(convert_holder_type(df[[month_index]][[bus]][["交易票種"]]))[["TPASS"]]
+    )
+    tpass <- c(tpass, temp)
   }
-  
-  for (month_index in month.from:month.to){
-    week.days = monthly_weekday_and_weekend(year = year, month = month_index)[['Freq']]
-    month.days = c(month.days, sum(week.days))
+
+  for (month_index in month.from:month.to) {
+    week.days <- monthly_weekday_and_weekend(year = year, month = month_index)[["Freq"]]
+    month.days <- c(month.days, sum(week.days))
   }
-  
-  month.volume.per_day = transport_volume / month.days
-  tpass.volume.per_day = tpass / month.days
-  
-  par(family = "kai", mar = c(5, 6, 4, 10))  # 字體與圖寬
-  
-  plot(x = month.from:month.to,
-       y = month.volume.per_day,
-       type = "o",
-       lwd = 2,
-       pch = 16,
-       col = color[1],
-       xlab = "月份",
-       ylab = "日均人次",
-       ylim = c(min(tpass.volume.per_day) * 0.9, max(month.volume.per_day) * 1.1),
-       cex.main = 2,
-       cex.lab = 2,
-       cex.axis = 1.5,
-       cex = 1.5,
-       xaxt = "n",
-       yaxt = "n",
-       bty = "n"
-       )
-  
-  title(main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '日均搭乘次數折線圖'), cex.main = 2, adj = 0)
-  
+
+  month.volume.per_day <- transport_volume / month.days
+  tpass.volume.per_day <- tpass / month.days
+
+  par(family = "kai", mar = c(5, 6, 4, 10)) # 字體與圖寬
+
+  plot(
+    x = month.from:month.to,
+    y = month.volume.per_day,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = color[1],
+    xlab = "月份",
+    ylab = "日均人次",
+    ylim = c(min(tpass.volume.per_day) * 0.9, max(month.volume.per_day) * 1.1),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+  )
+
+  title(main = paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "日均搭乘次數折線圖"), cex.main = 2, adj = 0)
+
   # x 軸
   axis(side = 1, at = month.from:month.to, labels = month.from:month.to, cex.axis = 1.5)
-  
+
   # y 軸
   axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
-  
-  lines(x = month.from:month.to,
-        y = tpass.volume.per_day,
-        type = "o",
-        lwd = 2,
-        pch = 16,
-        col = color[2]
-        )
-  
-  lines(x = month.from:month.to,
-        y = month.volume.per_day - tpass.volume.per_day,
-        type = "o",
-        lwd = 2,
-        pch = 16,
-        col = color[3]
-        )
-  
-  text(x = month.from:month.to,
-       y = month.volume.per_day + max(month.volume.per_day) * 0.02,
-       labels = round(x = month.volume.per_day, digits = 2),
-       pos = 3,            # 文字顯示在點上方
-       cex = 1.5,          # 文字大小
-       col = "black"
-      )
-  
-  grid()  # 網格線
-  
+
+  lines(
+    x = month.from:month.to,
+    y = tpass.volume.per_day,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = color[2]
+  )
+
+  lines(
+    x = month.from:month.to,
+    y = month.volume.per_day - tpass.volume.per_day,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = color[3]
+  )
+
+  text(
+    x = month.from:month.to,
+    y = month.volume.per_day + max(month.volume.per_day) * 0.02,
+    labels = round(x = month.volume.per_day, digits = 2),
+    pos = 3, # 文字顯示在點上方
+    cex = 1.5, # 文字大小
+    col = "black"
+  )
+
+  grid() # 網格線
+
   # 圖例
-  legend("topright", 
-         legend = c("月日均", "TPASS旅客", "其他旅客"), 
-         col = color, 
-         lwd = 2, 
-         pch = 16,
-         bty = "n",
-         inset = c(-0.17, 0),
-         xpd = TRUE,
-         cex= 1.5
-         )
+  legend("topright",
+    legend = c("月日均", "TPASS旅客", "其他旅客"),
+    col = color,
+    lwd = 2,
+    pch = 16,
+    bty = "n",
+    inset = c(-0.17, 0),
+    xpd = TRUE,
+    cex = 1.5
+  )
 }
 
 # 全年
-month.from = 1
-month.to = 12
-for (year in year.from:year.to){
-  for (bus in buses){
-  
-  # 繪圖 (在 R中呈現)
+month.from <- 1
+month.to <- 12
+for (year in year.from:year.to) {
+  for (bus in buses) {
+    # 繪圖 (在 R中呈現)
     tpass_volume_plot(bus, year)
-  
-  # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+
+    # 儲存圖片
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '日均運量及TPASS搭乘次數折線圖')
+    main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "日均運量及TPASS搭乘次數折線圖")
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     tpass_volume_plot(bus, year)
     dev.off()
@@ -2417,18 +2482,17 @@ for (year in year.from:year.to){
 }
 
 # 上半
-month.from = 1
-month.to = 6
-for (year in year.from:year.to){
-  for (bus in buses){
-  
-  # 繪圖 (在 R中呈現)
+month.from <- 1
+month.to <- 6
+for (year in year.from:year.to) {
+  for (bus in buses) {
+    # 繪圖 (在 R中呈現)
     tpass_volume_plot(bus, year)
-  
-  # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+
+    # 儲存圖片
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '日均運量及TPASS搭乘次數折線圖')
+    main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "日均運量及TPASS搭乘次數折線圖")
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     tpass_volume_plot(bus, year)
     dev.off()
@@ -2436,18 +2500,17 @@ for (year in year.from:year.to){
 }
 
 # 下半
-month.from = 7
-month.to = 12
-for (year in year.from:year.to){
-  for (bus in buses){
-  
-  # 繪圖 (在 R中呈現)
+month.from <- 7
+month.to <- 12
+for (year in year.from:year.to) {
+  for (bus in buses) {
+    # 繪圖 (在 R中呈現)
     tpass_volume_plot(bus, year)
-  
-  # 儲存圖片
-    path = paste0("images/", year - 1911, "/", bus, "/line_chart")
+
+    # 儲存圖片
+    path <- paste0("images/", year - 1911, "/", bus, "/line_chart")
     check_path(path)
-    main = paste0(year - 1911, '年', month.from, '月至', month.to, '月路線', bus, '日均運量及TPASS搭乘次數折線圖')
+    main <- paste0(year - 1911, "年", month.from, "月至", month.to, "月路線", bus, "日均運量及TPASS搭乘次數折線圖")
     png(filename = paste0(path, "/", main, ".png"), width = 15, height = 5, units = "in", res = 300, family = "kai")
     tpass_volume_plot(bus, year)
     dev.off()
@@ -2459,11 +2522,13 @@ for (year in year.from:year.to){
 
 ```{r}
 # when tpass start to use
-combined_df %>% 
-  select(路線編號, 交易票種, 上車時間) %>% 
+combined_df %>%
+  select(路線編號, 交易票種, 上車時間) %>%
   mutate(轉換交易票種 = convert_holder_type(交易票種)) %>%
-  filter(轉換交易票種 == "TPASS",
-         路線編號 == "9806") %>% 
+  filter(
+    轉換交易票種 == "TPASS",
+    路線編號 == "9806"
+  ) %>%
   arrange(上車時間)
 ```
 
@@ -2471,11 +2536,11 @@ combined_df %>%
 
 ```{r}
 # 運量概括 by 俊典的 code
-year.from = 2022
-year.to = 2024
-month.from = 1
-month.to = 12
-months = generate_months(year.from, year.to, month.from, month.to)
+year.from <- 2022
+year.to <- 2024
+month.from <- 1
+month.to <- 12
+months <- generate_months(year.from, year.to, month.from, month.to)
 
 mytable <- table(year(combined_df$上車時間[-which(combined_df$路線編號 == "9808")]) - 1911, combined_df$路線編號[-which(combined_df$路線編號 == "9808")])
 addmargins(mytable, margin = 2)
@@ -2485,7 +2550,9 @@ prop.table(mytable, margin = 1) %>% round(2)
 count_df <- as.data.frame(mytable) %>% rename(年份 = Var1, 路線 = Var2, 數量 = Freq)
 
 # 比例資料
-prop_df <- prop.table(mytable, margin = 1) %>% as.data.frame() %>% rename(年份 = Var1, 路線 = Var2, 比例 = Freq)
+prop_df <- prop.table(mytable, margin = 1) %>%
+  as.data.frame() %>%
+  rename(年份 = Var1, 路線 = Var2, 比例 = Freq)
 
 # 合併數量和比例
 combined_bar_df <- left_join(count_df, prop_df, by = c("年份", "路線"))
@@ -2499,27 +2566,34 @@ total_df <- rowSums(mytable) %>%
   rename(總量 = ".") %>%
   mutate(年份 = as.numeric(rownames(.)))
 
-img_filename = paste0(year.from - 1911, "年至", year.to - 1911, "年普悠瑪客運運量趨勢")
+img_filename <- paste0(year.from - 1911, "年至", year.to - 1911, "年普悠瑪客運運量趨勢")
 
 # 繪圖
 ggplot(combined_bar_df, aes(x = 年份, y = 數量, fill = 路線)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
   geom_text(aes(label = scales::percent(比例, accuracy = 0.1)),
-            position = position_dodge(width = 0.9), 
-            vjust = -0.5, size = 3) +
-  geom_line(data = total_df, aes(x = 年份, y = 總量),
-            inherit.aes = FALSE, color = "black", linewidth = 1) +
-  geom_point(data = total_df, aes(x = 年份, y = 總量),
-             inherit.aes = FALSE, color = "black") +
+    position = position_dodge(width = 0.9),
+    vjust = -0.5, size = 3
+  ) +
+  geom_line(
+    data = total_df, aes(x = 年份, y = 總量),
+    inherit.aes = FALSE, color = "black", linewidth = 1
+  ) +
+  geom_point(
+    data = total_df, aes(x = 年份, y = 總量),
+    inherit.aes = FALSE, color = "black"
+  ) +
   scale_fill_grey(start = 0.3, end = 0.8) +
-  labs(title = img_filename,
-       y = "搭乘次數", x = "") +
+  labs(
+    title = img_filename,
+    y = "搭乘次數", x = ""
+  ) +
   theme_minimal()
 
 # 儲存圖片
-path = paste0("images/from_", year.from - 1911, "_to_", year.to - 1911, "/total/barplot")
+path <- paste0("images/from_", year.from - 1911, "_to_", year.to - 1911, "/total/barplot")
 check_path(path)
-img_filename = paste0(year.from - 1911, "年至", year.to - 1911, "年普悠瑪客運運量趨勢")
+img_filename <- paste0(year.from - 1911, "年至", year.to - 1911, "年普悠瑪客運運量趨勢")
 ggsave(filename = paste0(path, "/", img_filename, ".png"), bg = "white")
 ```
 
@@ -2528,52 +2602,56 @@ ggsave(filename = paste0(path, "/", img_filename, ".png"), bg = "white")
 ```{r}
 ## 大家都搭去哪裡 by 易軒
 # (去程，direction = 0; 回程，direction = 1)
-year.from = 2022
-year.to = 2024
-month.from = 1
-month.to = 12
-months = generate_months(year.from, year.to, month.from, month.to)
+year.from <- 2022
+year.to <- 2024
+month.from <- 1
+month.to <- 12
+months <- generate_months(year.from, year.to, month.from, month.to)
 
 library(tidyverse)
-library(reshape2)  # 用於數據重塑
+library(reshape2) # 用於數據重塑
 
-all_year_stations_heatmap = function(bus, year_index) {
+all_year_stations_heatmap <- function(bus, year_index) {
   processed_data <- combined_df %>%
-    filter(路線編號 == bus,
-           year(上車交易日期) == year_index) %>%
+    filter(
+      路線編號 == bus,
+      year(上車交易日期) == year_index
+    ) %>%
     filter(!is.na(上車招呼站名稱) & !is.na(下車招呼站名稱)) %>%
     select(上車招呼站名稱, 下車招呼站名稱) %>%
-    mutate(上車招呼站名稱 = convert_stopnames(上車招呼站名稱),
-           下車招呼站名稱 = convert_stopnames(下車招呼站名稱)) %>%
-    count(上車招呼站名稱, 下車招呼站名稱) %>% 
+    mutate(
+      上車招呼站名稱 = convert_stopnames(上車招呼站名稱),
+      下車招呼站名稱 = convert_stopnames(下車招呼站名稱)
+    ) %>%
+    count(上車招呼站名稱, 下車招呼站名稱) %>%
     arrange(desc(n))
 
   # 原始數據處理流程 (保持不變)
-  p <- 
+  p <-
     ggplot(processed_data, aes(x = 下車招呼站名稱, y = 上車招呼站名稱)) +
-      geom_tile(aes(fill = n), color = "white") +
-      #geom_text(aes(label = n), color = "black", size = 3) +  # 顯示數值標籤
-      scale_fill_gradient(low = "white", high = "black") +
-      labs(
-        title = paste0(year_index - 1911, "年路線", bus, "上下車站點熱力圖"),
-        x = "下車站點",
-        y = "上車站點",
-        fill = "搭乘次數"
-      ) +
-      theme_minimal(base_size = 20) +
-      theme(
-        axis.text.x = element_text(angle = 45, hjust = 1)
-      )
-  
+    geom_tile(aes(fill = n), color = "white") +
+    # geom_text(aes(label = n), color = "black", size = 3) +  # 顯示數值標籤
+    scale_fill_gradient(low = "white", high = "black") +
+    labs(
+      title = paste0(year_index - 1911, "年路線", bus, "上下車站點熱力圖"),
+      x = "下車站點",
+      y = "上車站點",
+      fill = "搭乘次數"
+    ) +
+    theme_minimal(base_size = 20) +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1)
+    )
+
   # 儲存圖片
-  path = paste0("images/", year_index - 1911, "/", bus, "/heatmap")
+  path <- paste0("images/", year_index - 1911, "/", bus, "/heatmap")
   check_path(path)
-  img_filename = paste0(year_index - 1911, "年路線", bus, "上下車站點熱力圖")
-  ggsave(filename = paste0(path, "/", img_filename, ".png"), bg = "white", height = 8.25,width = 13.79, plot = p)
+  img_filename <- paste0(year_index - 1911, "年路線", bus, "上下車站點熱力圖")
+  ggsave(filename = paste0(path, "/", img_filename, ".png"), bg = "white", height = 8.25, width = 13.79, plot = p)
 }
 
-for (year_index in year.from:year.to){
-  for (bus in buses){
+for (year_index in year.from:year.to) {
+  for (bus in buses) {
     all_year_stations_heatmap(bus, year_index)
   }
 }
