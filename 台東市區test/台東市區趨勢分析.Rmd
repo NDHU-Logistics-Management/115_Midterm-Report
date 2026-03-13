@@ -1,0 +1,560 @@
+---
+title: "112-114台東市區趨勢分析"
+output: html_document
+date: "2025-05-28"
+---
+
+```{r library, include=FALSE}
+library(tidyverse)
+library(lubridate)
+library(scales)
+```
+
+
+
+
+```{r read and preprocessing, include=FALSE}
+base_path <- "D:/busData/huaTTT_bus_data_23to25/臺東縣公車.csv"
+```
+
+```{r}
+bus_data <- read_csv(base_path)
+
+range(bus_data$刷卡上車時間)
+range(bus_data$`資料代表日期(yyyy-MM-dd)`)
+```
+
+```{r}
+route_lookup <- tibble(
+    路線代碼 = c("TTT0981", "TTT0982", "TTT0984", "TTT0985", "9801", "9803", "9805", "9806"),
+    對應路線名稱 = c(
+        "市區循環線",
+        "火車站-小野柳",
+        "旅服中心-火車站",
+        "航空站-火車站",
+        "市區循環線",
+        "火車站-小野柳",
+        "旅服中心-火車站",
+        "航空站-火車站"
+    )
+)
+
+target_routes <- route_lookup$路線代碼
+
+if (!file.exists(base_path)) {
+    stop("找不到資料檔：", base_path)
+}
+
+if (!str_detect(base_path, "台東|Taitung|taitung")) {
+    message("目前 base_path 為：", base_path, "。若這不是台東市區資料，請改成正確的 CSV 路徑。")
+}
+
+bus_data <- read_csv(base_path, show_col_types = FALSE)
+
+find_first_col <- function(data, candidates) {
+    matched <- candidates[candidates %in% names(data)]
+    if (length(matched) == 0) {
+        NA_character_
+    } else {
+        matched[[1]]
+    }
+}
+
+normalize_date_text <- function(x) {
+    x_chr <- as.character(x)
+    x_chr <- stringr::str_trim(x_chr)
+    x_chr <- dplyr::na_if(x_chr, "")
+    x_chr <- stringr::str_replace_all(x_chr, "[./]", "-")
+    ifelse(
+        stringr::str_detect(x_chr, "^\\d{8}$"),
+        stringr::str_replace(x_chr, "^(\\d{4})(\\d{2})(\\d{2})$", "\\1-\\2-\\3"),
+        x_chr
+    )
+}
+
+normalize_time_text <- function(x) {
+    x_chr <- as.character(x)
+    x_chr <- stringr::str_trim(x_chr)
+    x_chr <- dplyr::na_if(x_chr, "")
+    only_digits <- stringr::str_detect(x_chr, "^\\d+$")
+    x_chr[only_digits] <- stringr::str_pad(x_chr[only_digits], width = 6, side = "left", pad = "0")
+    ifelse(
+        stringr::str_detect(x_chr, "^\\d{6}$"),
+        stringr::str_replace(x_chr, "^(\\d{2})(\\d{2})(\\d{2})$", "\\1:\\2:\\3"),
+        x_chr
+    )
+}
+
+parse_datetime_vector <- function(x) {
+    parse_date_time(
+        x,
+        orders = c(
+            "Ymd HMS", "Ymd HM", "Ymd",
+            "Y-m-d H:M:S", "Y-m-d H:M", "Y-m-d",
+            "Y/m/d H:M:S", "Y/m/d H:M", "Y/m/d"
+        ),
+        quiet = TRUE,
+        tz = "Asia/Taipei"
+    )
+}
+
+build_datetime <- function(data, datetime_col, date_col, time_col) {
+    if (!is.na(datetime_col)) {
+        return(parse_datetime_vector(as.character(data[[datetime_col]])))
+    }
+
+    if (!is.na(date_col) && !is.na(time_col)) {
+        combined_text <- stringr::str_c(
+            normalize_date_text(data[[date_col]]),
+            normalize_time_text(data[[time_col]]),
+            sep = " "
+        )
+        return(parse_datetime_vector(combined_text))
+    }
+
+    if (!is.na(date_col)) {
+        if (inherits(data[[date_col]], "Date")) {
+            return(as.POSIXct(data[[date_col]], tz = "Asia/Taipei"))
+        }
+        return(parse_datetime_vector(normalize_date_text(data[[date_col]])))
+    }
+
+    as.POSIXct(rep(NA, nrow(data)), origin = "1970-01-01", tz = "Asia/Taipei")
+}
+
+normalize_ticket_type <- function(x) {
+    x_chr <- as.character(x)
+    x_chr <- stringr::str_trim(x_chr)
+    x_chr <- dplyr::na_if(x_chr, "")
+
+    result <- dplyr::case_when(
+        is.na(x_chr) ~ "其他/未知",
+        stringr::str_detect(x_chr, "^台東$|TPASS|台東通勤月票|月票|通勤月票|臺東全區公路客運＋全臺鐵|台東全區公路客運[+]全臺鐵") ~ "TPASS",
+        stringr::str_detect(x_chr, "學生") ~ "學生票",
+        stringr::str_detect(x_chr, "敬老|愛心|博愛|陪伴|兒童|優待") ~ "優待票",
+        stringr::str_detect(x_chr, "一般|普通|全票|現金|QR") ~ "一般票",
+        TRUE ~ x_chr
+    )
+
+    tidyr::replace_na(result, "其他/未知")
+}
+
+route_id_col <- find_first_col(bus_data, c("搭乘路線代碼", "路線編號", "SubRouteUID", "RouteUID", "路線代碼"))
+route_name_col <- find_first_col(bus_data, c("路線名稱", "SubRouteName", "RouteName"))
+datetime_col <- find_first_col(bus_data, c("上車時間", "BoardingTime", "交易時間", "刷卡時間"))
+date_col <- find_first_col(bus_data, c("資料代表日期(yyyy-MM-dd)", "上車交易日期", "交易日期", "日期", "Date"))
+time_col <- find_first_col(bus_data, c("上車交易時間", "交易時間", "時間", "Time"))
+ticket_col <- find_first_col(bus_data, c("交易票種", "HolderType", "TicketType", "票種"))
+
+if (is.na(route_id_col) && is.na(route_name_col)) {
+    stop("找不到路線欄位，請檢查資料是否包含路線編號或路線名稱。")
+}
+
+analysis_data <- bus_data
+
+if (!is.na(route_id_col)) {
+    route_text <- as.character(bus_data[[route_id_col]])
+    target_mask <- route_text %in% target_routes
+    if (any(target_mask, na.rm = TRUE)) {
+        analysis_data <- bus_data[target_mask, , drop = FALSE]
+    }
+}
+
+analysis_data <- analysis_data %>%
+    mutate(
+        搭乘時間 = build_datetime(
+            data = cur_data_all(),
+            datetime_col = datetime_col,
+            date_col = date_col,
+            time_col = time_col
+        ),
+        路線代碼 = if (!is.na(route_id_col)) as.character(.data[[route_id_col]]) else NA_character_,
+        路線名稱 = if (!is.na(route_name_col)) as.character(.data[[route_name_col]]) else NA_character_
+    ) %>%
+    left_join(route_lookup, by = "路線代碼") %>%
+    mutate(
+        路線名稱 = coalesce(路線名稱, 對應路線名稱),
+        路線 = case_when(
+            !is.na(路線代碼) & !is.na(路線名稱) ~ str_c(路線代碼, 路線名稱, sep = " "),
+            !is.na(路線代碼) ~ 路線代碼,
+            !is.na(路線名稱) ~ 路線名稱,
+            TRUE ~ "未分類"
+        ),
+        票種 = if (!is.na(ticket_col)) normalize_ticket_type(.data[[ticket_col]]) else "未提供票種"
+    ) %>%
+    select(-對應路線名稱) %>%
+    # 僅保留可辨識時間資料
+    filter(!is.na(搭乘時間)) %>%
+    mutate(
+        年份 = year(搭乘時間),
+        月份 = floor_date(搭乘時間, unit = "month"),
+        年月 = format(月份, "%Y-%m"),
+        民國年 = 年份 - 1911,
+        星期序 = wday(搭乘時間, week_start = 1),
+        星期 = wday(搭乘時間, label = TRUE, abbr = FALSE, week_start = 1),
+        平假別 = if_else(星期序 >= 6, "假日", "平日")
+    ) %>%
+    filter(年份 >= 2023, 年份 <= 2025)
+
+if (nrow(analysis_data) == 0) {
+    stop("整理後沒有 112-114 年的有效資料，請檢查資料欄位與年份範圍。")
+}
+
+analysis_period <- range(analysis_data$搭乘時間, na.rm = TRUE)
+
+overview_tbl <- tibble(
+    指標 = c("原始資料筆數", "分析資料筆數", "分析起日", "分析迄日", "路線數"),
+    數值 = c(
+        comma(nrow(bus_data)),
+        comma(nrow(analysis_data)),
+        format(analysis_period[[1]], "%Y-%m-%d"),
+        format(analysis_period[[2]], "%Y-%m-%d"),
+        n_distinct(analysis_data$路線)
+    )
+)
+
+yearly_summary <- analysis_data %>%
+    count(年份, name = "搭乘筆數") %>%
+    arrange(年份) %>%
+    mutate(
+        民國年 = 年份 - 1911,
+        年增率 = 搭乘筆數 / lag(搭乘筆數) - 1
+    )
+
+monthly_summary <- analysis_data %>%
+    count(月份, name = "搭乘筆數") %>%
+    arrange(月份) %>%
+    mutate(
+        年份 = year(月份),
+        民國年月 = paste0(year(月份) - 1911, "-", month(月份))
+    )
+
+route_yearly_summary <- analysis_data %>%
+    count(年份, 路線, name = "搭乘筆數") %>%
+    arrange(年份, 路線)
+
+route_monthly_summary <- analysis_data %>%
+    count(月份, 路線, name = "搭乘筆數") %>%
+    arrange(月份, 路線)
+
+weekday_summary <- analysis_data %>%
+    count(年份, 平假別, name = "搭乘筆數") %>%
+    group_by(年份) %>%
+    mutate(占比 = 搭乘筆數 / sum(搭乘筆數)) %>%
+    ungroup()
+
+ticket_summary <- analysis_data %>%
+    count(年份, 票種, name = "搭乘筆數") %>%
+    group_by(年份) %>%
+    mutate(占比 = 搭乘筆數 / sum(搭乘筆數)) %>%
+    ungroup()
+
+tpass_monthly_summary <- analysis_data %>%
+    mutate(TPASS = 票種 == "TPASS") %>%
+    count(月份, TPASS, name = "搭乘筆數") %>%
+    mutate(類別 = if_else(TPASS, "TPASS", "非 TPASS"))
+
+route_count_named <- bus_data %>%
+    mutate(路線代碼 = if (!is.na(route_id_col)) as.character(.data[[route_id_col]]) else NA_character_) %>%
+    count(路線代碼, name = "搭乘筆數", sort = TRUE) %>%
+    left_join(route_lookup, by = "路線代碼") %>%
+    mutate(路線名稱 = coalesce(對應路線名稱, 路線代碼)) %>%
+    select(路線代碼, 路線名稱, 搭乘筆數)
+```
+
+# 台東市區趨勢分析
+
+## 資料概況
+
+```{r overview}
+kable(overview_tbl, align = c("l", "r"))
+```
+
+```{r route-code-to-name}
+route_count_named %>%
+    mutate(搭乘筆數 = comma(搭乘筆數)) %>%
+    kable(align = c("l", "l", "r"), caption = "搭乘路線代碼對應名稱")
+```
+
+```{r raw-structure}
+glimpse(analysis_data)
+```
+
+## 年度總運量
+
+```{r yearly-summary-table}
+yearly_summary %>%
+    transmute(
+        年份 = 民國年,
+        搭乘筆數 = comma(搭乘筆數),
+        年增率 = if_else(is.na(年增率), NA_character_, percent(年增率, accuracy = 0.1))
+    ) %>%
+    kable(align = c("r", "r", "r"))
+```
+
+```{r yearly-volume-plot, fig.width=10, fig.height=5}
+windowsFonts(kai = windowsFont("Microsoft JhengHei"))
+plot_df <- yearly_summary %>% arrange(年份)
+x <- plot_df$民國年
+y <- plot_df$搭乘筆數
+
+par(family = "kai", mar = c(5, 6, 4, 10))
+plot(
+    x = x,
+    y = y,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = "gray",
+    xlab = "年份",
+    ylab = "搭乘次數",
+    ylim = c(min(y) * 0.9, max(y) * 1.1),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+)
+title(main = "112-114 年台東市區客運年度總運量", cex.main = 2, adj = 0)
+axis(side = 1, at = x, labels = x, cex.axis = 1.5)
+axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
+text(x = x, y = y + max(y) * 0.02, labels = comma(y), pos = 3, cex = 1.2, col = "black")
+grid()
+legend("topright", legend = "總運量", col = "gray", lwd = 2, pch = 16, bty = "n", inset = c(-0.15, 0), xpd = TRUE, cex = 1.5)
+```
+
+## 月運量趨勢
+
+```{r monthly-volume-plot, fig.width=11, fig.height=5}
+plot_df <- monthly_summary %>% arrange(月份)
+x <- seq_len(nrow(plot_df))
+y <- plot_df$搭乘筆數
+labels_x <- format(plot_df$月份, "%Y-%m")
+
+par(family = "kai", mar = c(8, 6, 4, 10))
+plot(
+    x = x,
+    y = y,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = "gray",
+    xlab = "月份",
+    ylab = "搭乘次數",
+    ylim = c(min(y) * 0.9, max(y) * 1.1),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.2,
+    cex = 1.5,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+)
+title(main = "112-114 年台東市區客運月運量趨勢", cex.main = 2, adj = 0)
+axis(side = 1, at = x, labels = labels_x, cex.axis = 1.1, las = 2)
+axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
+grid()
+legend("topright", legend = "月運量", col = "gray", lwd = 2, pch = 16, bty = "n", inset = c(-0.15, 0), xpd = TRUE, cex = 1.5)
+```
+
+## 各路線月運量
+
+```{r route-monthly-plot, fig.width=12, fig.height=7}
+plot_df <- route_monthly_summary %>%
+    mutate(月標籤 = format(月份, "%Y-%m")) %>%
+    select(月標籤, 路線, 搭乘筆數) %>%
+    pivot_wider(names_from = 路線, values_from = 搭乘筆數, values_fill = 0)
+
+x <- seq_len(nrow(plot_df))
+labels_x <- plot_df$月標籤
+route_matrix <- as.matrix(plot_df[, -1, drop = FALSE])
+route_names <- colnames(route_matrix)
+colors <- gray.colors(length(route_names) + 2)
+
+par(family = "kai", mar = c(8, 6, 4, 10))
+plot(
+    x = x,
+    y = route_matrix[, 1],
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = colors[1],
+    xlab = "月份",
+    ylab = "搭乘次數",
+    ylim = c(min(route_matrix) * 0.9, max(route_matrix) * 1.1),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.2,
+    cex = 1.3,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+)
+title(main = "112-114 年台東市區各路線月運量趨勢", cex.main = 2, adj = 0)
+axis(side = 1, at = x, labels = labels_x, cex.axis = 1.0, las = 2)
+axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
+
+if (ncol(route_matrix) > 1) {
+    for (i in 2:ncol(route_matrix)) {
+        lines(x = x, y = route_matrix[, i], type = "o", lwd = 2, pch = 16, col = colors[i])
+    }
+}
+
+grid()
+legend("topright", legend = route_names, col = colors[seq_along(route_names)], lwd = 2, pch = 16, bty = "n", inset = c(-0.23, 0), xpd = TRUE, cex = 1.2)
+```
+
+```{r route-yearly-table}
+route_yearly_summary %>%
+    mutate(民國年 = 年份 - 1911) %>%
+    select(民國年, 路線, 搭乘筆數) %>%
+    pivot_wider(names_from = 路線, values_from = 搭乘筆數, values_fill = 0) %>%
+    kable(align = "r")
+```
+
+## 平假日差異
+
+```{r weekday-summary-table}
+weekday_summary %>%
+    mutate(
+        年份 = 年份 - 1911,
+        搭乘筆數 = comma(搭乘筆數),
+        占比 = percent(占比, accuracy = 0.1)
+    ) %>%
+    kable(align = c("r", "l", "r", "r"))
+```
+
+```{r weekday-plot, fig.width=10, fig.height=5}
+plot_df <- weekday_summary %>%
+    mutate(民國年 = 年份 - 1911) %>%
+    select(民國年, 平假別, 搭乘筆數) %>%
+    pivot_wider(names_from = 平假別, values_from = 搭乘筆數, values_fill = 0) %>%
+    arrange(民國年)
+
+mat <- t(as.matrix(plot_df[, c("平日", "假日"), drop = FALSE]))
+colnames(mat) <- plot_df$民國年
+colors <- gray.colors(3)
+
+par(family = "kai", mar = c(5, 6, 4, 10))
+bp <- barplot(
+    mat,
+    beside = TRUE,
+    col = colors[1:2],
+    xlab = "年份",
+    ylab = "搭乘次數",
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    yaxt = "n",
+    main = ""
+)
+title(main = "112-114 年台東市區平假日運量比較", cex.main = 2, adj = 0)
+axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
+grid()
+legend("topright", legend = c("平日", "假日"), col = colors[1:2], lwd = 2, pch = 15, bty = "n", inset = c(-0.15, 0), xpd = TRUE, cex = 1.5)
+```
+
+## 票種分布
+
+```{r ticket-summary-table}
+ticket_summary %>%
+    arrange(年份, desc(搭乘筆數)) %>%
+    mutate(
+        年份 = 年份 - 1911,
+        搭乘筆數 = comma(搭乘筆數),
+        占比 = percent(占比, accuracy = 0.1)
+    ) %>%
+    kable(align = c("r", "l", "r", "r"))
+```
+
+```{r ticket-share-plot, fig.width=10, fig.height=5}
+plot_df <- ticket_summary %>%
+    mutate(民國年 = 年份 - 1911) %>%
+    select(民國年, 票種, 搭乘筆數) %>%
+    pivot_wider(names_from = 票種, values_from = 搭乘筆數, values_fill = 0) %>%
+    arrange(民國年)
+
+mat <- as.matrix(plot_df[, -1, drop = FALSE])
+prop_mat <- t(apply(mat, 1, function(v) if (sum(v) == 0) rep(0, length(v)) else v / sum(v)))
+rownames(prop_mat) <- plot_df$民國年
+colors <- gray.colors(ncol(prop_mat) + 2)
+
+par(family = "kai", mar = c(5, 6, 4, 10))
+barplot(
+    t(prop_mat),
+    col = colors[seq_len(ncol(prop_mat))],
+    xlab = "年份",
+    ylab = "占比",
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.5,
+    yaxt = "n",
+    main = ""
+)
+title(main = "112-114 年台東市區票種占比", cex.main = 2, adj = 0)
+axis(side = 2, at = seq(0, 1, by = 0.2), labels = paste0(seq(0, 100, by = 20), "%"), las = 1, cex.axis = 1.5, line = -1.5)
+grid()
+legend("topright", legend = colnames(prop_mat), col = colors[seq_len(ncol(prop_mat))], lwd = 2, pch = 15, bty = "n", inset = c(-0.2, 0), xpd = TRUE, cex = 1.1)
+```
+
+## TPASS 趨勢
+
+```{r tpass-check}
+analysis_data %>%
+    count(票種, sort = TRUE) %>%
+    filter(票種 == "TPASS") %>%
+    kable(align = c("l", "r"))
+```
+
+```{r tpass-monthly-plot, fig.width=11, fig.height=5}
+plot_df <- tpass_monthly_summary %>%
+    select(月份, 類別, 搭乘筆數) %>%
+    pivot_wider(names_from = 類別, values_from = 搭乘筆數, values_fill = 0) %>%
+    arrange(月份)
+
+x <- seq_len(nrow(plot_df))
+labels_x <- format(plot_df$月份, "%Y-%m")
+tpass_y <- plot_df$TPASS
+non_tpass_y <- plot_df$`非 TPASS`
+colors <- gray.colors(3)
+
+par(family = "kai", mar = c(8, 6, 4, 10))
+plot(
+    x = x,
+    y = tpass_y,
+    type = "o",
+    lwd = 2,
+    pch = 16,
+    col = colors[1],
+    xlab = "月份",
+    ylab = "搭乘次數",
+    ylim = c(min(c(tpass_y, non_tpass_y)) * 0.9, max(c(tpass_y, non_tpass_y)) * 1.1),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.2,
+    cex = 1.5,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+)
+title(main = "112-114 年台東市區 TPASS 與非 TPASS 月運量", cex.main = 2, adj = 0)
+axis(side = 1, at = x, labels = labels_x, cex.axis = 1.1, las = 2)
+axis(side = 2, las = 1, cex.axis = 1.5, line = -1.5)
+lines(x = x, y = non_tpass_y, type = "o", lwd = 2, pch = 16, col = colors[2])
+grid()
+legend("topright", legend = c("TPASS", "非 TPASS"), col = colors[1:2], lwd = 2, pch = 16, bty = "n", inset = c(-0.18, 0), xpd = TRUE, cex = 1.5)
+```
+
+## 前 12 個高運量月份
+
+```{r top-months}
+monthly_summary %>%
+    arrange(desc(搭乘筆數)) %>%
+    slice_head(n = 12) %>%
+    transmute(月份 = format(月份, "%Y-%m"), 搭乘筆數 = comma(搭乘筆數)) %>%
+    kable(align = c("l", "r"))
+```
