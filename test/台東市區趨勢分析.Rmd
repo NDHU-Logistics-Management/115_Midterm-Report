@@ -11,10 +11,8 @@ library(scales)
 ```
 
 
-
-
 ```{r read and preprocessing, include=FALSE}
-base_path <- "D:/busData/huaTTT_bus_data_23to25/臺東縣公車.csv"
+base_path <- "D:/busData/huaTTT_bus_data_23to25/公路客運2025.csv"
 ```
 
 ```{r}
@@ -22,6 +20,9 @@ bus_data <- read_csv(base_path)
 
 range(bus_data$刷卡上車時間)
 range(bus_data$`資料代表日期(yyyy-MM-dd)`)
+names(bus_data)
+table(bus_data$`搭乘路線代碼`)
+nrow(bus_data)
 ```
 
 ```{r}
