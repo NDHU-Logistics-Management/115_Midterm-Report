@@ -6,12 +6,6 @@ df_2025 <- read.csv("C:/Users/Angela/Desktop/運籌/公路客運2025.csv") %>% m
 
 df_all <- bind_rows(df_2023, df_2024, df_2025)
 
-# -----資料數量檢查 -----
-
-#df_all_cleaned <- na.omit(df_all)
-#cat("清理後是否仍有 NA：", any(is.na(df_all_cleaned)), "\n")
-#df_all <- df_all_cleaned
-
 # ----- 路線分類 --------
 
 unique_routes <- unique(df_all$搭乘路線名稱)
@@ -19,11 +13,20 @@ print(sort(unique_routes))
 
 route_type <- list()
 route_type$hualien$coast <- c(
-  1129, 1132, 1136, 1140, 1145, 8101, 8102, 8103, 8105, 8107, 8110, 8111, 8113, 8119, 8120
+  1129, 1132, 1136, 1140, 1145,
+  8101, 8102, 8103, 8105, 8107, 
+  8110, 8111, 8113, 8119, 8120
   )
 
 route_type$hualien$valley <- c(
-  1121, 1122, 1123, 1128, 1130, 1135, 1137, 1139, 1142, 1143, 8109, 8115, 8117, 8128, 8129, 8130, 8131, 8132, 8135, 8136, 8137, 8138, 8150, 8151, 8152, 8153, 8156, 8157, 8158, 8161, 8163, 8165, 8166, 8167, 8168, 8170, 8171, 8172, 8173, 8178, 8180, 8122
+  1121, 1122, 1123, 1128, 1130, 
+  1135, 1137, 1139, 1142, 1143, 
+  8109, 8115, 8117, 8128, 8129, 
+  8130, 8131, 8132, 8135, 8136, 
+  8137, 8138, 8150, 8151, 8152, 
+  8153, 8156, 8157, 8158, 8161, 
+  8163, 8165, 8166, 8167, 8168, 
+  8170, 8171, 8172, 8173, 8178, 8180, 8122
   )
 
 route_type$hualien$cross <- c(
@@ -61,7 +64,7 @@ roadbus_table <- addmargins(mytable, margin = 2)
 colnames(roadbus_table)[colnames(roadbus_table) == "Sum"] <- "總運量"
 
 
-#畫圖
+#---- 畫圖 -------
 windowsFonts(msjh = windowsFont("Microsoft JhengHei"))
 df <- as.data.frame.matrix(roadbus_table)
 
