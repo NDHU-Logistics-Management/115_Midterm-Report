@@ -1,0 +1,103 @@
+library(dplyr)
+
+df_2023 <- read.csv("C:/Users/Angela/Desktop/運籌/公路客運2023.csv") %>% mutate(年份 = 112)
+df_2024 <- read.csv("C:/Users/Angela/Desktop/運籌/公路客運2024.csv") %>% mutate(年份 = 113)
+df_2025 <- read.csv("C:/Users/Angela/Desktop/運籌/公路客運2025.csv") %>% mutate(年份 = 114)
+
+df_all <- bind_rows(df_2023, df_2024, df_2025)
+
+# -----資料數量檢查 -----
+
+#df_all_cleaned <- na.omit(df_all)
+#cat("清理後是否仍有 NA：", any(is.na(df_all_cleaned)), "\n")
+#df_all <- df_all_cleaned
+
+# ----- 路線分類 --------
+
+unique_routes <- unique(df_all$搭乘路線名稱)
+print(sort(unique_routes))
+
+route_type <- list()
+route_type$hualien$coast <- c(
+  1129, 1132, 1136, 1140, 1145, 8101, 8102, 8103, 8105, 8107, 8110, 8111, 8113, 8119, 8120
+  )
+
+route_type$hualien$valley <- c(
+  1121, 1122, 1123, 1128, 1130, 1135, 1137, 1139, 1142, 1143, 8109, 8115, 8117, 8128, 8129, 8130, 8131, 8132, 8135, 8136, 8137, 8138, 8150, 8151, 8152, 8153, 8156, 8157, 8158, 8161, 8163, 8165, 8166, 8167, 8168, 8170, 8171, 8172, 8173, 8178, 8180, 8122
+  )
+
+route_type$hualien$cross <- c(
+  1125, 1126, 1133, 1141, 8125, 8181
+  )
+
+route_map <- data.frame(
+  搭乘路線名稱 = as.character(c(
+    route_type$hualien$coast,
+    route_type$hualien$valley,
+    route_type$hualien$cross
+  )),
+  路線類別 = c(
+    rep("海岸線", length(route_type$hualien$coast)),
+    rep("縱谷線", length(route_type$hualien$valley)),
+    rep("山海線", length(route_type$hualien$cross))
+  ),stringsAsFactors = FALSE  
+)
+
+df_all$搭乘路線名稱 <- as.character(df_all$搭乘路線名稱)
+df_all <- df_all %>% select(-starts_with("路線類別"))
+
+df_all <- df_all %>%
+  left_join(route_map, by = "搭乘路線名稱")
+
+temp <- data.frame(
+  年份 = df_all$年份,
+  路線類別 = df_all$路線類別
+)
+
+temp <- temp[!is.na(temp$路線類別), ]
+mytable <- table(temp$年份,temp$路線類別)
+
+roadbus_table <- addmargins(mytable, margin = 2)
+colnames(roadbus_table)[colnames(roadbus_table) == "Sum"] <- "總運量"
+
+
+#畫圖
+windowsFonts(msjh = windowsFont("Microsoft JhengHei"))
+df <- as.data.frame.matrix(roadbus_table)
+
+years <- c(112, 113, 114)
+n1 <- df[, "總運量"]
+n2 <- df[, "海岸線"]
+n3 <- df[, "縱谷線"]
+n4 <- df[, "山海線"]
+
+par(family = "msjh",mar = c(5,6,4,10))
+
+plot(years, n1,
+     type = "o", pch = 16, lwd = 2, col = "black",
+     ylim = c(min(df) * 0.9 , max(df) * 1.1),
+    # xlim = c(112,114),
+     xlab = "年",ylab = "搭乘次數",
+     main = "112年至114年花蓮縣公路客運年總運量折線圖",
+     cex.main = 2,cex.lab = 2,cex.axis = 1.5,cex = 1.5,
+     xaxt = "n", yaxt = "n", bty = "n")
+
+axis(1, at = years, labels = years)
+
+# 其他線
+lines(years, n2, type="o", pch=16, lwd=2, col="grey40",
+      cex.main = 2,cex.lab = 2,cex.axis = 1.5,cex = 1.5)
+lines(years, n3, type="o", pch=16, lwd=2, col="grey60",
+      cex.main = 2,cex.lab = 2,cex.axis = 1.5,cex = 1.5)
+lines(years, n4, type="o", pch=16, lwd=2, col="grey75",
+      cex.main = 2,cex.lab = 2,cex.axis = 1.5,cex = 1.5)
+
+text(years, n1 + max(n1) * 0.02,
+     labels = format(n1, big.mark=","),
+     pos = 3, col = "black", cex = 1.5)
+
+legend("topright",
+       inset = c(-0.3, 0),
+       legend = c("總運量", "海岸線", "縱谷線", "山海線"),
+       col = c("black", "grey40", "grey60", "grey75"),
+       lwd = 2, pch = 16,bty = "n",xpd = TRUE,cex = 1.2)
