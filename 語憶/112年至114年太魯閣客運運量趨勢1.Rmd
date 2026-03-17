@@ -1,0 +1,111 @@
+---
+title: "Untitled"
+author: "yuiy"
+date: "2026-03-16"
+output: html_document
+---
+
+```{r}
+library(lubridate)
+library(dplyr)
+library(data.table)
+windowsFonts(yui = windowsFont("Microsoft JhengHei"))
+par(family = "kai", mar = c(5, 6, 4, 10)) 
+
+path <- "C:/Users/AVITA/Downloads/花蓮縣公車.csv"
+data <- read.csv(path, stringsAsFactors = FALSE)
+
+
+date1 <- as.Date(data$資料代表日期.yyyy.MM.dd.)
+data$year <- year(date1)
+
+data_year <- data %>%
+  filter(year %in% c(2023, 2024, 2025))
+
+
+year_total <- table(data_year$year)
+
+year_value <- as.numeric(names(year_total))
+ride_count <- as.numeric(year_total)
+
+routes <- c("301","302","303","305","307","308","309","310","311","1123")
+
+data_route <- data_year %>%
+  filter(搭乘路線名稱 %in% routes)
+
+
+route_count <- table(data_route$year, data_route$搭乘路線名稱)
+
+route_count <- route_count[, routes, drop=FALSE]
+
+
+route_percent <- prop.table(route_count, 1)
+
+
+route_height <- route_percent * ride_count
+
+png("C:/Users/AVITA/Downloads/112年至114年太魯閣客運運量趨勢1.png",
+    width=12,
+    height=6,
+    units="in",
+    res=300)
+
+bp <- barplot(
+  t(route_height),
+  beside=TRUE,
+  col=gray.colors(length(routes)),
+  ylim=c(0, max(ride_count)*1.2),
+  xlab="年份",
+  ylab="搭乘次數",
+  main="112年至114年太魯閣客運運量趨勢1"
+)
+
+
+year_center <- colMeans(matrix(bp, nrow=length(routes)))
+axis(1, at=year_center, labels=c("2023","2024","2025"))
+
+
+text(
+  bp,
+  as.vector(t(route_height)) + max(ride_count)*0.02,
+  labels=paste0(round(as.vector(t(route_percent))*100,1),"%"),
+  cex=0.6
+)
+
+
+lines(
+  year_center,
+  ride_count,
+  type="o",
+  pch=16,
+  lwd=2,
+  col="black"
+)
+
+
+text(
+  year_center,
+  ride_count,
+  labels=ride_count,
+  pos=3,
+  cex=0.9
+)
+
+legend(
+  "topright",
+  legend=c(routes, "搭乘次數"),
+  fill=c(gray.colors(length(routes)), NA),
+  border=c(rep(NA, length(routes)), "black"),
+  lty=c(rep(0, length(routes)), 1),
+  pch=c(rep(15, length(routes)), 16),
+  cex=0.7
+)
+
+png("C:/Users/AVITA/Downloads/112年至114年太魯閣客運運量趨勢1.png",
+    width = 12,
+    height = 6,
+    units = "in",
+    res = 300)
+
+dev.off()
+```
