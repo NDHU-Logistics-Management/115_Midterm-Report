@@ -10,7 +10,9 @@ library(lubridate)
 library(dplyr)
 library(data.table)
 
-windowsFonts(yui = windowsFont("Microsoft JhengHei"))
+windowsFonts(kai = windowsFont("Microsoft JhengHei"))
+par(family = "kai", mar = c(5,6,4,10))
+
 
 path <- "C:/Users/AVITA/Downloads/花蓮縣公車.csv"
 data <- read.csv(path, stringsAsFactors = FALSE)
@@ -26,14 +28,13 @@ ride_count <- as.numeric(tk_table)
 roc_year <- year_value - 1911
 
 png(
-  filename = "112年至114年太魯閣客運運量趨勢.png",
+  filename = "112年至114年花蓮縣市區客運運量趨勢.png",
   width = 12,
   height = 6,
   units = "in",
   res = 300
 )
 
-par(family = "yui", mar = c(5,6,4,10))
 
 plot(
   x = roc_year,
@@ -54,13 +55,12 @@ plot(
 )
 
 title(
-  main = "112年至114年太魯閣客運運量趨勢",
+  main = "112年至114年花蓮縣市區客運運量趨勢",
   cex.main = 2,
   adj = 0
 )
 
 axis(1, at = roc_year, labels = roc_year, cex.axis = 1.5)
-axis(2, las = 1, cex.axis = 1.5, line = -1.5)
 
 text(
   x = roc_year,
@@ -72,17 +72,7 @@ text(
 
 grid()
 
-legend(
-  "topright",
-  legend = "花蓮縣市區公車",
-  col = "gray",
-  lwd = 2,
-  pch = 16,
-  bty = "n",
-  inset = c(-0.15,0),
-  xpd = TRUE,
-  cex = 1.5
-)
+
 png("C:/Users/AVITA/Downloads/112年至114年太魯閣客運運量趨勢.png",
     width = 12,
     height = 6,
