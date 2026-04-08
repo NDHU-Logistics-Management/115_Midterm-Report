@@ -31,10 +31,11 @@ start_time = Sys.time()
 # load data
 ```{r}
 data_path = "../data/"
-df_2023 <- read.csv(paste0(data_path, "公路客運2023.csv")) %>% mutate(年份 = 112)
-df_2024 <- read.csv(paste0(data_path, "公路客運2024.csv")) %>% mutate(年份 = 113)
-df_2025 <- read.csv(paste0(data_path, "公路客運2025.csv")) %>% mutate(年份 = 114)
-df_original <- bind_rows(df_2023, df_2024, df_2025)
+df_2023 <- read.csv(paste0(data_path, "公路客運2023.csv"))
+df_2024 <- read.csv(paste0(data_path, "公路客運2024.csv"))
+df_2025 <- read.csv(paste0(data_path, "公路客運2025.csv"))
+df_city <- read.csv(paste0(data_path, "花蓮縣公車.csv"))
+df_original <- bind_rows(df_2023, df_2024, df_2025, df_city)
 ```
 
 ```{r}
@@ -64,63 +65,12 @@ df = df_original %>%
     下車站序 = 下車站牌站序,
     下車時間 = 刷卡下車時間,
     異常 = 是否包含異常值.係指上下站值為.99或上下車時間為1970.01.01.00.00.00之情況.,
-    日期 = 資料代表日期.yyyy.MM.dd.,
-    年份
+    日期 = 資料代表日期.yyyy.MM.dd.
+  ) %>%
+  mutate(
+    年份 = year(as.Date(日期)) - 1911
   )
 
-df %>% head()
-```
-
-# route type
-```{r}
-unique_routes <- unique(df$路線)
-print(sort(unique_routes))
-
-route_type <- list(
-    hualien = list(
-        coast = c(
-            1129, 1132, 1136, 1140, 1145, 8101, 8102, 8105, 8119
-            # 8103,8107, 8110, 8111, 8113,, 8120  #井字部分為有出現在資料裡的路線，但不在"花蓮交通e點通"的所列路線中
-        ),
-        valley = c(
-            1121, 1122, 1123, 1128, 1130, 1135, 1137, 1139, 1142, 1143,
-            8161, 8173
-            # 8109, 8115, 8117, 8128, 8129, 8130, 8131, 8132, 8135, 8136,
-            # 8137, 8138, 8150, 8151, 8152, 8153, 8156, 8157, 8158, 8163,
-            # 8165, 8166, 8167, 8168, 8170, 8171, 8172, 8178, 8180, 8122
-        ),
-        cross = c(
-            1125, 1126, 1133, 1141, 8181
-            # 8125
-        )
-    )
-)
-
-route_map <- data.frame(
-    路線 = as.character(c(
-        route_type$hualien$coast,
-        route_type$hualien$valley,
-        route_type$hualien$cross
-    )),
-    路線類別 = c(
-        rep("海岸線", length(route_type$hualien$coast)),
-        rep("縱谷線", length(route_type$hualien$valley)),
-        rep("山海線", length(route_type$hualien$cross))
-    ), stringsAsFactors = FALSE
-)
-
-df$路線 <- as.character(df$路線)
-
-if ("路線" %in% names(df)) {
-    df$路線類別 <- NULL
-}
-df <- left_join(
-    df, route_map,
-    by = "路線"
-)
-```
-
-```{r}
 df
 ```
 
