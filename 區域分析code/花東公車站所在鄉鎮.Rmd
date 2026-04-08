@@ -1,0 +1,332 @@
+---
+title: "Untitled"
+author: "Jundian"
+date: "2025-09-10"
+output: html_document
+---
+
+# library&讀API金鑰
+```{r}
+# 安裝devtools套件
+#install.packages("devtools")
+# 自GitHub下載TDX套件
+#devtools::install_github("ChiaJung-Yeh/NYCU_TDX")
+#devtools::install_github("ChiaJung-Yeh/TWspData")
+
+library(TDX)
+library(httr)
+library(jsonlite)
+library(sf)
+library(cli)
+library(dplyr)
+library(TWspdata)
+library(data.table)
+library(purrr)
+
+# API 金鑰
+access_token <- get_token(client_id = "m9937020-577b0981-78ba-463e", client_secret = "670af1b7-e6d6-4ac5-9d2b-1c2cf2dcddf3")
+```
+
+# 公路客運+花蓮市區公車+台東市區公車站點鄉鎮
+```{r}
+# 縣市名稱代碼表
+TDX_County
+# 介接一般公路客運公車路線站點資料(地理資料)
+Intercity_bus_station=Bus_StopOfRoute(access_token, "Intercity", dtype="sf")
+# 鄉鎮界線資料並轉換座標系統
+towns <- TWspdata::taiwan_town %>% st_transform(towns, crs = st_crs(Intercity_bus_station))
+# 介接花蓮市區公車路線站點(地理資料)
+Hualien_bus_station=Bus_StopOfRoute(access_token, "HualienCounty", dtype="sf")
+# 介接台東市區公車路線站點(地理資料)
+Taitung_bus_station=Bus_StopOfRoute(access_token, "TaitungCounty", dtype="sf")
+# 合併
+Intercity_Hualien_Taitung_bus_station <- rbind(Intercity_bus_station, Hualien_bus_station) %>% 
+  rbind( ., Taitung_bus_station)
+# 做空間套疊：找到站點所屬鄉鎮
+Intercity_Hualien_Taitung_bus_station <- Intercity_Hualien_Taitung_bus_station %>% 
+  st_join(., towns %>% select(COUNTYNAME, TOWNNAME))
+# 存csv
+#write.csv(Intercity_Hualien_Taitung_bus_station, "公路客運_花蓮市區公車_台東市區公車站點鄉鎮.csv", row.names = FALSE)
+```
+
+# 里程(TDX資料)
+```{r}
+# 公路客運
+Bus_Distance(access_token, "Intercity", unique(Intercity_bus_station$RouteID), out="公路客運公車站點里程_TDX.csv")
+
+# 花蓮市區公車
+#temp=Bus_Distance(access_token, "HualienCounty", unique(Hualien_bus_station$RouteID))
+Bus_Distance(access_token, "HualienCounty", unique(Hualien_bus_station$RouteID), out="花蓮市區公車站點里程_TDX.csv")
+
+# 臺東市區公車
+Bus_Distance(access_token, "TaitungCounty", unique(Taitung_bus_station$RouteID), out="台東市區公車站點里程_TDX.csv")
+```
+
+# 里程(手算)
+```{r}
+# 花蓮市區公車
+# 擷取花蓮市區公車路線、站牌資料
+#bus_route=Bus_Route(access_token, "HualienCounty")
+#bus_shape=Bus_Shape(access_token, "HualienCounty", dtype="sf")%>%
+#  st_transform(crs=3826) %>% 
+#  distinct()
+#bus_stop=Bus_StopOfRoute(access_token, "HualienCounty", dtype="sf")%>%
+#  st_transform(crs=3826) %>% 
+#  distinct()
+
+# 臺東市區公車
+# 擷取臺東市區公車路線、站牌資料
+#bus_route=Bus_Route(access_token, "TaitungCounty")
+#bus_shape=Bus_Shape(access_token, "TaitungCounty", dtype="sf")%>%
+#  st_transform(crs=3826) %>% 
+#  distinct()
+#bus_stop=Bus_StopOfRoute(access_token, "TaitungCounty", dtype="sf")%>%
+#  st_transform(crs=3826) %>% 
+#  distinct()
+
+# 公路客運
+# 擷取公路客運路線、站牌資料
+bus_route=Bus_Route(access_token, "Intercity")
+bus_shape=Bus_Shape(access_token, "Intercity", dtype="sf")%>%
+  st_transform(crs=3826) %>% 
+  distinct()
+bus_stop=Bus_StopOfRoute(access_token, "Intercity", dtype="sf")%>%
+  st_transform(crs=3826) %>% 
+  distinct()
+
+
+# 計算站點與候選點間距離並給定標籤(只篩選小於30公尺者)
+min_ret=function(x, y){
+  Dist=x[x<30]
+  Seq=which(x<30)
+  
+  if(length(Dist)==0){
+    Dist=min(x)
+    Seq=which.min(x)
+  }
+  return(list(Dist=Dist, Seq=Seq))
+}
+
+
+bus_stop_rev=data.frame()
+cli_progress_bar(format = "Processing {pb_bar} {pb_percent} [{pb_eta}]  {.emph SubRouteUID: {bus_route$SubRouteUID[pb_current]}}", 
+                 total=nrow(bus_route))
+
+for(route in c(1:nrow(bus_route))){
+  cli_progress_update()
+  
+  bus_shape_temp=filter(bus_shape, SubRouteUID==bus_route$SubRouteUID[route])
+  bus_stop_temp=filter(bus_stop, SubRouteUID==bus_route$SubRouteUID[route], Direction==bus_route$Direction[route])
+  
+  if(nrow(bus_shape_temp)==0){
+    bus_shape_temp=filter(bus_shape, RouteUID==bus_route$RouteUID[route], is.na(SubRouteUID))
+  }
+  
+  # 拆分公車路線之線段
+  bus_shape_coord=data.frame(st_coordinates(bus_shape_temp)[, c(1:2)])%>%
+    mutate(geometry=st_as_sfc(paste0("POINT(", X, " ", Y, ")")))%>%
+    st_sf(crs=3826)
+  dist_point=as.numeric(st_distance(bus_shape_coord[1:(nrow(bus_shape_coord)-1),], bus_shape_coord[2:(nrow(bus_shape_coord)),], by_element=T))
+  
+  # 將各路段細分為至多每10公尺一段(使配對更為精確)
+  all_point=data.frame()
+  for(i in c(1:nrow(bus_shape_coord))){
+    if(i!=nrow(bus_shape_coord)){
+      new_int_num=ceiling(dist_point[i]/10)
+      if(new_int_num>1){
+        new_point=data.frame(X=mapply(function(x) bus_shape_coord$X[i]+((bus_shape_coord$X[i+1]-bus_shape_coord$X[i])/new_int_num)*x, c(1:(new_int_num-1))),
+                             Y=mapply(function(x) bus_shape_coord$Y[i]+((bus_shape_coord$Y[i+1]-bus_shape_coord$Y[i])/new_int_num)*x, c(1:(new_int_num-1))))
+        temp_point=rbind(data.frame(X=bus_shape_coord$X[i], Y=bus_shape_coord$Y[i]), new_point)
+        all_point=rbind(all_point, temp_point)
+      }else{
+        all_point=rbind(all_point, data.frame(X=bus_shape_coord$X[i], Y=bus_shape_coord$Y[i]))
+      }
+    }else{
+      all_point=rbind(all_point, data.frame(X=bus_shape_coord$X[i], Y=bus_shape_coord$Y[i]))
+    }
+  }
+  all_point=mutate(all_point, geometry=st_as_sfc(paste0("POINT(", X, " ", Y, ")")))%>%
+    st_sf(crs=3826)
+  
+  # 計算各點之間的距離與累積里程
+  dist_point=as.numeric(st_distance(all_point[1:(nrow(all_point)-1),], all_point[2:(nrow(all_point)),], by_element=T))
+  all_point$Dist_Cum=c(0, mapply(function(x) sum(dist_point[1:x]), c(1:length(dist_point))))
+  
+  # 計算原始公車站牌圖資與細分點間的距離關係
+  all_dist=as.matrix(st_distance(bus_stop_temp, all_point))
+  all_dist_poss=apply(all_dist, 1, min_ret)
+  
+  # 演算法尋找最可能匹配點位(類似Hidden Markov Model)
+  all_seq=c()
+  step_seq=0
+  for(m in c(1:length(all_dist_poss))){
+    emis_prob=abs(1/all_dist_poss[[m]]$Dist)
+    trans_prob=1/(all_dist_poss[[m]]$Seq-step_seq)
+    step_seq=all_dist_poss[[m]]$Seq[which.max(emis_prob*trans_prob)]
+    all_seq=c(all_seq, step_seq)
+  }
+  
+  # 將匹配點位貼附於原始公車資料中
+  bus_stop_temp_rev=cbind(st_drop_geometry(bus_stop_temp), all_point[all_seq,])%>%
+    st_sf(crs=3826)
+  
+  # 透過累積里程計算兩站點間距離
+  bus_stop_temp_rev$Dist_Intv=c(NA, bus_stop_temp_rev$Dist_Cum[c(2:nrow(bus_stop_temp_rev))]-bus_stop_temp_rev$Dist_Cum[c(1:nrow(bus_stop_temp_rev)-1)])
+  
+  if(sum(bus_stop_temp_rev$Dist_Intv<0, na.rm=T)!=0){
+    cli_alert_info(paste0("因 TDX 路線數化有問題，SubRouteUID:", bus_route$SubRouteUID[route], "（Direction:", bus_route$Direction[route], "）部分計算結果可能有誤!"))
+  }
+  
+  # 🔹 調整起點站 Dist_Cum = 0
+  start_idx <- which(bus_stop_temp_rev$StopBoarding == 1 & bus_stop_temp_rev$StopSequence == 1)
+  if (length(start_idx) == 1) {
+    offset <- bus_stop_temp_rev$Dist_Cum[start_idx]
+    bus_stop_temp_rev$Dist_Cum <- bus_stop_temp_rev$Dist_Cum - offset
+    bus_stop_temp_rev$Dist_Intv <- c(NA, diff(bus_stop_temp_rev$Dist_Cum))
+  }
+  
+  bus_stop_rev=rbind(bus_stop_rev, bus_stop_temp_rev)
+}
+cli_progress_done()
+
+# 存檔
+#write.csv(st_drop_geometry(bus_stop_rev), "花蓮市區公車站點里程.csv", row.names=F)
+#write.csv(st_drop_geometry(bus_stop_rev), "臺東市區公車站點里程.csv", row.names=F)
+write.csv(st_drop_geometry(bus_stop_rev), "公路客運站點里程.csv", row.names=F)
+```
+存檔後要在csv修正的地方
+
+花蓮
+1. SubRouteUID:HUA011701
+圖書館 -> 轉運站, Dis_Intv修正為375.5047
+更新Dis_Cum
+
+2. HUA030701
+電影城 -> 轉運站, Dis_Intv修正為558.40074
+北昌五街口 -> 北昌四街口, Dis_Intv修正為0.65
+更新Dis_Cum
+
+3. HUA030702
+圖書館 -> 轉運站, Dis_Intv修正為375.5047
+更新Dis_Cum
+
+
+臺東
+1. SubRouteUID:TTT098101
+火車站 -> 拖吊場, Dis_Intv修正為350.2641
+更新Dis_Cum
+
+2. SubRouteUID:TTT098102
+火車站 -> 拖吊場, Dis_Intv修正為350.2641
+拖吊場 -> 火車站, Dis_Intv修正為310.4217
+更新Dis_Cum
+
+
+公路客運
+1. SubRouteUID:THB186002
+桃園機場第一航廈 -> 桃園機場第二航廈, Dis_Intv修正為688.93
+更新Dis_Cum
+
+2. SubRouteUID:THB581501
+八甲校區2 -> 八甲校區1, Dis_Intv修正為536.006666288929
+更新Dis_Cum
+
+3. SubRouteUID:THB581502
+八甲校區2 -> 八甲校區1, Dis_Intv修正為538.230997978902
+更新Dis_Cum
+
+4. SubRouteUID:THB5815A2
+八甲校區2 -> 八甲校區1, Dis_Intv修正為534.519579370331
+更新Dis_Cum
+
+5. SubRouteUID:THB687501
+保留1~85站，刪除多餘站點
+
+6. SubRouteUID:THB687502
+保留1~86站，刪除多餘站點
+
+7. SubRouteUID:THB688301
+保留1~20站，刪除多餘站點
+
+8. SubRouteUID:THB688302
+保留1~20站，刪除多餘站點
+
+9. SubRouteUID:THB6883A1
+保留1~16站，刪除多餘站點
+
+10. SubRouteUID:THB6883A2
+保留1~16站，刪除多餘站點
+
+11. SubRouteUID:THB6883D1
+保留1~17站，刪除多餘站點
+
+12. SubRouteUID:THB6899A1
+保留1~81站，刪除多餘站點
+
+13. SubRouteUID:THB6899A2
+保留1~80站，刪除多餘站點
+
+14. SubRouteUID:THB6899D1
+保留1~29站，刪除多餘站點
+
+15. SubRouteUID:THB6899D2
+保留1~29站，刪除多餘站點
+
+16. SubRouteUID:THB723501
+蒜頭糖廠 -> 高鐵嘉義站, Dis_Intv修正為3792.6637
+更新Dis_Cum
+
+17. SubRouteUID:THB770001
+保留1~49站，刪除多餘站點
+更新站名, 荖?宅 -> 荖籘宅
+
+18. SubRouteUID:THB770002
+保留1~49站，刪除多餘站點
+更新站名, 荖?宅 -> 荖籘宅
+
+19. SubRouteUID:THB770101
+保留1~74站，刪除多餘站點
+更新站名, 荖?宅 -> 荖籘宅
+
+20. SubRouteUID:THB770102
+保留1~74站，刪除多餘站點
+更新站名, 荖?宅 -> 荖籘宅
+
+21. SubRouteUID:THB900101
+保留1~17站，刪除多餘站點
+更新StopBoarding, 中途站設為0
+
+22. SubRouteUID:THB900301
+保留1~14站，刪除多餘站點
+更新StopBoarding, 中途站設為0
+
+23. SubRouteUID:THB900902
+保留1~20站，刪除多餘站點
+更新StopBoarding, 中途站設為0
+
+24. SubRouteUID:THB901501
+保留1~11站，刪除多餘站點
+更新StopBoarding, 中途站設為0
+
+25. SubRouteUID:THB901502
+保留1~16站，刪除多餘站點
+更新StopBoarding, 中途站設為0
+
+26. SubRouteUID:THB9015A2
+保留1~15站，刪除多餘站點
+更新StopBoarding, 中途站設為0
+
+27. SubRouteUID:THB901602
+保留1~20站，刪除多餘站點
+更新StopBoarding, 中途站設為0
+
+28. SubRouteUID:THB9117A2
+保留1~64站，刪除多餘站點
+
+29. SubRouteUID:THB918801
+保留1~103站，刪除多餘站點
+
+30. SubRouteUID:THB918802
+保留1~103站，刪除多餘站點
+
+
