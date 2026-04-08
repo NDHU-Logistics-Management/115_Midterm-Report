@@ -1,0 +1,916 @@
+---
+title: "Important Spots Analysis for 115 Minterm"
+author: "Hsu, Yao-Chih"
+date: "2026-04-08"
+output: html_notebook
+---
+
+# library
+```{r}
+library(xml2)
+library(data.table)
+library(dplyr)
+library(lubridate)
+library(tidyr)
+library(ggplot2)
+library(future.apply)
+library(progressr)
+library(readxl)
+library(pbapply)
+library(stringr)
+library(openxlsx)
+library(readr)
+library(purrr)
+```
+
+# time
+```{r}
+start_time = Sys.time()
+```
+
+# load data
+```{r}
+data_path = "../data/"
+df_2023 <- read.csv(paste0(data_path, "公路客運2023.csv")) %>% mutate(年份 = 112)
+df_2024 <- read.csv(paste0(data_path, "公路客運2024.csv")) %>% mutate(年份 = 113)
+df_2025 <- read.csv(paste0(data_path, "公路客運2025.csv")) %>% mutate(年份 = 114)
+df_original <- bind_rows(df_2023, df_2024, df_2025)
+```
+
+```{r}
+head(df_original)
+```
+
+```{r}
+df_original %>% colnames()
+```
+
+# reduce df
+```{r}
+df = df_original %>% 
+  select(
+    業者編號,
+    卡號,
+    電子票證卡種,
+    持卡身分,
+    票種次類型,
+    路線 = 搭乘路線名稱,
+    子路線 = 搭乘附屬路線名稱,
+    方向 = 搭乘公車路線方向,
+    上車站牌名稱,
+    上車站序 = 上車計費站序資料,
+    上車時間 = 刷卡上車時間,
+    下車站牌名稱,
+    下車站序 = 下車站牌站序,
+    下車時間 = 刷卡下車時間,
+    異常 = 是否包含異常值.係指上下站值為.99或上下車時間為1970.01.01.00.00.00之情況.,
+    日期 = 資料代表日期.yyyy.MM.dd.,
+    年份
+  )
+
+df %>% head()
+```
+
+# route type
+```{r}
+unique_routes <- unique(df$路線)
+print(sort(unique_routes))
+
+route_type <- list(
+    hualien = list(
+        coast = c(
+            1129, 1132, 1136, 1140, 1145, 8101, 8102, 8105, 8119
+            # 8103,8107, 8110, 8111, 8113,, 8120  #井字部分為有出現在資料裡的路線，但不在"花蓮交通e點通"的所列路線中
+        ),
+        valley = c(
+            1121, 1122, 1123, 1128, 1130, 1135, 1137, 1139, 1142, 1143,
+            8161, 8173
+            # 8109, 8115, 8117, 8128, 8129, 8130, 8131, 8132, 8135, 8136,
+            # 8137, 8138, 8150, 8151, 8152, 8153, 8156, 8157, 8158, 8163,
+            # 8165, 8166, 8167, 8168, 8170, 8171, 8172, 8178, 8180, 8122
+        ),
+        cross = c(
+            1125, 1126, 1133, 1141, 8181
+            # 8125
+        )
+    )
+)
+
+route_map <- data.frame(
+    路線 = as.character(c(
+        route_type$hualien$coast,
+        route_type$hualien$valley,
+        route_type$hualien$cross
+    )),
+    路線類別 = c(
+        rep("海岸線", length(route_type$hualien$coast)),
+        rep("縱谷線", length(route_type$hualien$valley)),
+        rep("山海線", length(route_type$hualien$cross))
+    ), stringsAsFactors = FALSE
+)
+
+df$路線 <- as.character(df$路線)
+
+if ("路線" %in% names(df)) {
+    df$路線類別 <- NULL
+}
+df <- left_join(
+    df, route_map,
+    by = "路線"
+)
+```
+
+```{r}
+df
+```
+
+# configs
+```{r}
+year.from = 2023
+year.to = 2025
+month.from = 1
+month.to = 12
+```
+
+# summary function
+```{r}
+df_summary <- function(data) {
+  res <- list()
+  
+  # 使用 pblapply 取代 for 迴圈，自動顯示進度條
+  temp_res <- pblapply(colnames(data), function(col) {
+    # 計算每個 unique 值出現次數
+    tbl <- data.frame(table(data[[col]], useNA = "ifany"), stringsAsFactors = FALSE)
+    colnames(tbl) <- c("values", "times")
+    
+    list(
+      unique = tbl,
+      NAs = sum(is.na(data[[col]])),
+      type = class(data[[col]])[1]
+    )
+  })
+  
+  # 將結果組回 list，欄位名稱對應原欄位
+  names(temp_res) <- colnames(data)
+  res <- temp_res
+  
+  return(res)
+}
+```
+
+# summary
+```{r}
+df.summary = df_summary(df)
+```
+
+
+# 定義站別與重要景點對照表
+```{r}
+# 路線清單
+routes <- df.summary$子路線$unique$values %>% c() %>% na.omit() %>% as.character() 
+
+# 景區清單
+spots <- c("太魯閣",
+           "新城車站", 
+           "花蓮航空站", 
+           "花蓮轉運站/車站", 
+           "東大門夜市", 
+           "新天堂樂園", 
+           "海洋公園", 
+           "志學車站", 
+           "瑞穗車站", 
+           "玉里車站"
+           )
+
+# 建立對照表 (預設 NA)
+df_route_spot <- as.data.frame(matrix(NA, nrow = length(routes), ncol = length(spots), dimnames = list(routes, spots)))
+
+# 設定站名
+df_route_spot['301',  '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['301',  '新天堂樂園']      = '新天堂樂園'
+df_route_spot['301',  '東大門夜市']      = '東大門夜市'
+df_route_spot['302',  '新城車站']        = '新城火車站'
+df_route_spot['302',  '太魯閣']          = '太魯閣'
+df_route_spot['302A', '新城車站']        = '新城火車站'
+df_route_spot['302A', '太魯閣']          = '太魯閣'
+df_route_spot['303',  '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['303B', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['303C', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['303D', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['304',  '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['305',  '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['305A', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['307',  '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['307',  '東大門夜市']      = '東大門夜市'
+df_route_spot['307A', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['308',  '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['308',  '東大門夜市']      = '東大門夜市'
+df_route_spot['308A', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['308A', '東大門夜市']      = '東大門夜市'
+df_route_spot['309',  '玉里車站']        = '玉里火車站'
+df_route_spot['310',  '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['310',  '新城車站']        = '新城火車站'
+df_route_spot['310',  '東大門夜市']      = '東大門夜市'
+df_route_spot['310A', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['310A', '新城車站']        = '新城火車站'
+df_route_spot['310A', '太魯閣']          = '太魯閣'
+df_route_spot['311',  '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['311A', '花蓮航空站']      = '花蓮機場'
+df_route_spot['311A', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['8119', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['8119', '海洋公園']        = '海洋公園'
+df_route_spot['8181', '玉里車站']        = '玉里火車站'
+df_route_spot['1121', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1121', '志學車站']        = '志學'
+df_route_spot['1122', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1122', '瑞穗車站']        = '瑞穗'
+df_route_spot['1122', '志學車站']        = '志學'
+df_route_spot['1128', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1128', '東大門夜市']      = '東大門夜市'
+df_route_spot['1129', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1129', '新城車站']        = '興田'
+df_route_spot['1129', '太魯閣']          = '太魯閣'
+df_route_spot['1129', '東大門夜市']      = '東大門夜市'
+df_route_spot['1130', '玉里車站']        = '玉里站'
+df_route_spot['1132', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1132', '新城車站']        = '興田'
+df_route_spot['1132', '太魯閣']          = '太魯閣'
+df_route_spot['1132', '東大門夜市']      = '東大門夜市'
+df_route_spot['1132A','花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1132A','新城車站']        = '興田'
+df_route_spot['1132A','太魯閣']          = '太魯閣'
+df_route_spot['1132A','東大門夜市']      = '東大門夜市'
+df_route_spot['1133', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1133', '太魯閣']          = '太魯閣'
+df_route_spot['1133', '東大門夜市']      = '東大門夜市'
+df_route_spot['1133', '新城車站']        = '新城火車站'
+df_route_spot['1135', '瑞穗車站']        = '瑞穗'
+df_route_spot['1135', '玉里車站']        = '玉里站'
+df_route_spot['1135A','瑞穗車站']        = '瑞穗'
+df_route_spot['1135A','玉里車站']        = '玉里站'
+df_route_spot['1136', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1136', '新城車站']        = '民治社區'
+df_route_spot['1136', '東大門夜市']      = '東大門夜市'
+df_route_spot['1137', '瑞穗車站']        = '瑞穗'
+df_route_spot['1137', '玉里車站']        = '玉里站'
+df_route_spot['1139', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1139', '東大門夜市']      = '東大門夜市'
+df_route_spot['1139B','花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1139B','東大門夜市']      = '東大門夜市'
+df_route_spot['1139C','花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1139C','東大門夜市']      = '東大門夜市'
+df_route_spot['1140', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1140', '海洋公園']        = '海洋公園'
+df_route_spot['1140A','花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1140A','海洋公園']        = '海洋公園'
+df_route_spot['1141', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1141', '新城車站']        = '興田'
+df_route_spot['1141', '太魯閣']          = '太魯閣'
+df_route_spot['1141', '東大門夜市']      = '東大門夜市'
+df_route_spot['1141A','花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1141A','新城車站']        = '興田'
+df_route_spot['1141A','太魯閣']          = '太魯閣'
+df_route_spot['1141A','東大門夜市']      = '東大門夜市'
+df_route_spot['1142', '瑞穗車站']        = '瑞穗'
+df_route_spot['1142', '玉里車站']        = '玉里站'
+df_route_spot['1143', '瑞穗車站']        = '瑞穗'
+df_route_spot['1145', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1145', '海洋公園']        = '海洋公園'
+df_route_spot['1918', '花蓮轉運站/車站'] = '花蓮轉運站'
+df_route_spot['1918', '新城車站']        = '新城火車站'
+
+# df_route_spot 攤平成長表格
+df_route_spot_long <- df_route_spot %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("路線") %>%   # rownames = 車次/路線
+  pivot_longer(
+    cols = -路線,
+    names_to = "景點",
+    values_to = "站名"
+  ) %>%
+  filter(!is.na(站名))   # 去掉 NA
+```
+
+
+# 觀光景點人數統計長條圖
+```{r}
+tourist_attraction_visitor_statistics_histgram <- function(year.from, year.to) {
+  color <- gray.colors(length(year.from:year.to) + 1)
+  
+  data <- df %>%
+    inner_join(df_route_spot_long, by = c("路線" = "路線", "下車站點名稱" = "站名")) %>%
+    mutate(年 = year(上車交易日期) - 1911) %>% 
+    filter(年 >= year.from - 1911 & 年 <= year.to - 1911) %>% 
+    group_by(年, 景點) %>%
+    summarise(人數 = n(), .groups = "drop") %>% 
+    complete(年, 景點 = factor(spots, levels = spots), fill = list(人數 = 0)) %>%
+    arrange(年, 景點)
+  
+  df_data <- data %>%
+    pivot_wider(
+        names_from = 景點,
+        values_from = 人數,
+        values_fill = 0  # 沒有的補0
+    ) %>%
+    data.frame()
+  
+  # 寫入 .xlsx
+  wb <- createWorkbook()
+  addWorksheet(wb, "觀光景點人數統計")
+  writeData(wb, sheet = "觀光景點人數統計", x = df_data)
+  xlsx_path = "datasets/111-113"
+  if (!dir.exists(xlsx_path)) {
+    dir.create(xlsx_path, recursive = TRUE)
+  }
+  saveWorkbook(wb, file = paste0(xlsx_path, "/花蓮縣重要交通觀光景點下車人數統計.xlsx"), overwrite = TRUE)
+  
+  data$景點 <- factor(data$景點, levels = spots)
+  #data = data %>% filter(景點 != "花蓮轉運站/車站")
+  #data = data %>% mutate(人數 = sqrt(人數))
+  
+  p = ggplot(data, aes(x = 景點, y = 人數, fill = factor(年))) +
+    geom_col(position = "dodge", width = 0.8) +          # 分組長條圖 # 調小長條寬度 → gap 變大
+    scale_fill_manual(values = color) +     # 使用自訂灰階色
+    scale_y_continuous(
+      trans = "sqrt",               # 對柱子高度做 sqrt 變換
+      breaks = scales::pretty_breaks(n = 6),   # 刻度
+      labels = scales::comma       # 顯示原始數字
+    ) +
+    labs(x = "", 
+         y = "人數", 
+         fill = "年度", 
+         title = paste0(year.from - 1911, '年至', year.to - 1911, '年花蓮縣重要交通觀光景點下車人數統計')
+         ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    theme(
+      text = element_text(family = "Kai", size = 16),          # 基本文字大小
+      axis.title = element_text(size = 18),                    # x, y 軸標題
+      axis.text = element_text(size = 14),                     # x, y 軸文字
+      plot.title = element_text(size = 20),                    # 圖標題
+      legend.title = element_text(size = 16),                  # 圖例標題
+      legend.text = element_text(size = 14),                   # 圖例文字
+      panel.grid.major.y = element_line(color = "gray80"),     # 僅保留橫線
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      panel.background = element_rect(fill = "white", color = NA),  # 面板背景白色
+      plot.background = element_rect(fill = "white", color = NA)    # 圖片背景白色
+    )
+  return(p)
+}
+
+generate_tourist_attraction_visitor_statistics_histgram <- function(year.from, year.to) {
+  # 儲存圖片
+  path = paste0("images/barplot/111-113")
+  check_path(path)
+  img_filename = paste0(year.from - 1911, '年至', year.to - 1911, '年花蓮縣重要交通觀光景點下車人數統計')
+  p = tourist_attraction_visitor_statistics_histgram(year.from, year.to)
+  ggsave(filename = paste0(path, "/", img_filename, ".png"), plot = p, width = 15, height = 5, units = "in", dpi = 300)
+}
+
+# 繪圖
+generate_tourist_attraction_visitor_statistics_histgram(2022, 2024)
+```
+
+## 觀光景點上下車人數及百分比前三名及後三名路線
+```{r}
+top3_and_bottom3_analysis <- function(year.from, year.to){
+  # df_route_spot 攤平成長表格
+  df_route_spot_long <- df_route_spot %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column("路線") %>%   # rownames = 車次/路線
+    pivot_longer(
+      cols = -路線,
+      names_to = "景點",
+      values_to = "站名"
+    ) %>%
+    filter(!is.na(站名))   # 去掉 NA
+  
+  data <- df_bus %>%
+    inner_join(df_route_spot_long, by = c("路線" = "路線", "下車站點名稱" = "站名")) %>%
+    mutate(年 = year(上車交易日期) - 1911) %>% 
+    filter(年 >= year.from - 1911 & 年 <= year.to - 1911) %>% 
+    group_by(路線, 景點) %>%
+    summarise(人數 = n(), .groups = "drop")
+  
+  df_total <- data %>% 
+    group_by(景點) %>% 
+    summarise(總數 = sum(人數, na.rm = TRUE), .groups = "drop")
+    
+  df_top <- data %>%
+    group_by(景點) %>%
+    arrange(desc(人數), .by_group = TRUE) %>%
+    slice_head(n = 3) %>%
+    left_join(df_total, by = "景點") %>%
+    mutate(百分比 = ifelse(is.na(人數), NA, ((人數 / 總數 * 100) %>% round(., 2) %>% paste0(., "%"))),
+           rank = row_number()
+           ) %>%
+    ungroup() %>% 
+    complete(nesting(景點), rank = 1:3, fill = list(路線 = NA, 人數 = NA, 百分比 = NA)) %>%
+    mutate(類別 = paste0("Top", rank)) %>%
+    select(-rank, -總數)
+  
+  df_bottom <- data %>%
+    group_by(景點) %>%
+    arrange(人數, .by_group = TRUE) %>%
+    slice_head(n = 3) %>%
+    left_join(df_total, by = "景點") %>%
+    mutate(百分比 = ifelse(is.na(人數), NA, ((人數 / 總數 * 100) %>% round(., 2) %>% paste0(., "%"))),
+           rank = row_number()
+           ) %>%
+    ungroup() %>% 
+    complete(nesting(景點), rank = 1:3, fill = list(路線 = NA, 人數 = NA, 百分比 = NA)) %>%
+    mutate(類別 = paste0("Bottom", rank)) %>%
+    select(-rank, -總數)
+  
+  df_data <- bind_cols(df_top, df_bottom)
+  
+  print(df_data)
+    
+  # 寫入 .xlsx
+  wb <- createWorkbook()
+  addWorksheet(wb, "花蓮縣觀光景點上下車人數及百分比前三名及後三名路線")
+  writeData(wb, sheet = "花蓮縣觀光景點上下車人數及百分比前三名及後三名路線", x = df_data)
+  xlsx_path = paste0("datasets/", year.from - 1911, "-", year.to - 1911)
+  if (!dir.exists(xlsx_path)) {
+    dir.create(xlsx_path, recursive = TRUE)
+  }
+  saveWorkbook(wb, file = paste0(xlsx_path, "/花蓮縣觀光景點上下車人數及百分比前三名及後三名路線.xlsx"), overwrite = TRUE)
+}
+
+top3_and_bottom3_analysis(2022, 2024)
+```
+
+## 平假日分析
+```{r}
+weekday_analysis <- function(year.from, year.to){
+  
+  data <- df_bus %>%
+    filter(
+      上車交易日期 >= as.Date(paste0(year.from, "-01-01")),
+      上車交易日期 <= as.Date(paste0(year.to, "-12-31"))
+    ) %>%
+    inner_join(df_route_spot_long, by = c("路線" = "路線", "下車站點名稱" = "站名")) %>%
+    mutate(平假日 = if_else(wday(上車交易日期) %in% c(1,7), "假日", "平日")) %>% 
+    group_by(景點, 平假日) %>%
+    summarise(人次 = n(), .groups = "drop")
+  
+  df_total <- data %>%
+    group_by(平假日) %>%
+    summarise(人次 = sum(人次), .groups = "drop") %>%
+    mutate(景點 = "總計") %>%
+    select(景點, 平假日, 人次)
+  
+  dates = seq.Date(from = as.Date(paste0(year.from, "-01-01")), to = as.Date(paste0(year.to, "-12-31")), by = "day")
+  df_weekdays <- tibble(日期 = dates) %>% 
+    mutate(
+      平假日 = if_else(wday(日期) %in% c(1, 7), "假日", "平日")
+    ) %>%
+    count(平假日, name = "天數") %>% 
+    pivot_wider(names_from = 平假日, values_from = 天數) %>% 
+    data.frame()
+  
+  df_data <- bind_rows(data, df_total) %>%
+    mutate(.is_total = (景點 == "總計")) %>%
+    arrange(.is_total, 景點, factor(平假日, levels = c("平日", "假日"))) %>%
+    select(-.is_total) %>% 
+    pivot_wider(., names_from = 平假日, values_from = 人次) %>%
+    mutate(平日平均 = 平日 / df_weekdays$平日,
+           假日平均 = 假日 / df_weekdays$假日,
+           平假日平均比值百分比 = (平日平均 / 假日平均 * 100) %>% round(., 2) %>% paste0(., "%")
+           )
+
+  # 寫入 .xlsx
+  wb <- createWorkbook()
+  addWorksheet(wb, paste0(year.from - 1911, "-", year.to - 1911, "年花蓮縣平假日分析"))
+  writeData(wb, sheet = paste0(year.from - 1911, "-", year.to - 1911, "年花蓮縣平假日分析"), x = df_data)
+  xlsx_path = paste0("datasets/", year.from - 1911, "-", year.to - 1911)
+  if (!dir.exists(xlsx_path)) {
+    dir.create(xlsx_path, recursive = TRUE)
+  }
+  saveWorkbook(wb, file = paste0(xlsx_path, "/", year.from - 1911, "-", year.to - 1911, "年花蓮縣平假日分析.xlsx"), overwrite = TRUE)
+}
+
+weekday_analysis(2022, 2024)
+```
+
+## 上下車鄉鎮分析 
+### 讀取 TDX 資料
+```{r}
+TDX_path = "../../TDX/公路客運_花蓮市區公車_台東市區公車站點鄉鎮.csv"
+df_TDX = read_csv(TDX_path, locale = locale(encoding = "BIG5"))
+df_TDX.summary <- df_TDX %>% df_summary(.)
+
+df_TDX_reduce <- df_TDX %>% 
+  select(RouteName, SubRouteName, Direction, StopName, PositionLon, PositionLat, COUNTYNAME, TOWNNAME) %>% 
+  distinct()
+df_TDX_reduce.summary <- df_TDX_reduce %>% df_summary(.)
+```
+
+### 重複資料檢查
+```{r}
+# 先統計兩邊 key 出現次數
+left_count <- df_bus %>%
+    count(路線, 去返程分類, 上車站點名稱, name = "n_left")
+
+right_count <- df_TDX_reduce %>%
+    count(SubRouteName, Direction, StopName, name = "n_right")
+
+# 合併統計，檢查多對多
+conflicts <- left_count %>%
+    inner_join(right_count, 
+               by = c("路線" = "SubRouteName", "去返程分類" = "Direction", "上車站點名稱" = "StopName")) %>%
+    mutate(expanded_rows = n_left * n_right) %>%
+    filter(n_left > 1 & n_right > 1)   # 只挑出真正 many-to-many 的
+
+conflicts
+```
+
+```{r}
+# 如下解決衝突
+
+# > conflicts
+# # A tibble: 2 × 6
+#   路線  去返程分類 上車站點名稱 n_left n_right expanded_rows
+#   <chr>      <dbl> <chr>         <int>   <int>         <int>
+# 1 1145           0 小港             29       2            58
+# 2 1145           1 小港            194       2           388
+
+# 因全臺灣同一路線僅 1145 出現同一班車有兩相同站名，又因此處僅分析花蓮縣客運，故刪除臺東站點防止合併衝突
+
+df_TDX_reduce <- df_TDX_reduce %>% 
+  filter(!(RouteName == "1145" & StopName == "小港" & COUNTYNAME == "臺東縣"))
+df_TDX_reduce.summary <- df_TDX_reduce %>% df_summary(.)
+```
+
+### 定義新舊站點對照表
+```{r}
+rename_stop_map <- list(
+  # "舊" = "新" ，若已裁撤就填寫附近同鄉鎮站點
+  `303` = c(
+    "林田山林業文化園區"     = "花蓮轉運站",
+    "松園別館"               = "花蓮轉運站"
+  ),
+  `305` = c(
+    "慈濟科技大學"           = "慈濟大學(建國校區)"
+  ),
+  `308` = c(
+    "花蓮火車站"             = "花蓮轉運站",
+    "翰品酒店"               = "花蓮轉運站",
+    "亞士都飯店"             = "花蓮轉運站"
+  ),
+  `310` = c(
+    "花蓮火車站"             = "花蓮轉運站",
+    "砂卡噹"                 = "太魯閣遊客中心",
+    "補點1"                  = NA,
+    "補點2"                  = NA,
+    "補點3"                  = NA,
+    "花蓮觀光漁港"           = "花蓮轉運站"
+  ),
+  `1121` = c(
+    "花蓮火車站"             = "花蓮轉運站",
+    "萬榮"                   = "萬榮火車站",
+    "南華車站"               = "干城福德宮",
+    "榮民醫院"               = "鳳林榮民醫院",
+    "中華站"                 = "中華路",
+    "中正站"                 = "花蓮文創園區(中正)",
+    "壽豐車站"               = "壽豐火車站",
+    "北林"                   = "鳳林自強平和路口",
+    "南林"                   = "鳳林自強平康路口",
+    "安養中心"               = "壽豐志平",
+    "森榮里"                 = "長橋",
+    "順昌"                   = "萬榮火車站",
+    "鳳信里"                 = "鳳信社區",
+    "明利"                   = "萬榮火車站",
+    "中原農場"               = "鳳林變電所",
+    "兆豐農場"               = "兆豐農場(林榮路)"
+  ),
+  `1122` = c(
+    "大農大富平地森林園區"   = "大農大富平地森林園區(台9線)",
+    "花蓮火車站"             = "花蓮轉運站",
+    "南華車站"               = "干城福德宮",
+    "榮民醫院"               = "鳳林榮民醫院",
+    "中華站"                 = "中華路",
+    "自強外獄"               = "大農大富平地森林園區(台9線)",
+    "中正站"                 = "花蓮文創園區(中正)",
+    "壽豐車站"               = "壽豐火車站",
+    "光復火車站"             = "光復火車站(台9線)",
+    "明利"                   = "萬榮火車站",
+    "順昌"                   = "萬榮火車站",
+    "森榮里"                 = "長橋",
+    "馬遠"                   = "富源教會",
+    "中原農場"               = "鳳林變電所",
+    "兆豐農場"               = "兆豐農場(林榮路)",
+    "安養中心"               = "壽豐志平",
+    "萬榮"                   = "萬榮火車站",
+    "南林"                   = "鳳林自強平康路口",
+    "馬遠分校"               = "瑞北",
+    "北林"                   = "鳳林自強平和路口",
+    "鳳信里"                 = "鳳信社區"
+  ),
+  `1123` = c(
+    "花蓮火車站"             = NA,
+    "臺灣企銀"               = NA,
+    "市立圖書館"             = NA,
+    "花蓮醫院"               = NA,
+    "花蓮旅行社"             = NA,
+    "東大門夜市"             = NA,
+    "美崙飯店"               = NA,
+    "亞士都飯店"             = NA,
+    "中興中美路口"           = NA,
+    "花蓮機場"               = NA,
+    "花蓮商校"               = NA,
+    "民權一街"               = NA,
+    "石雕博物館"             = NA,
+    "嘉里村"                 = NA,
+    "明廉國小"               = NA,
+    "榮民之家"               = NA,
+    "翰品酒店"               = NA,
+    "家樂福"                 = NA,
+    "大陳一村"               = NA,
+    "郵政總局"               = NA,
+    "門諾醫院"               = NA,
+    "慈濟醫院"               = NA,
+    "大同市場"               = NA,
+    "海星中學"               = NA
+  ),
+  `1125` = c(
+    "敦厚路"                 = "光復站"
+  ),
+  `1129` = c(
+    "花蓮醫院"               = "花蓮醫院(將軍府)",
+    "中華站"                 = "中華路",
+    "花蓮總站"               = "花蓮轉運站",
+    "花蓮工校"               = "國立花蓮高工",
+    "花蓮火車站"             = "花蓮轉運站",
+    "文化園區"               = "花蓮文創園區",
+    "新城"                   = "興田"
+  ),
+  `1130` = c(
+    "古風"                   = "明里"
+  ),
+  `1132` = c(
+    "花蓮醫院"               = "花蓮醫院(將軍府)"
+  ),
+  `1133` = c(
+    "花蓮醫院"               = "花蓮醫院(將軍府)"
+  ),
+  `1136` = c(
+    "花蓮醫院"               = "花蓮醫院(將軍府)"
+  ),
+  `1137` = c(
+    "瑞穗加油站"             = "瑞穗中正南瑞強路口",
+    "大農大富平地森林園區"   = "大農大富平地森林園區(台9線)"
+  ),
+  `1139` = c(
+    "慶豐郵局"               = "好客藝術村",
+    "南華四街"               = "吉安五南華四街口",
+    "吉安鄉公所"             = "吉安鄉公所(慶修院 )"
+  ),
+  `1141` = c(
+    "花蓮火車站"             = "花蓮轉運站",
+    "新城"                   = "新城佳興冰果室",
+    "花蓮工校"               = "國立花蓮高工",
+    "慈母橋"                 = "太魯閣國家公園管理處",
+    "花蓮醫院"               = "花蓮醫院(將軍府)",
+    "花蓮總站"               = "東大門夜市",
+    "中華站"                 = "中華路",
+    "文化園區"               = "花蓮文創園區"
+  ),
+  `1142` = c(
+    "大農大富平地森林園區"   = "大農大富平地森林園區(台9線)",
+    "光復火車站"             = "光復火車站(台9線)",
+    "馬遠"                   = "富源教會",
+    "玉里街"                 = "玉里中山路二段口",
+    "自強外獄"               = "大農大富平地森林園區(台9線)",
+    "瑞穗加油站"             = "瑞穗中正南瑞強路口",
+    "地政事務所"             = "自來水公司玉里所",
+    "三民村"                 = "三民火車站",
+    "大彎"                   = "大灣福德宮",
+    "鶴山茶園"               = "北回歸線公園(瑞穗)",
+    "三民車站"               = "三民火車站"
+  ),
+  `1145` = c(
+    "進豐街"	               = "市民廣場",
+    "石梯漁港北口"	         = "靜埔B",
+    "大峯村"	               = "大?村"
+  ),
+  `8119` = c(
+    "寧浦"                   = "寧埔",
+    "花蓮文創園區(中"        = "花蓮文創園區(中正)",
+    "大峰村"                 = "大?村",
+    "長濱衛生所"             = "公糧倉庫"
+  )
+)
+
+# 依路線數字替換站名
+rename_stop <- function(route_num_vec, stop_name_vec) {
+  map2_chr(route_num_vec, stop_name_vec, ~{
+    route_key <- as.character(.x)
+    if (route_key %in% names(rename_stop_map) && .y %in% names(rename_stop_map[[route_key]])) {
+      rename_stop_map[[route_key]][[.y]]
+    } else {
+      .y
+    }
+  })
+}
+```
+
+### 定義南到北鄉鎮
+```{r}
+hua_township_order = c(
+  "臺中市",
+  "南投縣",
+  "臺東縣",
+  "富里鄉",
+  "玉里鎮",
+  "卓溪鄉",
+  "瑞穗鄉",
+  "萬榮鄉",
+  "光復鄉",
+  "鳳林鎮",
+  "豐濱鄉",
+  "壽豐鄉",
+  "秀林鄉",
+  "吉安鄉",
+  "花蓮市",
+  "新城鄉"
+)
+```
+
+
+### 熱力圖分析
+```{r}
+year.from = 2024
+year.to = 2024
+
+data <- df_bus %>% 
+  select(路線, 上車交易日期, 去返程分類, 上車站點名稱, 下車站點名稱, 客運公司編號) %>% 
+  filter(
+      上車交易日期 >= as.Date(paste0(year.from, "-01-01")),
+      上車交易日期 <= as.Date(paste0(year.to, "-12-31")),
+      !(上車站點名稱 %in% c("", "-99") | is.na(上車站點名稱)),
+      !(下車站點名稱 %in% c("", "-99") | is.na(下車站點名稱))
+    ) %>% 
+  mutate(路線數字 = as.numeric(gsub("[^0-9]", "", 路線)),
+         上車站點名稱 = rename_stop(路線數字, 上車站點名稱),
+         下車站點名稱 = rename_stop(路線數字, 下車站點名稱)
+         ) %>% 
+  
+  # 上車鄉鎮
+  ## 依去返程分類
+  left_join(df_TDX_reduce, by = c("路線" = "SubRouteName", 
+                                  "去返程分類" = "Direction", 
+                                  "上車站點名稱" = "StopName")
+            ) %>% 
+  select(-RouteName, -PositionLon, -PositionLat) %>% 
+  rename(上車縣市 = COUNTYNAME, 上車鄉鎮 = TOWNNAME) %>% 
+  ## 依照無法判別去返程 (255) 再次分類
+  left_join(df_TDX_reduce %>% 
+              select(-Direction, -SubRouteName, -PositionLon, -PositionLat) %>% 
+              distinct(RouteName, StopName, .keep_all = TRUE),  # 只保留第一筆匹配到的鄉鎮，移除重複站名
+            by = c("路線數字" = "RouteName", 
+                   "上車站點名稱" = "StopName")
+            ) %>% 
+  mutate(
+    上車鄉鎮 = if_else(is.na(上車鄉鎮), TOWNNAME, 上車鄉鎮),
+    上車縣市 = if_else(is.na(上車縣市), COUNTYNAME, 上車縣市)
+  ) %>%
+  select(-TOWNNAME, -COUNTYNAME) %>% 
+  
+  # 下車鄉鎮
+  ## 依去返程分類
+  left_join(df_TDX_reduce, by = c("路線" = "SubRouteName", 
+                                  "去返程分類" = "Direction", 
+                                  "下車站點名稱" = "StopName")
+            ) %>% 
+  select(-RouteName, -PositionLon, -PositionLat) %>% 
+  rename(下車縣市 = COUNTYNAME, 下車鄉鎮 = TOWNNAME) %>% 
+  ## 依照無法判別 (255) 再次分類
+    left_join(df_TDX_reduce %>% 
+              select(-Direction, -SubRouteName, -PositionLon, -PositionLat) %>% 
+              distinct(RouteName, StopName, .keep_all = TRUE),  # 只保留第一筆匹配到的鄉鎮，移除重複站名
+            by = c("路線數字" = "RouteName", 
+                   "下車站點名稱" = "StopName")
+            ) %>% 
+  mutate(
+    下車鄉鎮 = if_else(is.na(下車鄉鎮), TOWNNAME, 下車鄉鎮),
+    下車縣市 = if_else(is.na(下車縣市), COUNTYNAME, 下車縣市)
+  ) %>%
+  select(-TOWNNAME, -COUNTYNAME)
+```
+
+### 檢查上下車站點所在鄉鎮是否存在 NA 情況，如有則需修改對照表
+```{r}
+# 上車鄉鎮為 NA 的站點
+up_na <- data %>%
+  filter(is.na(上車鄉鎮)) %>%
+  select(路線, 上車站點名稱) %>%
+  distinct() %>%
+  rename(站點名稱 = 上車站點名稱)
+
+# 下車鄉鎮為 NA 的站點
+down_na <- data %>%
+  filter(is.na(下車鄉鎮)) %>%
+  select(路線, 下車站點名稱) %>%
+  distinct() %>%
+  rename(站點名稱 = 下車站點名稱)
+
+df_township_analysis_na_stop <- bind_rows(up_na, down_na) %>% 
+  distinct()
+
+print(df_township_analysis_na_stop)
+```
+
+```{r}
+data <- data %>% 
+  # 修改外縣鄉鎮 -> 外縣
+  mutate(
+    上車鄉鎮 = if_else(上車縣市 != "花蓮縣", 上車縣市, 上車鄉鎮),
+    下車鄉鎮 = if_else(下車縣市 != "花蓮縣", 下車縣市, 下車鄉鎮)
+  ) %>%
+  select(上車鄉鎮, 下車鄉鎮) %>% 
+  drop_na() %>% 
+  # 排序南到北
+  mutate(
+    上車鄉鎮 = factor(上車鄉鎮, levels = hua_township_order),
+    下車鄉鎮 = factor(下車鄉鎮, levels = hua_township_order)
+  ) %>% 
+  # 計算鄉鎮數量
+  group_by(上車鄉鎮, 下車鄉鎮) %>% 
+  summarise(數量 = n(), .groups = "drop") %>% 
+  arrange(desc(數量))
+
+# 寫入 .xlsx
+wb <- createWorkbook()
+addWorksheet(wb, "113年花蓮縣鄉鎮上下車")
+writeData(wb, sheet = "113年花蓮縣鄉鎮上下車", x = data %>% pivot_wider(names_from = 下車鄉鎮, values_from = 數量))
+xlsx_path = paste0("datasets/113")
+if (!dir.exists(xlsx_path)) {
+  dir.create(xlsx_path, recursive = TRUE)
+}
+saveWorkbook(wb, file = paste0(xlsx_path, "/113年花蓮縣鄉鎮上下車.xlsx"), overwrite = TRUE)
+```
+
+### 鄉鎮上下車熱力圖
+```{r}
+p <- ggplot(data, aes(x = 下車鄉鎮, y = 上車鄉鎮)) +
+  geom_tile(aes(fill = 數量), color = "white") + 
+  scale_fill_gradient(
+    trans = "sqrt",                      # ✅ 填色開根號變換
+    # low = "white", high = "red",
+    low = "grey90",          # 幾乎白
+    high = "grey10",         # 幾乎黑
+    labels = scales::comma                  # ✅ 格式化數字
+  ) +
+  labs(
+    title = "花蓮縣113年客運鄉鎮搭乘需求熱力圖",
+    x = "下車鄉鎮",
+    y = "上車鄉鎮",
+    fill = "乘客數量"
+  ) +
+  theme_minimal(base_family = "Kai") +   
+  theme(
+    axis.text.x  = element_text(angle = 45,
+                                hjust = 1,
+                                family = "Kai",
+                                size = 12), # X軸字體大小
+    axis.text.y  = element_text(family = "Kai",
+                                size = 12), # Y軸字體大小
+    axis.title.x = element_text(family = "Kai",
+                                size = 14), # X軸標題大小
+    axis.title.y = element_text(family = "Kai",
+                                size = 14), # Y軸標題大小
+    plot.title   = element_text(hjust = 0,
+                                family = "Kai",
+                                size = 18,
+                                face = "bold"),
+    legend.title = element_text(family = "Kai", size = 14),
+    legend.text  = element_text(family = "Kai", size = 12)
+  )
+
+# 儲存圖片
+path = paste0("images/heatmap/")
+check_path(path)
+img_filename = paste0("花蓮縣113年客運鄉鎮搭乘需求熱力圖")
+ggsave(filename = paste0(path, "/", img_filename, ".png"),
+       plot = p,
+       bg = "white",
+       width = 15,
+       height = 10,
+       units = "in",
+       dpi = 600)
+```
+
+
+
+
+
+
+
+
+
+
+
+
