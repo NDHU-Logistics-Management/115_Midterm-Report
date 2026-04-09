@@ -1,0 +1,775 @@
+---
+title: "Important Spots Analysis for 115 Minterm"
+author: "Hsu, Yao-Chih"
+date: "2026-04-08"
+output: html_notebook
+---
+
+# library
+```{r}
+library(xml2)
+library(data.table)
+library(dplyr)
+library(lubridate)
+library(tidyr)
+library(ggplot2)
+library(future.apply)
+library(progressr)
+library(geosphere)
+library(readxl)
+library(pbapply)
+library(stringr)
+library(openxlsx)
+library(readr)
+library(purrr)
+```
+
+# time
+```{r}
+start_time = Sys.time()
+```
+
+# load data
+```{r}
+data_path = "../data/"
+df_2023 <- read.csv(paste0(data_path, "公路客運2023.csv")) %>% 
+  mutate(
+    搭乘路線名稱 = as.character(搭乘路線名稱),
+    搭乘附屬路線名稱 = as.character(搭乘附屬路線名稱)
+  )
+df_2024 <- read.csv(paste0(data_path, "公路客運2024.csv")) %>% 
+  mutate(
+    搭乘路線名稱 = as.character(搭乘路線名稱),
+    搭乘附屬路線名稱 = as.character(搭乘附屬路線名稱)
+  )
+df_2025 <- read.csv(paste0(data_path, "公路客運2025.csv")) %>% 
+  mutate(
+    搭乘路線名稱 = as.character(搭乘路線名稱),
+    搭乘附屬路線名稱 = as.character(搭乘附屬路線名稱)
+  )
+df_city <- read.csv(paste0(data_path, "臺東縣公車.csv")) %>% 
+  mutate(
+    搭乘路線名稱 = as.character(搭乘路線名稱),
+    搭乘附屬路線名稱 = as.character(搭乘附屬路線名稱)
+  )
+df_original <- bind_rows(df_2023, df_2024, df_2025, df_city)
+```
+
+```{r}
+head(df_original)
+```
+
+```{r}
+df_original %>% colnames()
+```
+
+# reduce df
+```{r}
+df = df_original %>% 
+  select(
+    業者編號,
+    卡號,
+    電子票證卡種,
+    持卡身分,
+    票種次類型,
+    路線 = 搭乘路線名稱,
+    子路線 = 搭乘附屬路線名稱,
+    方向 = 搭乘公車路線方向,
+    上車站牌名稱,
+    上車站序 = 上車計費站序資料,
+    上車時間 = 刷卡上車時間,
+    下車站牌名稱,
+    下車站序 = 下車站牌站序,
+    下車時間 = 刷卡下車時間,
+    異常 = 是否包含異常值.係指上下站值為.99或上下車時間為1970.01.01.00.00.00之情況.,
+    日期 = 資料代表日期.yyyy.MM.dd.
+  ) %>%
+  mutate(
+    年份 = year(as.Date(日期)) - 1911,
+    路線 = as.character(路線)
+  )
+
+df
+```
+
+# configs
+```{r}
+year.from = 2023
+year.to = 2025
+month.from = 1
+month.to = 12
+windowsFonts(kai = windowsFont("Microsoft JhengHei"))
+```
+
+# summary function
+```{r}
+df_summary <- function(data) {
+  res <- list()
+  
+  # 使用 pblapply 取代 for 迴圈，自動顯示進度條
+  temp_res <- pblapply(colnames(data), function(col) {
+    # 計算每個 unique 值出現次數
+    tbl <- data.frame(table(data[[col]], useNA = "ifany"), stringsAsFactors = FALSE)
+    colnames(tbl) <- c("values", "times")
+    
+    list(
+      unique = tbl,
+      NAs = sum(is.na(data[[col]])),
+      type = class(data[[col]])[1]
+    )
+  })
+  
+  # 將結果組回 list，欄位名稱對應原欄位
+  names(temp_res) <- colnames(data)
+  res <- temp_res
+  
+  return(res)
+}
+```
+
+# summary
+```{r}
+df.summary = df_summary(df)
+```
+
+
+# 定義站別與重要景點對照表
+```{r}
+# 路線清單
+routes <- df.summary$子路線$unique$values %>% c() %>% na.omit() %>% as.character() 
+
+# 景區清單
+## 請取鄰近 500 m
+spots <- data.frame(
+  景點 = c(
+    "臺東轉運站",
+    "臺東車站",
+    "臺東航空站",
+    "池上車站",
+    "富岡漁港及小野柳",
+    "都蘭遊憩區",
+    "都蘭遊憩區",
+    "卑南初鹿地區",
+    "卑南初鹿地區",
+    "卑南初鹿地區",
+    "卑南初鹿地區",
+    "三仙台遊憩區",
+    "鹿野高台"
+  ),
+  lat = c(
+    22.752030106452885,
+    22.792736141920486, 
+    22.755704801070728, 
+    23.1258493402344,   
+    22.794234266283055, 
+    22.874313079458283, 
+    22.867901616990604, 
+    22.865610055606645, 
+    22.854160719048227, 
+    22.85212800927866,  
+    22.860901155161912, 
+    23.12239504572739,  
+    22.920250626424057
+  ),
+  lon = c(
+    121.14751770625294,
+    121.12351830735503,
+    121.107187832452,
+    121.21970161828274,
+    121.19384171073096,
+    121.22838925670898,
+    121.21863475616063,
+    121.10802920174031,
+    121.10413309892175,
+    121.09204970995559,
+    121.09259286683559,
+    121.40381687778647,
+    121.12349969498933
+  ),
+  stringsAsFactors = FALSE
+)
+
+d_meter = 500
+
+df_route_spot_long <- tibble(
+  路線 = character(),
+  景點 = character(),
+  站名 = character()
+)
+
+```
+
+## load coors
+```{r}
+data_path = "../區域分析code/"
+coor_intercity <- read.csv(paste0(data_path, "公路客運站點里程.csv"), fileEncoding = "BIG5", colClasses = "character")
+coor_HUA <- read.csv(paste0(data_path, "花蓮市區公車站點里程.csv"), fileEncoding = "BIG5", colClasses = "character")
+coor_TTT <- read.csv(paste0(data_path, "臺東市區公車站點里程.csv"), fileEncoding = "BIG5", colClasses = "character")
+
+# 欄位名稱列表，需要轉成數值
+num_cols <- c("Direction", "StopID", "StopBoarding", "StopSequence",
+              "PositionLon", "PositionLat", "StationID", "Dist_Cum", "Dist_Intv")
+
+# 批量轉換函數
+convert_to_numeric <- function(df, cols) {
+  for (col in cols) {
+    if (col %in% names(df)) {
+      df[[col]] <- suppressWarnings(as.numeric(df[[col]]))
+    }
+  }
+  return(df)
+}
+
+# 套用到三個 CSV
+coor_intercity <- convert_to_numeric(coor_intercity, num_cols)
+coor_HUA       <- convert_to_numeric(coor_HUA, num_cols)
+coor_TTT       <- convert_to_numeric(coor_TTT, num_cols)
+
+coor_original <- bind_rows(coor_intercity, coor_HUA, coor_TTT)
+coor_original
+```
+
+## reduce coor
+```{r}
+coor <- coor_original %>% 
+  select(
+    RouteName, 
+    SubRouteName, 
+    StopName, PositionLon, 
+    PositionLat, 
+    LocationCityCode
+    ) %>%
+  filter(
+    LocationCityCode %in% c("TTT", "HUA")
+    )
+
+coor
+```
+
+```{r}
+# pblapply 逐景點比對
+results_list <- pblapply(1:nrow(spots), function(i) {
+  spot <- spots[i, ]
+  
+  # 計算每個站點到這個景點的距離
+  coor$dist_m <- distHaversine(
+    matrix(c(coor$PositionLon, coor$PositionLat), ncol = 2),
+    c(spot$lon, spot$lat)
+  )
+  
+  # 篩選距離小於 d_meter 的站點
+  matched <- coor %>%
+    filter(dist_m <= d_meter) %>%
+    select(RouteName, StopName)
+  
+  if(nrow(matched) > 0){
+    tibble(
+      路線 = matched$RouteName,
+      景點 = spot$景點,
+      站名 = matched$StopName
+    )
+  } else {
+    NULL
+  }
+})
+
+# 合併所有結果
+df_route_spot_long <- bind_rows(results_list) %>%
+  distinct() %>%
+  group_by(路線, 站名) %>%
+  slice(1) %>%        # 只保留配對到的第一筆景點
+  ungroup()
+
+# 查看結果
+df_route_spot_long
+```
+
+# check the save path function
+```{r}
+check_path <- function(path) {
+  if (!dir.exists(path)) {
+    dir.create(path, recursive = TRUE, showWarnings = FALSE)
+  }
+} 
+```
+
+# 觀光景點人數統計長條圖
+```{r}
+tourist_attraction_visitor_statistics_histgram <- function(year.from, year.to) {
+  color <- gray.colors(length(year.from:year.to) + 1)
+  
+  data <- df %>%
+    inner_join(df_route_spot_long, by = c("路線" = "路線", "下車站牌名稱" = "站名")) %>%
+    filter(年份 >= year.from - 1911 & 年份 <= year.to - 1911) %>% 
+    group_by(年份, 景點) %>%
+    summarise(人數 = n(), .groups = "drop") %>% 
+    complete(年份, 景點 = factor(unique(spots$景點), levels = unique(spots$景點)), fill = list(人數 = 0)) %>%
+    arrange(年份, 景點)
+  
+  df_data <- data %>%
+    pivot_wider(
+        names_from = 景點,
+        values_from = 人數,
+        values_fill = 0  # 沒有的補0
+    ) %>%
+    data.frame()
+  
+  # 寫入 .xlsx
+  wb <- createWorkbook()
+  addWorksheet(wb, "觀光景點人數統計")
+  writeData(wb, sheet = "觀光景點人數統計", x = df_data)
+  xlsx_path = paste0("datasets/", year.from - 1911, "-", year.to - 1911)
+  if (!dir.exists(xlsx_path)) {
+    dir.create(xlsx_path, recursive = TRUE)
+  }
+  saveWorkbook(wb, file = paste0(xlsx_path, "/臺東縣重要交通觀光景點下車人數統計.xlsx"), overwrite = TRUE)
+  
+  data$景點 <- factor(data$景點, levels = unique(spots$景點))
+  #data = data %>% filter(景點 != "花蓮轉運站/車站")
+  #data = data %>% mutate(人數 = sqrt(人數))
+  
+  p = ggplot(data, aes(x = 景點, y = 人數, fill = factor(年份))) +
+    geom_col(position = "dodge", width = 0.8) +          # 分組長條圖 # 調小長條寬度 → gap 變大
+    scale_fill_manual(values = color) +     # 使用自訂灰階色
+    scale_y_continuous(
+      trans = "sqrt",               # 對柱子高度做 sqrt 變換
+      breaks = scales::pretty_breaks(n = 6),   # 刻度
+      labels = scales::comma       # 顯示原始數字
+    ) +
+    labs(x = "", 
+         y = "人數", 
+         fill = "年度", 
+         title = paste0(year.from - 1911, '年至', year.to - 1911, '年臺東縣重要交通觀光景點下車人數統計')
+         ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    theme(
+      text = element_text(family = "Kai", size = 16),          # 基本文字大小
+      axis.title = element_text(size = 18),                    # x, y 軸標題
+      axis.text = element_text(size = 14),                     # x, y 軸文字
+      plot.title = element_text(size = 20),                    # 圖標題
+      legend.title = element_text(size = 16),                  # 圖例標題
+      legend.text = element_text(size = 14),                   # 圖例文字
+      panel.grid.major.y = element_line(color = "gray80"),     # 僅保留橫線
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      panel.background = element_rect(fill = "white", color = NA),  # 面板背景白色
+      plot.background = element_rect(fill = "white", color = NA)    # 圖片背景白色
+    )
+  return(p)
+}
+
+generate_tourist_attraction_visitor_statistics_histgram <- function(year.from, year.to) {
+  # 儲存圖片
+  path = paste0("images/barplot/", year.from - 1911, "-", year.to - 1911)
+  check_path(path)
+  img_filename = paste0(year.from - 1911, '年至', year.to - 1911, '年臺東縣重要交通觀光景點下車人數統計')
+  p = tourist_attraction_visitor_statistics_histgram(year.from, year.to)
+  ggsave(filename = paste0(path, "/", img_filename, ".png"), plot = p, width = 15, height = 5, units = "in", dpi = 300)
+}
+
+# 繪圖
+generate_tourist_attraction_visitor_statistics_histgram(2023, 2025)
+```
+
+# 觀光景點上下車人數及百分比前三名及後三名路線
+```{r}
+top3_and_bottom3_analysis <- function(year.from, year.to){
+  
+  data <- df %>%
+    inner_join(df_route_spot_long, by = c("路線" = "路線", "下車站牌名稱" = "站名")) %>%
+    mutate(年份 = year(日期) - 1911) %>% 
+    filter(年份 >= year.from - 1911 & 年份 <= year.to - 1911) %>% 
+    group_by(路線, 景點) %>%
+    summarise(人數 = n(), .groups = "drop")
+  
+  df_total <- data %>% 
+    group_by(景點) %>% 
+    summarise(總數 = sum(人數, na.rm = TRUE), .groups = "drop")
+    
+  df_top <- data %>%
+    group_by(景點) %>%
+    arrange(desc(人數), .by_group = TRUE) %>%
+    slice_head(n = 3) %>%
+    left_join(df_total, by = "景點") %>%
+    mutate(百分比 = ifelse(is.na(人數), NA, ((人數 / 總數 * 100) %>% round(., 2) %>% paste0(., "%"))),
+           rank = row_number()
+           ) %>%
+    ungroup() %>% 
+    complete(nesting(景點), rank = 1:3, fill = list(路線 = NA, 人數 = NA, 百分比 = NA)) %>%
+    mutate(類別 = paste0("Top", rank)) %>%
+    select(-rank, -總數)
+  
+  df_bottom <- data %>%
+    group_by(景點) %>%
+    arrange(人數, .by_group = TRUE) %>%
+    slice_head(n = 3) %>%
+    left_join(df_total, by = "景點") %>%
+    mutate(百分比 = ifelse(is.na(人數), NA, ((人數 / 總數 * 100) %>% round(., 2) %>% paste0(., "%"))),
+           rank = row_number()
+           ) %>%
+    ungroup() %>% 
+    complete(nesting(景點), rank = 1:3, fill = list(路線 = NA, 人數 = NA, 百分比 = NA)) %>%
+    mutate(類別 = paste0("Bottom", rank)) %>%
+    select(-rank, -總數)
+  
+  df_data <- bind_cols(df_top, df_bottom)
+  
+  print(df_data)
+    
+  # 寫入 .xlsx
+  wb <- createWorkbook()
+  addWorksheet(wb, "臺東縣觀光景點上下車人數及百分比前三名及後三名路線")
+  writeData(wb, sheet = "臺東縣觀光景點上下車人數及百分比前三名及後三名路線", x = df_data)
+  xlsx_path = paste0("datasets/", year.from - 1911, "-", year.to - 1911)
+  if (!dir.exists(xlsx_path)) {
+    dir.create(xlsx_path, recursive = TRUE)
+  }
+  saveWorkbook(wb, file = paste0(xlsx_path, "/臺東縣觀光景點上下車人數及百分比前三名及後三名路線.xlsx"), overwrite = TRUE)
+}
+
+top3_and_bottom3_analysis(2023, 2025)
+```
+
+# 平假日分析
+```{r}
+weekday_analysis <- function(year.from, year.to){
+  
+  data <- df %>%
+    filter(
+      日期 >= as.Date(paste0(year.from, "-01-01")),
+      日期 <= as.Date(paste0(year.to, "-12-31"))
+    ) %>%
+    inner_join(df_route_spot_long, by = c("路線" = "路線", "下車站牌名稱" = "站名")) %>%
+    mutate(平假日 = if_else(wday(日期) %in% c(1,7), "假日", "平日")) %>% 
+    group_by(景點, 平假日) %>%
+    summarise(人次 = n(), .groups = "drop")
+  
+  df_total <- data %>%
+    group_by(平假日) %>%
+    summarise(人次 = sum(人次), .groups = "drop") %>%
+    mutate(景點 = "總計") %>%
+    select(景點, 平假日, 人次)
+  
+  dates = seq.Date(from = as.Date(paste0(year.from, "-01-01")), to = as.Date(paste0(year.to, "-12-31")), by = "day")
+  df_weekdays <- tibble(日期 = dates) %>% 
+    mutate(
+      平假日 = if_else(wday(日期) %in% c(1, 7), "假日", "平日")
+    ) %>%
+    count(平假日, name = "天數") %>% 
+    pivot_wider(names_from = 平假日, values_from = 天數) %>% 
+    data.frame()
+  
+  df_data <- bind_rows(data, df_total) %>%
+    mutate(.is_total = (景點 == "總計")) %>%
+    arrange(.is_total, 景點, factor(平假日, levels = c("平日", "假日"))) %>%
+    select(-.is_total) %>% 
+    pivot_wider(., names_from = 平假日, values_from = 人次) %>%
+    mutate(平日平均 = 平日 / df_weekdays$平日,
+           假日平均 = 假日 / df_weekdays$假日,
+           平假日平均比值百分比 = (平日平均 / 假日平均 * 100) %>% round(., 2) %>% paste0(., "%")
+           )
+
+  # 寫入 .xlsx
+  wb <- createWorkbook()
+  addWorksheet(wb, paste0(year.from - 1911, "-", year.to - 1911, "年臺東縣平假日分析"))
+  writeData(wb, sheet = paste0(year.from - 1911, "-", year.to - 1911, "年臺東縣平假日分析"), x = df_data)
+  xlsx_path = paste0("datasets/", year.from - 1911, "-", year.to - 1911)
+  if (!dir.exists(xlsx_path)) {
+    dir.create(xlsx_path, recursive = TRUE)
+  }
+  saveWorkbook(wb, file = paste0(xlsx_path, "/", year.from - 1911, "-", year.to - 1911, "年臺東縣平假日分析.xlsx"), overwrite = TRUE)
+}
+
+weekday_analysis(2023, 2025)
+```
+
+# 上下車鄉鎮分析 
+## 讀取 TDX 資料
+```{r}
+TDX_path = "../data/公路客運_花蓮市區公車_台東市區公車站點鄉鎮.csv"
+df_TDX = read_csv(TDX_path, locale = locale(encoding = "BIG5"))
+df_TDX.summary <- df_TDX %>% df_summary(.)
+
+df_TDX_reduce <- df_TDX %>% 
+  mutate(RouteName = as.character(RouteName)) %>% 
+  select(RouteName, SubRouteName, Direction, StopName, PositionLon, PositionLat, COUNTYNAME, TOWNNAME) %>%
+  filter(SubRouteName %in% routes) %>%
+  select(-PositionLon, -PositionLat) %>% 
+  distinct()
+df_TDX_reduce.summary <- df_TDX_reduce %>% df_summary(.)
+```
+
+## 重複資料檢查
+```{r}
+# 先統計兩邊 key 出現次數
+left_count <- df %>%
+    count(子路線, 方向, 上車站牌名稱, name = "n_left")
+
+right_count <- df_TDX_reduce %>%
+    count(SubRouteName, Direction, StopName, name = "n_right")
+
+# 合併統計，檢查多對多
+conflicts <- left_count %>%
+    inner_join(right_count, 
+               by = c("子路線" = "SubRouteName", "方向" = "Direction", "上車站牌名稱" = "StopName")) %>%
+    mutate(expanded_rows = n_left * n_right) %>%
+    filter(n_left > 1 & n_right > 1)   # 只挑出真正 many-to-many 的
+
+conflicts
+```
+
+```{r}
+# 如下衝突如果出現，需解決
+
+# > conflicts
+# # A tibble: 2 × 6
+#   路線  去返程分類 上車站點名稱 n_left n_right expanded_rows
+#   <chr>      <dbl> <chr>         <int>   <int>         <int>
+# 1 1145           0 小港             29       2            58
+# 2 1145           1 小港            194       2           388
+
+```
+
+## 小港資料修改
+```{r}
+df <- df %>%
+  mutate(
+    上車站牌名稱 = case_when(
+      上車站牌名稱 == "小港" & 方向 == 0 & 上車站序 < 70 ~ "小港(花蓮)",
+      上車站牌名稱 == "小港" & 方向 == 0 & 上車站序 >= 70 ~ "小港(台東)",
+      上車站牌名稱 == "小港" & 方向 == 1 & 上車站序 < 10 ~ "小港(台東)",
+      上車站牌名稱 == "小港" & 方向 == 1 & 上車站序 >= 10 ~ "小港(花蓮)",
+      TRUE ~ 上車站牌名稱
+    ),
+    下車站牌名稱 = case_when(
+      下車站牌名稱 == "小港" & 方向 == 0 & 下車站序 < 70 ~ "小港(花蓮)",
+      下車站牌名稱 == "小港" & 方向 == 0 & 下車站序 >= 70 ~ "小港(台東)",
+      下車站牌名稱 == "小港" & 方向 == 1 & 下車站序 < 10 ~ "小港(台東)",
+      下車站牌名稱 == "小港" & 方向 == 1 & 下車站序 >= 10 ~ "小港(花蓮)",
+      TRUE ~ 下車站牌名稱
+    )
+  )
+
+df_TDX_reduce <- df_TDX_reduce %>%
+  mutate(
+    StopName = case_when(
+      StopName == "小港" & COUNTYNAME == "臺東縣" ~ "小港(台東)",
+      StopName == "小港" & COUNTYNAME == "花蓮縣" ~ "小港(花蓮)",
+      TRUE ~ StopName
+    )
+  )
+```
+
+## 重複資料檢查
+```{r}
+# 先統計兩邊 key 出現次數
+left_count <- df %>%
+    count(子路線, 方向, 上車站牌名稱, name = "n_left")
+
+right_count <- df_TDX_reduce %>%
+    count(SubRouteName, Direction, StopName, name = "n_right")
+
+# 合併統計，檢查多對多
+conflicts <- left_count %>%
+    inner_join(right_count, 
+               by = c("子路線" = "SubRouteName", "方向" = "Direction", "上車站牌名稱" = "StopName")) %>%
+    mutate(expanded_rows = n_left * n_right) %>%
+    filter(n_left > 1 & n_right > 1)   # 只挑出真正 many-to-many 的
+
+conflicts
+```
+
+## 定義南到北鄉鎮
+```{r}
+ttt_township_order = c(
+  "達仁鄉", 
+  "大武鄉", 
+  "金峰鄉", 
+  "太麻里鄉", 
+  "臺東市", 
+  "卑南鄉",
+  "延平鄉", 
+  "鹿野鄉", 
+  "關山鎮", 
+  "海端鄉", 
+  "池上鄉",
+  "東河鄉", 
+  "成功鎮", 
+  "長濱鄉", 
+  "花蓮縣"
+)
+```
+
+## 熱力圖分析
+```{r}
+year.from = 2025
+year.to = 2025
+
+data <- df %>% 
+  select(路線, 子路線, 日期, 方向, 上車站牌名稱, 下車站牌名稱, 業者編號) %>% 
+  filter(
+      日期 >= as.Date(paste0(year.from, "-01-01")),
+      日期 <= as.Date(paste0(year.to, "-12-31")),
+      !(上車站牌名稱 %in% c("", "-99") | is.na(上車站牌名稱)),
+      !(下車站牌名稱 %in% c("", "-99") | is.na(下車站牌名稱))
+    ) %>% 
+  
+  # 上車鄉鎮
+  ## 依去返程分類
+  left_join(df_TDX_reduce, by = c("子路線" = "SubRouteName", 
+                                  "方向" = "Direction", 
+                                  "上車站牌名稱" = "StopName")
+            ) %>% 
+  select(-RouteName) %>% 
+  rename(上車縣市 = COUNTYNAME, 上車鄉鎮 = TOWNNAME) %>% 
+  ## 依照無法判別去返程 (255) 再次分類
+  left_join(df_TDX_reduce %>% 
+              select(-Direction, -SubRouteName) %>% 
+              distinct(RouteName, StopName, .keep_all = TRUE),  # 只保留第一筆匹配到的鄉鎮，移除重複站名
+            by = c("路線" = "RouteName", 
+                   "上車站牌名稱" = "StopName")
+            ) %>% 
+  mutate(
+    上車鄉鎮 = if_else(is.na(上車鄉鎮), TOWNNAME, 上車鄉鎮),
+    上車縣市 = if_else(is.na(上車縣市), COUNTYNAME, 上車縣市)
+  ) %>%
+  select(-TOWNNAME, -COUNTYNAME) %>% 
+  
+  # 下車鄉鎮
+  ## 依去返程分類
+  left_join(df_TDX_reduce, by = c("子路線" = "SubRouteName", 
+                                  "方向" = "Direction", 
+                                  "下車站牌名稱" = "StopName")
+            ) %>% 
+  select(-RouteName) %>% 
+  rename(下車縣市 = COUNTYNAME, 下車鄉鎮 = TOWNNAME) %>% 
+  ## 依照無法判別 (255) 再次分類
+    left_join(df_TDX_reduce %>% 
+              select(-Direction, -SubRouteName) %>% 
+              distinct(RouteName, StopName, .keep_all = TRUE),  # 只保留第一筆匹配到的鄉鎮，移除重複站名
+            by = c("路線" = "RouteName", 
+                   "下車站牌名稱" = "StopName")
+            ) %>% 
+  mutate(
+    下車鄉鎮 = if_else(is.na(下車鄉鎮), TOWNNAME, 下車鄉鎮),
+    下車縣市 = if_else(is.na(下車縣市), COUNTYNAME, 下車縣市)
+  ) %>%
+  select(-TOWNNAME, -COUNTYNAME) %>%
+  filter(上車縣市 == "臺東縣" | 下車縣市 == "臺東縣")
+```
+
+## 檢查上下車站點所在鄉鎮是否存在 NA 情況，如有則需修改對照表
+```{r}
+# 上車鄉鎮為 NA 的站點
+up_na <- data %>%
+  filter(is.na(上車鄉鎮)) %>%
+  select(子路線, 上車站牌名稱) %>%
+  distinct() %>%
+  rename(站點名稱 = 上車站牌名稱)
+
+# 下車鄉鎮為 NA 的站點
+down_na <- data %>%
+  filter(is.na(下車鄉鎮)) %>%
+  select(子路線, 下車站牌名稱) %>%
+  distinct() %>%
+  rename(站點名稱 = 下車站牌名稱)
+
+df_township_analysis_na_stop <- bind_rows(up_na, down_na) %>% 
+  distinct()
+
+print(df_township_analysis_na_stop)
+```
+
+```{r}
+data <- data %>% 
+  # 修改外縣鄉鎮 -> 外縣
+  mutate(
+    上車鄉鎮 = if_else(上車縣市 != "臺東縣", 上車縣市, 上車鄉鎮),
+    下車鄉鎮 = if_else(下車縣市 != "臺東縣", 下車縣市, 下車鄉鎮)
+  ) %>%
+  select(上車鄉鎮, 下車鄉鎮) %>% 
+  drop_na() %>% 
+  # 排序南到北
+  mutate(
+    上車鄉鎮 = factor(上車鄉鎮, levels = ttt_township_order),
+    下車鄉鎮 = factor(下車鄉鎮, levels = ttt_township_order)
+  ) %>% 
+  # 計算鄉鎮數量
+  group_by(上車鄉鎮, 下車鄉鎮) %>% 
+  summarise(數量 = n(), .groups = "drop") %>% 
+  arrange(desc(數量))
+
+# 寫入 .xlsx
+wb <- createWorkbook()
+addWorksheet(wb, paste0(year.from - 1911, "年臺東縣鄉鎮上下車"))
+writeData(wb, sheet = paste0(year.from - 1911, "年臺東縣鄉鎮上下車"), x = data %>% pivot_wider(names_from = 下車鄉鎮, values_from = 數量))
+xlsx_path = paste0("datasets/", year.from - 1911)
+if (!dir.exists(xlsx_path)) {
+  dir.create(xlsx_path, recursive = TRUE)
+}
+saveWorkbook(wb, file = paste0(xlsx_path, "/", paste0(year.from - 1911, "年臺東縣鄉鎮上下車.xlsx")), overwrite = TRUE)
+```
+
+## 鄉鎮上下車熱力圖
+```{r}
+p <- ggplot(data, aes(x = 下車鄉鎮, y = 上車鄉鎮)) +
+  geom_tile(aes(fill = 數量), color = "white") + 
+  scale_fill_gradient(
+    trans = "sqrt",                      # ✅ 填色開根號變換
+    # low = "white", high = "red",
+    low = "grey90",          # 幾乎白
+    high = "grey10",         # 幾乎黑
+    labels = scales::comma                  # ✅ 格式化數字
+  ) +
+  labs(
+    title = paste0("臺東縣", year.from - 1911, "年客運鄉鎮搭乘需求熱力圖"),
+    x = "下車鄉鎮",
+    y = "上車鄉鎮",
+    fill = "乘客數量"
+  ) +
+  theme_minimal(base_family = "Kai") +   
+  theme(
+    axis.text.x  = element_text(angle = 45,
+                                hjust = 1,
+                                family = "Kai",
+                                size = 12), # X軸字體大小
+    axis.text.y  = element_text(family = "Kai",
+                                size = 12), # Y軸字體大小
+    axis.title.x = element_text(family = "Kai",
+                                size = 14), # X軸標題大小
+    axis.title.y = element_text(family = "Kai",
+                                size = 14), # Y軸標題大小
+    plot.title   = element_text(hjust = 0,
+                                family = "Kai",
+                                size = 18,
+                                face = "bold"),
+    legend.title = element_text(family = "Kai", size = 14),
+    legend.text  = element_text(family = "Kai", size = 12)
+  )
+
+# 儲存圖片
+path = paste0("images/heatmap/")
+check_path(path)
+img_filename = paste0("臺東縣", year.from - 1911, "年客運鄉鎮搭乘需求熱力圖")
+ggsave(filename = paste0(path, "/", img_filename, ".png"),
+       plot = p,
+       bg = "white",
+       width = 15,
+       height = 10,
+       units = "in",
+       dpi = 600)
+```
+
+
+
+
+
+
+
+
+
+
+
+
