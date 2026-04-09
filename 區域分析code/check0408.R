@@ -34,7 +34,7 @@ table(all_data$"上車站牌代碼"[-which(all_data$"上車站牌代碼" == "-99
 #  151236 5530755
 
 # check which "上車站牌代碼" are not in locD$StopUID
-table(all_data$"上車站牌代碼"[!all_data$"上車站牌代碼" %in% locD$StopUID])
+table(all_data$"上車站牌名稱"[!all_data$"上車站牌代碼" %in% locD$StopUID])
 
 # check all_data$"下車站牌代碼" in locD$StopUID
 table(all_data$"下車站牌代碼" %in% locD$StopUID)
@@ -44,4 +44,8 @@ table(all_data$"下車站牌代碼"[-which(all_data$"下車站牌代碼" == "-99
 #  183699 5426456
 
 # check which "下車站牌代碼" are not in locD$StopUID
-table(all_data$"下車站牌代碼"[!all_data$"下車站牌代碼" %in% locD$StopUID])
+table(all_data$"下車站牌名稱"[!all_data$"下車站牌代碼" %in% locD$StopUID])
+
+# check date range of data with "上下車站牌代碼" not in locD$StopUID
+range(all_data$"資料代表日期(yyyy-MM-dd)"[!all_data$"上車站牌代碼"[-which(all_data$"上車站牌代碼" == "-99")] %in% locD$StopUID])
+range(all_data$"資料代表日期(yyyy-MM-dd)"[!all_data$"下車站牌代碼"[-which(all_data$"下車站牌代碼" == "-99")] %in% locD$StopUID])
