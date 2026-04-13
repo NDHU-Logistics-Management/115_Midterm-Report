@@ -629,7 +629,7 @@ plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -647,7 +647,7 @@ plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -763,7 +763,7 @@ plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -781,7 +781,7 @@ plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -898,7 +898,7 @@ plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -916,7 +916,7 @@ plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -1032,7 +1032,7 @@ plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -1050,7 +1050,7 @@ plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -1503,7 +1503,7 @@ plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -1521,7 +1521,7 @@ plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -1637,7 +1637,7 @@ plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -1655,7 +1655,7 @@ plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -1772,7 +1772,7 @@ plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -1790,7 +1790,7 @@ plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -1906,7 +1906,7 @@ plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -1924,7 +1924,7 @@ plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -2378,7 +2378,7 @@ plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -2396,7 +2396,7 @@ plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -2512,7 +2512,7 @@ plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -2530,7 +2530,7 @@ plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -2647,7 +2647,7 @@ plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -2665,7 +2665,7 @@ plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -2781,7 +2781,7 @@ plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -2799,7 +2799,7 @@ plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
