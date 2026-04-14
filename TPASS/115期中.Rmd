@@ -610,7 +610,7 @@ plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     ylim = c(min(tpass_prop) * 0.9, max(tpass_prop) * 1.2),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -647,7 +647,7 @@ plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 1.3,
+    cex = 1.5,
     col = "black"
   )
   
@@ -744,7 +744,7 @@ plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     ylim = c(min(tpass_prop) * 0.9, max(tpass_prop) * 1.2),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -879,7 +879,7 @@ plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     ylim = c(min(tpass_prop) * 0.9, max(tpass_prop) * 1.2),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -1013,7 +1013,7 @@ plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     ylim = c(min(tpass_prop) * 0.9, max(tpass_prop) * 1.2),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -1233,7 +1233,7 @@ plot_bus_hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
     cex.main = 2,
     cex.lab = 2,
     cex.axis = 1.5,
-    cex = 1.5,
+    cex = 1.3,
     xaxt = "n",
     yaxt = "n",
     bty = "n"
@@ -1268,7 +1268,7 @@ plot_bus_hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 1.5,
+    cex = 1.3,
     col = "black"
   )
   
@@ -1285,7 +1285,7 @@ plot_bus_hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
     bty = "n",
     inset = c(-0.15, -0.1),
     xpd = TRUE,
-    cex = 1.5
+    cex = 1.3
   )
 }
 
@@ -1352,7 +1352,7 @@ plot_bus_taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
     cex.main = 2,
     cex.lab = 2,
     cex.axis = 1.5,
-    cex = 1.5,
+    cex = 1.3,
     xaxt = "n",
     yaxt = "n",
     bty = "n"
@@ -1387,7 +1387,7 @@ plot_bus_taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 1.5,
+    cex = 1.3,
     col = "black"
   )
   
@@ -1404,7 +1404,7 @@ plot_bus_taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
     bty = "n",
     inset = c(-0.15, -0.1),
     xpd = TRUE,
-    cex = 1.5
+    cex = 1.3
   )
 }
 
@@ -1484,7 +1484,7 @@ plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     ylim = c(min(tpass_prop) * 0.9, max(tpass_prop) * 1.2),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -1618,7 +1618,7 @@ plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     ylim = c(min(tpass_prop) * 0.9, max(tpass_prop) * 1.2),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -1753,7 +1753,7 @@ plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     ylim = c(min(tpass_prop) * 0.9, max(tpass_prop) * 1.2),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -1887,7 +1887,7 @@ plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     ylim = c(min(tpass_prop) * 0.9, max(tpass_prop) * 1.2),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -2108,7 +2108,7 @@ plot_Hualien_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
     cex.main = 2,
     cex.lab = 2,
     cex.axis = 1.5,
-    cex = 1.5,
+    cex = 1.3,
     xaxt = "n",
     yaxt = "n",
     bty = "n"
@@ -2143,7 +2143,7 @@ plot_Hualien_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 1.5,
+    cex = 1.3,
     col = "black"
   )
   
@@ -2160,7 +2160,7 @@ plot_Hualien_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
     bty = "n",
     inset = c(-0.15, -0.1),
     xpd = TRUE,
-    cex = 1.5
+    cex = 1.3
   )
 }
 
@@ -2227,7 +2227,7 @@ plot_Taitung_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
     cex.main = 2,
     cex.lab = 2,
     cex.axis = 1.5,
-    cex = 1.5,
+    cex = 1.3,
     xaxt = "n",
     yaxt = "n",
     bty = "n"
@@ -2262,7 +2262,7 @@ plot_Taitung_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
     y = tpass_prop + max(tpass_prop) * 0.02,
     labels = tpass_prop_table$rate_pct,
     pos = 3,
-    cex = 1.5,
+    cex = 1.3,
     col = "black"
   )
   
@@ -2279,7 +2279,7 @@ plot_Taitung_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
     bty = "n",
     inset = c(-0.15, -0.1),
     xpd = TRUE,
-    cex = 1.5
+    cex = 1.3
   )
 }
 
@@ -2359,7 +2359,7 @@ plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     ylim = c(min(tpass_prop) * 0.9, max(tpass_prop) * 1.2),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -2493,7 +2493,7 @@ plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     ylim = c(min(tpass_prop) * 0.9, max(tpass_prop) * 1.2),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -2628,7 +2628,7 @@ plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     ylim = c(min(tpass_prop) * 0.9, max(tpass_prop) * 1.2),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -2762,7 +2762,7 @@ plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     ylim = c(min(tpass_prop) * 0.9, max(tpass_prop) * 1.2),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -3447,10 +3447,10 @@ plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
     xlab = "年月",
     ylab = "",
     ylim = c(min(avg_km) * 0.9, max(avg_km) * 1.15),
-    cex.main = 1.6,
-    cex.lab = 1.5,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.3,
     xaxt = "n",
     yaxt = "n",
     bty = "n"
@@ -3459,7 +3459,7 @@ plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
   # 標題
   title(
     main = "113年7月至114年6月花蓮縣市區客運平均搭乘里程折線圖",
-    cex.main = 1.6,
+    cex.main = 2,
     adj = 0
   )
   
@@ -3468,7 +3468,7 @@ plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -3480,7 +3480,7 @@ plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
     y = avg_km + max(avg_km) * 0.03,
     labels = format(avg_km, nsmall = 1),
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -3495,7 +3495,7 @@ plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
     lwd = 1.5,
     pch = 16,
     bty = "n",
-    cex = 1.2
+    cex = 1.3
   )
 }
 
@@ -4031,10 +4031,10 @@ plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
     xlab = "年月",
     ylab = "",
     ylim = c(min(avg_km) * 0.9, max(avg_km) * 1.15),
-    cex.main = 1.6,
-    cex.lab = 1.5,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.3,
     xaxt = "n",
     yaxt = "n",
     bty = "n"
@@ -4052,7 +4052,7 @@ plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -4064,7 +4064,7 @@ plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
     y = avg_km + max(avg_km) * 0.03,
     labels = format(avg_km, nsmall = 1),
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -4079,7 +4079,7 @@ plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
     lwd = 1.5,
     pch = 16,
     bty = "n",
-    cex = 1.2
+    cex = 1.3
   )
 }
 
@@ -4599,10 +4599,10 @@ plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
     xlab = "年月",
     ylab = "",
     ylim = c(min(avg_km) * 0.9, max(avg_km) * 1.15),
-    cex.main = 1.6,
-    cex.lab = 1.5,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.3,
     xaxt = "n",
     yaxt = "n",
     bty = "n"
@@ -4611,7 +4611,7 @@ plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
   # 標題
   title(
     main = "113年7月至114年6月臺東縣市區客運平均搭乘里程折線圖",
-    cex.main = 1.6,
+    cex.main = 2,
     adj = 0
   )
   
@@ -4620,7 +4620,7 @@ plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -4632,7 +4632,7 @@ plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
     y = avg_km + max(avg_km) * 0.03,
     labels = format(avg_km, nsmall = 1),
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -4647,7 +4647,7 @@ plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
     lwd = 1.5,
     pch = 16,
     bty = "n",
-    cex = 1.2
+    cex = 1.3
   )
 }
 
@@ -5166,10 +5166,10 @@ plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
     xlab = "年月",
     ylab = "",
     ylim = c(min(avg_km) * 0.9, max(avg_km) * 1.15),
-    cex.main = 1.6,
-    cex.lab = 1.5,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.3,
     xaxt = "n",
     yaxt = "n",
     bty = "n"
@@ -5178,7 +5178,7 @@ plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
   # 標題
   title(
     main = "113年6月至114年12月臺東縣市區客運平均搭乘里程折線圖",
-    cex.main = 1.6,
+    cex.main = 2,
     adj = 0
   )
   
@@ -5187,7 +5187,7 @@ plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -5199,7 +5199,7 @@ plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
     y = avg_km + max(avg_km) * 0.03,
     labels = format(avg_km, nsmall = 1),
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -5214,7 +5214,7 @@ plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
     lwd = 1.5,
     pch = 16,
     bty = "n",
-    cex = 1.2
+    cex = 1.3
   )
 }
 
@@ -5820,10 +5820,10 @@ plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     xlab = "年月",
     ylab = "",
     ylim = c(min(avg_km) * 0.9, max(avg_km) * 1.15),
-    cex.main = 1.6,
-    cex.lab = 1.5,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.3,
     xaxt = "n",
     yaxt = "n",
     bty = "n"
@@ -5832,7 +5832,7 @@ plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
   # 標題
   title(
     main = "113年7月至114年6月花蓮縣公路客運平均搭乘里程折線圖",
-    cex.main = 1.6,
+    cex.main = 2,
     adj = 0
   )
   
@@ -5841,7 +5841,7 @@ plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -5853,7 +5853,7 @@ plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     y = avg_km + max(avg_km) * 0.03,
     labels = format(avg_km, nsmall = 1),
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -5868,7 +5868,7 @@ plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     lwd = 1.5,
     pch = 16,
     bty = "n",
-    cex = 1.2
+    cex = 1.3
   )
 }
 
@@ -6470,10 +6470,10 @@ plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     xlab = "年月",
     ylab = "",
     ylim = c(min(avg_km) * 0.9, max(avg_km) * 1.15),
-    cex.main = 1.6,
-    cex.lab = 1.5,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.3,
     xaxt = "n",
     yaxt = "n",
     bty = "n"
@@ -6482,7 +6482,7 @@ plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
   # 標題
   title(
     main = "113年6月至114年12月花蓮縣公路客運平均搭乘里程折線圖",
-    cex.main = 1.6,
+    cex.main = 2,
     adj = 0
   )
   
@@ -6491,7 +6491,7 @@ plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -6503,7 +6503,7 @@ plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     y = avg_km + max(avg_km) * 0.03,
     labels = format(avg_km, nsmall = 1),
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -6518,7 +6518,7 @@ plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     lwd = 1.5,
     pch = 16,
     bty = "n",
-    cex = 1.2
+    cex = 1.3
   )
 }
 
@@ -7172,10 +7172,10 @@ plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     xlab = "年月",
     ylab = "",
     ylim = c(min(avg_km) * 0.9, max(avg_km) * 1.15),
-    cex.main = 1.6,
-    cex.lab = 1.5,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.3,
     xaxt = "n",
     yaxt = "n",
     bty = "n"
@@ -7184,7 +7184,7 @@ plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
   # 標題
   title(
     main = "113年7月至114年6月臺東縣公路客運平均搭乘里程折線圖",
-    cex.main = 1.6,
+    cex.main = 2,
     adj = 0
   )
   
@@ -7193,7 +7193,7 @@ plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -7205,7 +7205,7 @@ plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     y = avg_km + max(avg_km) * 0.03,
     labels = format(avg_km, nsmall = 1),
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -7220,7 +7220,7 @@ plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     lwd = 1.5,
     pch = 16,
     bty = "n",
-    cex = 1.2,
+    cex = 1.3,
     inset = c(-0.05, 0),
     xpd = TRUE
   )
@@ -7873,10 +7873,10 @@ plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     xlab = "年月",
     ylab = "",
     ylim = c(min(avg_km) * 0.9, max(avg_km) * 1.15),
-    cex.main = 1.6,
-    cex.lab = 1.5,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.3,
     xaxt = "n",
     yaxt = "n",
     bty = "n"
@@ -7885,7 +7885,7 @@ plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
   # 標題
   title(
     main = "113年6月至114年12月臺東縣公路客運平均搭乘里程折線圖",
-    cex.main = 1.6,
+    cex.main = 2,
     adj = 0
   )
   
@@ -7894,7 +7894,7 @@ plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
@@ -7906,7 +7906,7 @@ plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     y = avg_km + max(avg_km) * 0.03,
     labels = format(avg_km, nsmall = 1),
     pos = 3,
-    cex = 0.9,
+    cex = 1.3,
     col = "black"
   )
   
@@ -7921,7 +7921,7 @@ plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     lwd = 1.5,
     pch = 16,
     bty = "n",
-    cex = 1.2,
+    cex = 1.3,
     inset = c(-0.05, 0),
     xpd = TRUE
   )
@@ -8045,7 +8045,7 @@ plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
     ylim = c(y_min, y_max),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -8059,16 +8059,16 @@ plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = y_ticks,
@@ -8078,7 +8078,7 @@ plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
     line = 0
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "日均使用次數",
     side = 2,
@@ -8232,8 +8232,8 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     yaxt = "n",
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.axis = 1.5,
+    cex = 1.3,
     bty = "n"
   )
   
@@ -8262,25 +8262,25 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = pretty(c(0, y_max)),
     labels = format(pretty(c(0, y_max)), big.mark = ","),
     las = 1,
-    cex.axis = 1.2
+    cex.axis = 1.5
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "人數",
     side = 2,
@@ -8301,7 +8301,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     bty = "n",
     inset = c(-0.12, 0),
     xpd = TRUE,
-    cex = 1.2,
+    cex = 1.3,
     title = "搭乘次數"
   )
 }
@@ -8436,8 +8436,8 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     yaxt = "n",
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.axis = 1.5,
+    cex = 1.3,
     bty = "n"
   )
   
@@ -8466,25 +8466,25 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = pretty(c(0, y_max)),
     labels = format(pretty(c(0, y_max)), big.mark = ","),
     las = 1,
-    cex.axis = 1.2
+    cex.axis = 1.5
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "人數",
     side = 2,
@@ -8505,7 +8505,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     bty = "n",
     inset = c(-0.12, 0),
     xpd = TRUE,
-    cex = 1.2,
+    cex = 1.3,
     title = "搭乘次數"
   )
 }
@@ -8624,7 +8624,7 @@ plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
     ylim = c(y_min, y_max),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -8638,16 +8638,16 @@ plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = y_ticks,
@@ -8809,8 +8809,8 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     yaxt = "n",
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.axis = 1.5,
+    cex = 1.3,
     bty = "n"
   )
   
@@ -8839,25 +8839,25 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = pretty(c(0, y_max)),
     labels = format(pretty(c(0, y_max)), big.mark = ","),
     las = 1,
-    cex.axis = 1.2
+    cex.axis = 1.5
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "人數",
     side = 2,
@@ -8878,7 +8878,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     bty = "n",
     inset = c(-0.12, 0),
     xpd = TRUE,
-    cex = 1.2,
+    cex = 1.3,
     title = "搭乘次數"
   )
 }
@@ -9012,8 +9012,8 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     yaxt = "n",
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.axis = 1.5,
+    cex = 1.3,
     bty = "n"
   )
   
@@ -9042,25 +9042,25 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = pretty(c(0, y_max)),
     labels = format(pretty(c(0, y_max)), big.mark = ","),
     las = 1,
-    cex.axis = 1.2
+    cex.axis = 1.5
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "人數",
     side = 2,
@@ -9081,7 +9081,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     bty = "n",
     inset = c(-0.12, 0),
     xpd = TRUE,
-    cex = 1.2,
+    cex = 1.3,
     title = "搭乘次數"
   )
 }
@@ -9202,7 +9202,7 @@ plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
     ylim = c(y_min, y_max),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -9216,16 +9216,16 @@ plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = y_ticks,
@@ -9235,7 +9235,7 @@ plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
     line = 0
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "日均使用次數",
     side = 2,
@@ -9388,8 +9388,8 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     yaxt = "n",
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.axis = 1.5,
+    cex = 1.3,
     bty = "n"
   )
   
@@ -9418,25 +9418,25 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = pretty(c(0, y_max)),
     labels = format(pretty(c(0, y_max)), big.mark = ","),
     las = 1,
-    cex.axis = 1.2
+    cex.axis = 1.5
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "人數",
     side = 2,
@@ -9457,7 +9457,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     bty = "n",
     inset = c(-0.12, 0),
     xpd = TRUE,
-    cex = 1.2,
+    cex = 1.3,
     title = "搭乘次數"
   )
 }
@@ -9592,8 +9592,8 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     yaxt = "n",
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.axis = 1.5,
+    cex = 1.3,
     bty = "n"
   )
   
@@ -9622,25 +9622,25 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = pretty(c(0, y_max)),
     labels = format(pretty(c(0, y_max)), big.mark = ","),
     las = 1,
-    cex.axis = 1.2
+    cex.axis = 1.5
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "人數",
     side = 2,
@@ -9661,7 +9661,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     bty = "n",
     inset = c(-0.12, 0),
     xpd = TRUE,
-    cex = 1.2,
+    cex = 1.3,
     title = "搭乘次數"
   )
 }
@@ -9780,7 +9780,7 @@ plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
     ylim = c(y_min, y_max),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -9794,16 +9794,16 @@ plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = y_ticks,
@@ -9813,7 +9813,7 @@ plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
     line = 0
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "日均使用次數",
     side = 2,
@@ -9965,8 +9965,8 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     yaxt = "n",
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.axis = 1.5,
+    cex = 1.3,
     bty = "n"
   )
   
@@ -9995,25 +9995,25 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = pretty(c(0, y_max)),
     labels = format(pretty(c(0, y_max)), big.mark = ","),
     las = 1,
-    cex.axis = 1.2
+    cex.axis = 1.5
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "人數",
     side = 2,
@@ -10034,7 +10034,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     bty = "n",
     inset = c(-0.12, 0),
     xpd = TRUE,
-    cex = 1.2,
+    cex = 1.3,
     title = "搭乘次數"
   )
 }
@@ -10168,8 +10168,8 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     yaxt = "n",
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.axis = 1.5,
+    cex = 1.3,
     bty = "n"
   )
   
@@ -10198,25 +10198,25 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = pretty(c(0, y_max)),
     labels = format(pretty(c(0, y_max)), big.mark = ","),
     las = 1,
-    cex.axis = 1.2
+    cex.axis = 1.5
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "人數",
     side = 2,
@@ -10237,7 +10237,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     bty = "n",
     inset = c(-0.12, 0),
     xpd = TRUE,
-    cex = 1.2,
+    cex = 1.3,
     title = "搭乘次數"
   )
 }
@@ -10359,7 +10359,7 @@ plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
     ylim = c(y_min, y_max),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -10373,16 +10373,16 @@ plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = y_ticks,
@@ -10392,7 +10392,7 @@ plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
     line = 0
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "日均使用次數",
     side = 2,
@@ -10544,8 +10544,8 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     yaxt = "n",
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.axis = 1.5,
+    cex = 1.3,
     bty = "n"
   )
   
@@ -10574,25 +10574,25 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = pretty(c(0, y_max)),
     labels = format(pretty(c(0, y_max)), big.mark = ","),
     las = 1,
-    cex.axis = 1.2
+    cex.axis = 1.5
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "人數",
     side = 2,
@@ -10613,7 +10613,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     bty = "n",
     inset = c(-0.12, 0),
     xpd = TRUE,
-    cex = 1.2,
+    cex = 1.3,
     title = "搭乘次數"
   )
 }
@@ -10747,8 +10747,8 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     yaxt = "n",
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.axis = 1.5,
+    cex = 1.3,
     bty = "n"
   )
   
@@ -10777,25 +10777,25 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = pretty(c(0, y_max)),
     labels = format(pretty(c(0, y_max)), big.mark = ","),
     las = 1,
-    cex.axis = 1.2
+    cex.axis = 1.5
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "人數",
     side = 2,
@@ -10816,7 +10816,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     bty = "n",
     inset = c(-0.12, 0),
     xpd = TRUE,
-    cex = 1.2,
+    cex = 1.3,
     title = "搭乘次數"
   )
 }
@@ -10935,7 +10935,7 @@ plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
     ylim = c(y_min, y_max),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -10949,16 +10949,16 @@ plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = y_ticks,
@@ -10968,7 +10968,7 @@ plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
     line = 0
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "日均使用次數",
     side = 2,
@@ -11120,8 +11120,8 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     yaxt = "n",
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.axis = 1.5,
+    cex = 1.3,
     bty = "n"
   )
   
@@ -11150,25 +11150,25 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = pretty(c(0, y_max)),
     labels = format(pretty(c(0, y_max)), big.mark = ","),
     las = 1,
-    cex.axis = 1.2
+    cex.axis = 1.5
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "人數",
     side = 2,
@@ -11189,7 +11189,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     bty = "n",
     inset = c(-0.12, 0),
     xpd = TRUE,
-    cex = 1.2,
+    cex = 1.3,
     title = "搭乘次數"
   )
 }
@@ -11323,8 +11323,8 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     yaxt = "n",
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.axis = 1.5,
+    cex = 1.3,
     bty = "n"
   )
   
@@ -11353,25 +11353,25 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = pretty(c(0, y_max)),
     labels = format(pretty(c(0, y_max)), big.mark = ","),
     las = 1,
-    cex.axis = 1.2
+    cex.axis = 1.5
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "人數",
     side = 2,
@@ -11392,7 +11392,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     bty = "n",
     inset = c(-0.12, 0),
     xpd = TRUE,
-    cex = 1.2,
+    cex = 1.3,
     title = "搭乘次數"
   )
 }
@@ -11513,7 +11513,7 @@ plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
     ylim = c(y_min, y_max),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -11527,16 +11527,16 @@ plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = y_ticks,
@@ -11546,7 +11546,7 @@ plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
     line = 0
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "日均使用次數",
     side = 2,
@@ -11698,8 +11698,8 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     yaxt = "n",
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.axis = 1.5,
+    cex = 1.3,
     bty = "n"
   )
   
@@ -11728,25 +11728,25 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = pretty(c(0, y_max)),
     labels = format(pretty(c(0, y_max)), big.mark = ","),
     las = 1,
-    cex.axis = 1.2
+    cex.axis = 1.5
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "人數",
     side = 2,
@@ -11767,7 +11767,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     bty = "n",
     inset = c(-0.12, 0),
     xpd = TRUE,
-    cex = 1.2,
+    cex = 1.3,
     title = "搭乘次數"
   )
 }
@@ -11901,8 +11901,8 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     yaxt = "n",
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.axis = 1.5,
+    cex = 1.3,
     bty = "n"
   )
   
@@ -11931,25 +11931,25 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = pretty(c(0, y_max)),
     labels = format(pretty(c(0, y_max)), big.mark = ","),
     las = 1,
-    cex.axis = 1.2
+    cex.axis = 1.5
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "人數",
     side = 2,
@@ -11970,7 +11970,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     bty = "n",
     inset = c(-0.12, 0),
     xpd = TRUE,
-    cex = 1.2,
+    cex = 1.3,
     title = "搭乘次數"
   )
 }
@@ -12089,7 +12089,7 @@ plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
     ylim = c(y_min, y_max),
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
+    cex.axis = 1.5,
     cex = 1.3,
     xaxt = "n",
     yaxt = "n",
@@ -12103,16 +12103,16 @@ plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = y_ticks,
@@ -12122,7 +12122,7 @@ plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
     line = 0
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "日均使用次數",
     side = 2,
@@ -12274,8 +12274,8 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     yaxt = "n",
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.axis = 1.5,
+    cex = 1.3,
     bty = "n"
   )
   
@@ -12304,25 +12304,25 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = pretty(c(0, y_max)),
     labels = format(pretty(c(0, y_max)), big.mark = ","),
     las = 1,
-    cex.axis = 1.2
+    cex.axis = 1.5
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "人數",
     side = 2,
@@ -12343,7 +12343,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     bty = "n",
     inset = c(-0.12, 0),
     xpd = TRUE,
-    cex = 1.2,
+    cex = 1.3,
     title = "搭乘次數"
   )
 }
@@ -12477,8 +12477,8 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     yaxt = "n",
     cex.main = 2,
     cex.lab = 2,
-    cex.axis = 1.2,
-    cex = 1.2,
+    cex.axis = 1.5,
+    cex = 1.3,
     bty = "n"
   )
   
@@ -12507,25 +12507,25 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     adj = 0
   )
   
-  # X 軸
+  # x 軸
   axis(
     side = 1,
     at = x_idx,
     labels = roc_label,
-    cex.axis = 1.1,
+    cex.axis = 1.5,
     las = 1
   )
   
-  # Y 軸
+  # y 軸
   axis(
     side = 2,
     at = pretty(c(0, y_max)),
     labels = format(pretty(c(0, y_max)), big.mark = ","),
     las = 1,
-    cex.axis = 1.2
+    cex.axis = 1.5
   )
   
-  # Y 軸標題
+  # y 軸標題
   mtext(
     text = "人數",
     side = 2,
@@ -12546,7 +12546,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     bty = "n",
     inset = c(-0.12, 0),
     xpd = TRUE,
-    cex = 1.2,
+    cex = 1.3,
     title = "搭乘次數"
   )
 }
