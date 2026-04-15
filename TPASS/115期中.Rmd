@@ -11,10 +11,10 @@ library(readr)
 library(dplyr)
 
 # 花蓮市區客運
-bus_hualien <-  read_csv("票證資料/整理後data/花蓮縣公車.csv") %>% 
+bus_hualien <- read_csv("票證資料/整理後data/花蓮縣公車.csv") %>%
   filter(`資料代表日期(yyyy-MM-dd)` < as.Date("2026-01-01"))
 # 臺東市區客運
-bus_taitung <- read_csv("票證資料/整理後data/臺東縣公車.csv") %>% 
+bus_taitung <- read_csv("票證資料/整理後data/臺東縣公車.csv") %>%
   filter(`資料代表日期(yyyy-MM-dd)` < as.Date("2026-01-01"))
 
 # 公路客運
@@ -30,20 +30,20 @@ all_bus <- rbind(bus_hualien, bus_taitung, bus_2023, bus_2024, bus_2025)
 # check route(1123)
 ```{r}
 # library(dplyr)
-# 
+#
 # temp <- bus_2023 %>% filter(搭乘路線名稱 == 1123)
 # temp1 <- hualien %>% filter(搭乘路線名稱 == 311)
-# 
+#
 # all_days_2023 <- seq(as.Date("2023-01-01"), as.Date("2023-12-31"), by = "day")
 # all_days_2024 <- seq(as.Date("2024-01-01"), as.Date("2024-12-31"), by = "day")
 # # all_days_2025 <- seq(as.Date("2025-01-01"), as.Date("2025-12-31"), by = "day")
-# 
+#
 # have_days <- as.Date(unique(temp$`資料代表日期(yyyy-MM-dd)`))
-# 
+#
 # missing_days_2023 <- setdiff(all_days_2023, have_days)
 # missing_days_2024 <- setdiff(all_days_2024, have_days)
 # # missing_days_2025 <- setdiff(all_days_2025, have_days)
-# 
+#
 # missing_days_2023
 # missing_days_2024
 # # missing_days_2025
@@ -55,67 +55,70 @@ all_bus <- rbind(bus_hualien, bus_taitung, bus_2023, bus_2024, bus_2025)
 library(dplyr)
 
 # All Hualien data
-routes_hualien <- c("1121", 
-                    "1122", 
-                    "1123", 
-                    "1125", 
-                    "1126", 
-                    "1128", 
-                    "1129", 
-                    "1130", 
-                    "1132", 
-                    "1133", 
-                    "1135", 
-                    "1136", 
-                    "1137", 
-                    "1139", 
-                    "1140", 
-                    "1141", 
-                    "1142", 
-                    "1143", 
-                    "1145", 
-                    "301", 
-                    "302", 
-                    "303", 
-                    "305", 
-                    "307", 
-                    "308", 
-                    "309", 
-                    "310", 
-                    "311", 
-                    "8119", 
-                    "8161", 
-                    "8173", 
-                    "8181")
+routes_hualien <- c(
+  "1121",
+  "1122",
+  "1123",
+  "1125",
+  "1126",
+  "1128",
+  "1129",
+  "1130",
+  "1132",
+  "1133",
+  "1135",
+  "1136",
+  "1137",
+  "1139",
+  "1140",
+  "1141",
+  "1142",
+  "1143",
+  "1145",
+  "301",
+  "302",
+  "303",
+  "305",
+  "307",
+  "308",
+  "309",
+  "310",
+  "311",
+  "8119",
+  "8161",
+  "8173",
+  "8181"
+)
 Hualien <- all_bus %>%
   filter(搭乘路線名稱 %in% routes_hualien)
 
 # 花蓮公路客運
-routes_hualien_THB <- c("1121", 
-                        "1122",
-                        "1125", 
-                        "1126",
-                        "1128", 
-                        "1129",
-                        "1130", 
-                        "1132",
-                        "1133", 
-                        "1135",
-                        "1136", 
-                        "1137",
-                        "1139", 
-                        "1140",
-                        "1141", 
-                        "1142",
-                        "1143", 
-                        "1145",
-                        "8119",
-                        "8161", 
-                        "8173",
-                        "8181")
+routes_hualien_THB <- c(
+  "1121",
+  "1122",
+  "1125",
+  "1126",
+  "1128",
+  "1129",
+  "1130",
+  "1132",
+  "1133",
+  "1135",
+  "1136",
+  "1137",
+  "1139",
+  "1140",
+  "1141",
+  "1142",
+  "1143",
+  "1145",
+  "8119",
+  "8161",
+  "8173",
+  "8181"
+)
 Hualien_THB <- all_bus %>%
   filter(搭乘路線名稱 %in% routes_hualien_THB)
-
 ```
 
 ## Taitung
@@ -123,108 +126,112 @@ Hualien_THB <- all_bus %>%
 library(dplyr)
 
 # All Taitung data
-routes_taitung <- c("101", 
-                    "1145", 
-                    "201", 
-                    "202", 
-                    "203", 
-                    "309", 
-                    "8101", 
-                    "8102", 
-                    "8103", 
-                    "8105", 
-                    "8107", 
-                    "8109", 
-                    "8110", 
-                    "8111", 
-                    "8113", 
-                    "8115", 
-                    "8117", 
-                    "8119", 
-                    "8120", 
-                    "8122", 
-                    "8125", 
-                    "8128", 
-                    "8129", 
-                    "8130", 
-                    "8131", 
-                    "8132", 
-                    "8135", 
-                    "8136", 
-                    "8137", 
-                    "8138", 
-                    "8150", 
-                    "8151", 
-                    "8152", 
-                    "8153", 
-                    "8156", 
-                    "8157", 
-                    "8158", 
-                    "8161", 
-                    "8163", 
-                    "8165", 
-                    "8166", 
-                    "8167", 
-                    "8168", 
-                    "8170", 
-                    "8171", 
-                    "8172", 
-                    "8173", 
-                    "8178", 
-                    "8180", 
-                    "8181", 
-                    "市區循環", 
-                    "陸海空線")
+routes_taitung <- c(
+  "101",
+  "1145",
+  "201",
+  "202",
+  "203",
+  "309",
+  "8101",
+  "8102",
+  "8103",
+  "8105",
+  "8107",
+  "8109",
+  "8110",
+  "8111",
+  "8113",
+  "8115",
+  "8117",
+  "8119",
+  "8120",
+  "8122",
+  "8125",
+  "8128",
+  "8129",
+  "8130",
+  "8131",
+  "8132",
+  "8135",
+  "8136",
+  "8137",
+  "8138",
+  "8150",
+  "8151",
+  "8152",
+  "8153",
+  "8156",
+  "8157",
+  "8158",
+  "8161",
+  "8163",
+  "8165",
+  "8166",
+  "8167",
+  "8168",
+  "8170",
+  "8171",
+  "8172",
+  "8173",
+  "8178",
+  "8180",
+  "8181",
+  "市區循環",
+  "陸海空線"
+)
 Taitung <- all_bus %>%
   filter(搭乘路線名稱 %in% routes_taitung)
 
 # 臺東公路客運
-routes_taitung_THB <- c("1145", 
-                        "309",
-                        "8101", 
-                        "8102", 
-                        "8103", 
-                        "8105", 
-                        "8107", 
-                        "8109", 
-                        "8110", 
-                        "8111", 
-                        "8113", 
-                        "8115", 
-                        "8117", 
-                        "8119", 
-                        "8120", 
-                        "8122", 
-                        "8125", 
-                        "8128", 
-                        "8129", 
-                        "8130", 
-                        "8131", 
-                        "8132", 
-                        "8135", 
-                        "8136", 
-                        "8137", 
-                        "8138", 
-                        "8150", 
-                        "8151", 
-                        "8152", 
-                        "8153", 
-                        "8156", 
-                        "8157", 
-                        "8158", 
-                        "8161", 
-                        "8163", 
-                        "8165", 
-                        "8166", 
-                        "8167", 
-                        "8168", 
-                        "8170", 
-                        "8171", 
-                        "8172", 
-                        "8173", 
-                        "8178", 
-                        "8180", 
-                        "8181")
+routes_taitung_THB <- c(
+  "1145",
+  "309",
+  "8101",
+  "8102",
+  "8103",
+  "8105",
+  "8107",
+  "8109",
+  "8110",
+  "8111",
+  "8113",
+  "8115",
+  "8117",
+  "8119",
+  "8120",
+  "8122",
+  "8125",
+  "8128",
+  "8129",
+  "8130",
+  "8131",
+  "8132",
+  "8135",
+  "8136",
+  "8137",
+  "8138",
+  "8150",
+  "8151",
+  "8152",
+  "8153",
+  "8156",
+  "8157",
+  "8158",
+  "8161",
+  "8163",
+  "8165",
+  "8166",
+  "8167",
+  "8168",
+  "8170",
+  "8171",
+  "8172",
+  "8173",
+  "8178",
+  "8180",
+  "8181"
+)
 Taitung_THB <- all_bus %>%
   filter(搭乘路線名稱 %in% routes_taitung_THB)
 ```
@@ -236,23 +243,23 @@ Hualien_TPASS <- Hualien %>% filter(票種次類型 %in% c("#HUA-199", "#HUA-399
 Taitung_TPASS <- Taitung %>% filter(票種次類型 %in% c("#HUA-199", "#HUA-399", "#TTT-299"))
 
 # 計算花東每年筆數 (因為TPASS從2023/10啟用所以從2023-10-01開始計算)
-Hualien_by_year <- Hualien %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>% 
-  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>% 
+Hualien_by_year <- Hualien %>%
+  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>%
+  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>%
   count(year)
 
-Taitung_by_year <- Taitung %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>% 
-  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>% 
+Taitung_by_year <- Taitung %>%
+  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>%
+  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>%
   count(year)
 
 # 計算花東TPASS每年筆數
-Hualien_TPASS_by_year <- Hualien_TPASS %>% 
-  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>% 
+Hualien_TPASS_by_year <- Hualien_TPASS %>%
+  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>%
   count(year)
 
-Taitung_TPASS_by_year <- Taitung_TPASS %>% 
-  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>% 
+Taitung_TPASS_by_year <- Taitung_TPASS %>%
+  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>%
   count(year)
 
 # 計算年占比
@@ -263,10 +270,11 @@ Hualien_TPASS_ratio_by_year <- Hualien_by_year %>%
     Hualien_TPASS_by_year %>% rename(花蓮縣TPASS每年筆數 = n),
     by = "year"
   ) %>%
-  mutate(year = as.numeric(year), 
-         rate = `花蓮縣TPASS每年筆數` / `花蓮縣每年筆數` * 100, 
-         rate_pct = sprintf("%.1f%%", rate)
-         )
+  mutate(
+    year = as.numeric(year),
+    rate = `花蓮縣TPASS每年筆數` / `花蓮縣每年筆數` * 100,
+    rate_pct = sprintf("%.1f%%", rate)
+  )
 
 ## 臺東
 Taitung_TPASS_ratio_by_year <- Taitung_by_year %>%
@@ -275,30 +283,31 @@ Taitung_TPASS_ratio_by_year <- Taitung_by_year %>%
     Taitung_TPASS_by_year %>% rename(臺東縣TPASS每年筆數 = n),
     by = "year"
   ) %>%
-  mutate(year = as.numeric(year), 
-         rate = `臺東縣TPASS每年筆數` / `臺東縣每年筆數` * 100, 
-         rate_pct = sprintf("%.1f%%", rate)
-         )
+  mutate(
+    year = as.numeric(year),
+    rate = `臺東縣TPASS每年筆數` / `臺東縣每年筆數` * 100,
+    rate_pct = sprintf("%.1f%%", rate)
+  )
 
 
 # 計算花東每月筆數 (因為TPASS從2023/10啟用所以從2023-10-01開始計算)
-Hualien_by_month <- Hualien %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>% 
+Hualien_by_month <- Hualien %>%
+  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   count(year_month)
 
-Taitung_by_month <- Taitung %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>% 
+Taitung_by_month <- Taitung %>%
+  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   count(year_month)
 
 
 # 計算花東TPASS每月筆數
-Hualien_TPASS_by_month <- Hualien_TPASS %>% 
+Hualien_TPASS_by_month <- Hualien_TPASS %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   count(year_month)
 
-Taitung_TPASS_by_month <- Taitung_TPASS %>% 
+Taitung_TPASS_by_month <- Taitung_TPASS %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   count(year_month)
 
@@ -335,16 +344,15 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # def function
 plot_Hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
   roc_year <- tpass_prop_table$year - 1911
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -364,14 +372,14 @@ plot_Hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "112年至114年花蓮縣TPASS逐年使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -379,7 +387,7 @@ plot_Hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
     labels = roc_year,
     cex.axis = 1.5
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -387,7 +395,7 @@ plot_Hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -397,10 +405,10 @@ plot_Hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
     cex = 1.5,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -420,14 +428,13 @@ plot_Hualien_TPASS_ratio_by_year(Hualien_TPASS_ratio_by_year)
 
 # 存圖
 save_plot_Hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/112~114"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "112年至114年花蓮縣TPASS逐年使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -437,10 +444,10 @@ save_plot_Hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Hualien_TPASS_ratio_by_year(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -454,16 +461,15 @@ save_plot_Hualien_TPASS_ratio_by_year(Hualien_TPASS_ratio_by_year)
 windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 # def function
 plot_Taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
   roc_year <- tpass_prop_table$year - 1911
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -483,14 +489,14 @@ plot_Taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "112年至114年臺東縣TPASS逐年使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -498,7 +504,7 @@ plot_Taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
     labels = roc_year,
     cex.axis = 1.5
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -506,7 +512,7 @@ plot_Taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -516,10 +522,10 @@ plot_Taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
     cex = 1.5,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -539,14 +545,13 @@ plot_Taitung_TPASS_ratio_by_year(Taitung_TPASS_ratio_by_year)
 
 # 存圖
 save_plot_Taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/112~114"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "112年至114年臺東縣TPASS逐年使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -556,10 +561,10 @@ save_plot_Taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Taitung_TPASS_ratio_by_year(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -576,27 +581,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 # 篩選資料：只保留 2024/7 ~ 2025/6
 Hualien_TPASS_ratio_by_month_sub <- Hualien_TPASS_ratio_by_month[
   Hualien_TPASS_ratio_by_month$year_month >= "2024-07" &
-  Hualien_TPASS_ratio_by_month$year_month <= "2025-06",
+    Hualien_TPASS_ratio_by_month$year_month <= "2025-06",
 ]
 
 # def function
 plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(tpass_prop_table$year_month, 1, 4)) - 1911,
     "/",
     substr(tpass_prop_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -616,14 +620,14 @@ plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月花蓮縣TPASS逐月使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -632,7 +636,7 @@ plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -640,7 +644,7 @@ plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -650,10 +654,10 @@ plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex = 1.5,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -673,14 +677,13 @@ plot_Hualien_TPASS_ratio_by_month(Hualien_TPASS_ratio_by_month_sub)
 
 # 存圖
 save_plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月花蓮縣TPASS逐月使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -690,10 +693,10 @@ save_plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Hualien_TPASS_ratio_by_month(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -710,27 +713,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 # 篩選資料：只保留 2024/6 ~ 2025/12
 Hualien_TPASS_ratio_by_month_sub <- Hualien_TPASS_ratio_by_month[
   Hualien_TPASS_ratio_by_month$year_month >= "2024-06" &
-  Hualien_TPASS_ratio_by_month$year_month <= "2025-12",
+    Hualien_TPASS_ratio_by_month$year_month <= "2025-12",
 ]
 
 # def function
 plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(tpass_prop_table$year_month, 1, 4)) - 1911,
     "/",
     substr(tpass_prop_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -750,14 +752,14 @@ plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月花蓮縣TPASS逐月使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -766,7 +768,7 @@ plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -774,7 +776,7 @@ plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -784,10 +786,10 @@ plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -807,14 +809,13 @@ plot_Hualien_TPASS_ratio_by_month(Hualien_TPASS_ratio_by_month_sub)
 
 # 存圖
 save_plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月花蓮縣TPASS逐月使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -824,10 +825,10 @@ save_plot_Hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Hualien_TPASS_ratio_by_month(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -845,27 +846,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 # 篩選資料：只保留 2024/7 ~ 2025/6
 Taitung_TPASS_ratio_by_month_sub <- Taitung_TPASS_ratio_by_month[
   Taitung_TPASS_ratio_by_month$year_month >= "2024-07" &
-  Taitung_TPASS_ratio_by_month$year_month <= "2025-06",
+    Taitung_TPASS_ratio_by_month$year_month <= "2025-06",
 ]
 
 # def function
 plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(tpass_prop_table$year_month, 1, 4)) - 1911,
     "/",
     substr(tpass_prop_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -885,14 +885,14 @@ plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月臺東縣TPASS逐月使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -901,7 +901,7 @@ plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -909,7 +909,7 @@ plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -919,10 +919,10 @@ plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -942,14 +942,13 @@ plot_Taitung_TPASS_ratio_by_month(Taitung_TPASS_ratio_by_month_sub)
 
 # 存圖
 save_plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月臺東縣TPASS逐月使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -959,10 +958,10 @@ save_plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Taitung_TPASS_ratio_by_month(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -979,27 +978,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 # 篩選資料：只保留 2024/6 ~ 2025/12
 Taitung_TPASS_ratio_by_month_sub <- Taitung_TPASS_ratio_by_month[
   Taitung_TPASS_ratio_by_month$year_month >= "2024-06" &
-  Taitung_TPASS_ratio_by_month$year_month <= "2025-12",
+    Taitung_TPASS_ratio_by_month$year_month <= "2025-12",
 ]
 
 # def function
 plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(tpass_prop_table$year_month, 1, 4)) - 1911,
     "/",
     substr(tpass_prop_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -1019,14 +1017,14 @@ plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月臺東縣TPASS逐月使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -1035,7 +1033,7 @@ plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -1043,7 +1041,7 @@ plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -1053,10 +1051,10 @@ plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -1076,14 +1074,13 @@ plot_Taitung_TPASS_ratio_by_month(Taitung_TPASS_ratio_by_month_sub)
 
 # 存圖
 save_plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月臺東縣TPASS逐月使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -1093,10 +1090,10 @@ save_plot_Taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Taitung_TPASS_ratio_by_month(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -1111,23 +1108,23 @@ bus_hualien_TPASS <- bus_hualien %>% filter(票種次類型 %in% c("#HUA-199", "
 bus_taitung_TPASS <- bus_taitung %>% filter(票種次類型 %in% c("#HUA-199", "#HUA-399", "#TTT-299"))
 
 # 計算花東市區客運每年筆數 (因為TPASS從2023/10啟用所以從2023-10-01開始計算)
-bus_hualien_by_year <- bus_hualien %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>% 
-  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>% 
+bus_hualien_by_year <- bus_hualien %>%
+  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>%
+  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>%
   count(year)
 
-bus_taitung_by_year <- bus_taitung %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>% 
-  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>% 
+bus_taitung_by_year <- bus_taitung %>%
+  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>%
+  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>%
   count(year)
 
 # 計算花東市區客運TPASS每年筆數
-bus_hualien_TPASS_by_year <- bus_hualien_TPASS %>% 
-  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>% 
+bus_hualien_TPASS_by_year <- bus_hualien_TPASS %>%
+  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>%
   count(year)
 
-bus_taitung_TPASS_by_year <- bus_taitung_TPASS %>% 
-  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>% 
+bus_taitung_TPASS_by_year <- bus_taitung_TPASS %>%
+  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>%
   count(year)
 
 # 計算年占比
@@ -1138,10 +1135,11 @@ bus_hualien_TPASS_ratio_by_year <- bus_hualien_by_year %>%
     bus_hualien_TPASS_by_year %>% rename(花蓮縣市區客運TPASS每年筆數 = n),
     by = "year"
   ) %>%
-  mutate(year = as.numeric(year), 
-         rate = `花蓮縣市區客運TPASS每年筆數` / `花蓮縣市區客運每年筆數` * 100, 
-         rate_pct = sprintf("%.1f%%", rate)
-         )
+  mutate(
+    year = as.numeric(year),
+    rate = `花蓮縣市區客運TPASS每年筆數` / `花蓮縣市區客運每年筆數` * 100,
+    rate_pct = sprintf("%.1f%%", rate)
+  )
 
 ## 臺東
 bus_taitung_TPASS_ratio_by_year <- bus_taitung_by_year %>%
@@ -1150,29 +1148,30 @@ bus_taitung_TPASS_ratio_by_year <- bus_taitung_by_year %>%
     bus_taitung_TPASS_by_year %>% rename(臺東縣市區客運TPASS每年筆數 = n),
     by = "year"
   ) %>%
-  mutate(year = as.numeric(year), 
-         rate = `臺東縣市區客運TPASS每年筆數` / `臺東縣市區客運每年筆數` * 100, 
-         rate_pct = sprintf("%.1f%%", rate)
-         )
+  mutate(
+    year = as.numeric(year),
+    rate = `臺東縣市區客運TPASS每年筆數` / `臺東縣市區客運每年筆數` * 100,
+    rate_pct = sprintf("%.1f%%", rate)
+  )
 
 
 # 計算花東市區客運每月筆數 (因為TPASS從2023/10啟用所以從2023-10-01開始計算)
-bus_hualien_by_month <- bus_hualien %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>% 
+bus_hualien_by_month <- bus_hualien %>%
+  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   count(year_month)
 
-bus_taitung_by_month <- bus_taitung %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>% 
+bus_taitung_by_month <- bus_taitung %>%
+  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   count(year_month)
 
 # 計算花東市區客運TPASS每月筆數
-bus_hualien_TPASS_by_month <- bus_hualien_TPASS %>% 
+bus_hualien_TPASS_by_month <- bus_hualien_TPASS %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   count(year_month)
 
-bus_taitung_TPASS_by_month <- bus_taitung_TPASS %>% 
+bus_taitung_TPASS_by_month <- bus_taitung_TPASS %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   count(year_month)
 
@@ -1209,16 +1208,15 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # def function
 plot_bus_hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
   roc_year <- tpass_prop_table$year - 1911
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -1238,14 +1236,14 @@ plot_bus_hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "112年至114年花蓮縣市區客運TPASS逐年使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -1253,7 +1251,7 @@ plot_bus_hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
     labels = roc_year,
     cex.axis = 1.5
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -1261,7 +1259,7 @@ plot_bus_hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -1271,10 +1269,10 @@ plot_bus_hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -1294,14 +1292,13 @@ plot_bus_hualien_TPASS_ratio_by_year(bus_hualien_TPASS_ratio_by_year)
 
 # 存圖
 save_plot_bus_hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/112~114"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "112年至114年花蓮縣市區客運TPASS逐年使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -1311,10 +1308,10 @@ save_plot_bus_hualien_TPASS_ratio_by_year <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_hualien_TPASS_ratio_by_year(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -1328,16 +1325,15 @@ save_plot_bus_hualien_TPASS_ratio_by_year(bus_hualien_TPASS_ratio_by_year)
 windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 # def function
 plot_bus_taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
   roc_year <- tpass_prop_table$year - 1911
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -1357,14 +1353,14 @@ plot_bus_taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "112年至114年臺東縣市區客運TPASS逐年使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -1372,7 +1368,7 @@ plot_bus_taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
     labels = roc_year,
     cex.axis = 1.5
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -1380,7 +1376,7 @@ plot_bus_taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -1390,10 +1386,10 @@ plot_bus_taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -1413,14 +1409,13 @@ plot_bus_taitung_TPASS_ratio_by_year(bus_taitung_TPASS_ratio_by_year)
 
 # 存圖
 save_plot_bus_taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/112~114"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "112年至114年臺東縣市區客運TPASS逐年使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -1430,10 +1425,10 @@ save_plot_bus_taitung_TPASS_ratio_by_year <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_taitung_TPASS_ratio_by_year(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -1450,27 +1445,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 # 篩選資料：只保留 2024/7 ~ 2025/6
 bus_hualien_TPASS_ratio_by_month_sub <- bus_hualien_TPASS_ratio_by_month[
   bus_hualien_TPASS_ratio_by_month$year_month >= "2024-07" &
-  bus_hualien_TPASS_ratio_by_month$year_month <= "2025-06",
+    bus_hualien_TPASS_ratio_by_month$year_month <= "2025-06",
 ]
 
 # def function
 plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(tpass_prop_table$year_month, 1, 4)) - 1911,
     "/",
     substr(tpass_prop_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -1490,14 +1484,14 @@ plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月花蓮縣市區客運TPASS逐月使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -1506,7 +1500,7 @@ plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -1514,7 +1508,7 @@ plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -1524,10 +1518,10 @@ plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -1547,14 +1541,13 @@ plot_bus_hualien_TPASS_ratio_by_month(bus_hualien_TPASS_ratio_by_month_sub)
 
 # 存圖
 save_plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月花蓮縣市區客運TPASS逐月使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -1564,10 +1557,10 @@ save_plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_hualien_TPASS_ratio_by_month(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -1584,27 +1577,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 # 篩選資料：只保留 2024/6 ~ 2025/12
 bus_hualien_TPASS_ratio_by_month_sub <- bus_hualien_TPASS_ratio_by_month[
   bus_hualien_TPASS_ratio_by_month$year_month >= "2024-06" &
-  bus_hualien_TPASS_ratio_by_month$year_month <= "2025-12",
+    bus_hualien_TPASS_ratio_by_month$year_month <= "2025-12",
 ]
 
 # def function
 plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(tpass_prop_table$year_month, 1, 4)) - 1911,
     "/",
     substr(tpass_prop_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -1624,14 +1616,14 @@ plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月花蓮縣市區客運TPASS逐月使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -1640,7 +1632,7 @@ plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -1648,7 +1640,7 @@ plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -1658,10 +1650,10 @@ plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -1681,14 +1673,13 @@ plot_bus_hualien_TPASS_ratio_by_month(bus_hualien_TPASS_ratio_by_month_sub)
 
 # 存圖
 save_plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月花蓮縣市區客運TPASS逐月使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -1698,10 +1689,10 @@ save_plot_bus_hualien_TPASS_ratio_by_month <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_hualien_TPASS_ratio_by_month(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -1719,27 +1710,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 # 篩選資料：只保留 2024/7 ~ 2025/6
 bus_taitung_TPASS_ratio_by_month_sub <- bus_taitung_TPASS_ratio_by_month[
   bus_taitung_TPASS_ratio_by_month$year_month >= "2024-07" &
-  bus_taitung_TPASS_ratio_by_month$year_month <= "2025-06",
+    bus_taitung_TPASS_ratio_by_month$year_month <= "2025-06",
 ]
 
 # def function
 plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(tpass_prop_table$year_month, 1, 4)) - 1911,
     "/",
     substr(tpass_prop_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -1759,14 +1749,14 @@ plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月臺東縣市區客運TPASS逐月使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -1775,7 +1765,7 @@ plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -1783,7 +1773,7 @@ plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -1793,10 +1783,10 @@ plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -1816,14 +1806,13 @@ plot_bus_taitung_TPASS_ratio_by_month(bus_taitung_TPASS_ratio_by_month_sub)
 
 # 存圖
 save_plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月臺東縣市區客運TPASS逐月使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -1833,10 +1822,10 @@ save_plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_taitung_TPASS_ratio_by_month(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -1853,27 +1842,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 # 篩選資料：只保留 2024/6 ~ 2025/12
 bus_taitung_TPASS_ratio_by_month_sub <- bus_taitung_TPASS_ratio_by_month[
   bus_taitung_TPASS_ratio_by_month$year_month >= "2024-06" &
-  bus_taitung_TPASS_ratio_by_month$year_month <= "2025-12",
+    bus_taitung_TPASS_ratio_by_month$year_month <= "2025-12",
 ]
 
 # def function
 plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(tpass_prop_table$year_month, 1, 4)) - 1911,
     "/",
     substr(tpass_prop_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -1893,14 +1881,14 @@ plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月臺東縣市區客運TPASS逐月使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -1909,7 +1897,7 @@ plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -1917,7 +1905,7 @@ plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -1927,10 +1915,10 @@ plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -1950,14 +1938,13 @@ plot_bus_taitung_TPASS_ratio_by_month(bus_taitung_TPASS_ratio_by_month_sub)
 
 # 存圖
 save_plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月臺東縣市區客運TPASS逐月使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -1967,10 +1954,10 @@ save_plot_bus_taitung_TPASS_ratio_by_month <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_taitung_TPASS_ratio_by_month(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -1986,23 +1973,23 @@ Hualien_THB_TPASS <- Hualien_THB %>% filter(票種次類型 %in% c("#HUA-199", "
 Taitung_THB_TPASS <- Taitung_THB %>% filter(票種次類型 %in% c("#HUA-199", "#HUA-399", "#TTT-299"))
 
 # 計算花東公路客運每年筆數 (因為TPASS從2023/10啟用所以從2023-10-01開始計算)
-Hualien_THB_by_year <- Hualien_THB %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>% 
-  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>% 
+Hualien_THB_by_year <- Hualien_THB %>%
+  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>%
+  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>%
   count(year)
 
-Taitung_THB_by_year <- Taitung_THB %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>% 
-  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>% 
+Taitung_THB_by_year <- Taitung_THB %>%
+  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>%
+  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>%
   count(year)
 
 # 計算花東公路客運TPASS每年筆數
-Hualien_THB_TPASS_by_year <- Hualien_THB_TPASS %>% 
-  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>% 
+Hualien_THB_TPASS_by_year <- Hualien_THB_TPASS %>%
+  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>%
   count(year)
 
-Taitung_THB_TPASS_by_year <- Taitung_THB_TPASS %>% 
-  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>% 
+Taitung_THB_TPASS_by_year <- Taitung_THB_TPASS %>%
+  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>%
   count(year)
 
 # 計算年占比
@@ -2013,10 +2000,11 @@ Hualien_THB_TPASS_ratio_by_year <- Hualien_THB_by_year %>%
     Hualien_THB_TPASS_by_year %>% rename(花蓮縣公路客運TPASS每年筆數 = n),
     by = "year"
   ) %>%
-  mutate(year = as.numeric(year), 
-         rate = `花蓮縣公路客運TPASS每年筆數` / `花蓮縣公路客運每年筆數` * 100, 
-         rate_pct = sprintf("%.1f%%", rate)
-         )
+  mutate(
+    year = as.numeric(year),
+    rate = `花蓮縣公路客運TPASS每年筆數` / `花蓮縣公路客運每年筆數` * 100,
+    rate_pct = sprintf("%.1f%%", rate)
+  )
 
 ## 臺東
 Taitung_THB_TPASS_ratio_by_year <- Taitung_THB_by_year %>%
@@ -2025,29 +2013,30 @@ Taitung_THB_TPASS_ratio_by_year <- Taitung_THB_by_year %>%
     Taitung_THB_TPASS_by_year %>% rename(臺東縣公路客運TPASS每年筆數 = n),
     by = "year"
   ) %>%
-  mutate(year = as.numeric(year), 
-         rate = `臺東縣公路客運TPASS每年筆數` / `臺東縣公路客運每年筆數` * 100, 
-         rate_pct = sprintf("%.1f%%", rate)
-         )
+  mutate(
+    year = as.numeric(year),
+    rate = `臺東縣公路客運TPASS每年筆數` / `臺東縣公路客運每年筆數` * 100,
+    rate_pct = sprintf("%.1f%%", rate)
+  )
 
 
 # 計算花東公路客運每月筆數 (因為TPASS從2023/10啟用所以從2023-10-01開始計算)
-Hualien_THB_by_month <- Hualien_THB %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>% 
+Hualien_THB_by_month <- Hualien_THB %>%
+  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   count(year_month)
 
-Taitung_THB_by_month <- Taitung_THB %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>% 
+Taitung_THB_by_month <- Taitung_THB %>%
+  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2023-10-01")) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   count(year_month)
 
 # 計算花東公路客運TPASS每月筆數
-Hualien_THB_TPASS_by_month <- Hualien_THB_TPASS %>% 
+Hualien_THB_TPASS_by_month <- Hualien_THB_TPASS %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   count(year_month)
 
-Taitung_THB_TPASS_by_month <- Taitung_THB_TPASS %>% 
+Taitung_THB_TPASS_by_month <- Taitung_THB_TPASS %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   count(year_month)
 
@@ -2084,16 +2073,15 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # def function
 plot_Hualien_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
   roc_year <- tpass_prop_table$year - 1911
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -2113,14 +2101,14 @@ plot_Hualien_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "112年至114年花蓮縣公路客運TPASS逐年使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -2128,7 +2116,7 @@ plot_Hualien_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
     labels = roc_year,
     cex.axis = 1.5
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -2136,7 +2124,7 @@ plot_Hualien_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -2146,10 +2134,10 @@ plot_Hualien_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -2169,14 +2157,13 @@ plot_Hualien_THB_TPASS_ratio_by_year(Hualien_THB_TPASS_ratio_by_year)
 
 # 存圖
 save_plot_Hualien_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/112~114"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "112年至114年花蓮縣公路客運TPASS逐年使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -2186,10 +2173,10 @@ save_plot_Hualien_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Hualien_THB_TPASS_ratio_by_year(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -2203,16 +2190,15 @@ save_plot_Hualien_THB_TPASS_ratio_by_year(Hualien_THB_TPASS_ratio_by_year)
 windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 # def function
 plot_Taitung_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
   roc_year <- tpass_prop_table$year - 1911
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -2232,14 +2218,14 @@ plot_Taitung_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "112年至114年臺東縣公路客運TPASS逐年使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -2247,7 +2233,7 @@ plot_Taitung_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
     labels = roc_year,
     cex.axis = 1.5
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -2255,7 +2241,7 @@ plot_Taitung_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -2265,10 +2251,10 @@ plot_Taitung_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -2288,14 +2274,13 @@ plot_Taitung_THB_TPASS_ratio_by_year(Taitung_THB_TPASS_ratio_by_year)
 
 # 存圖
 save_plot_Taitung_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/112~114"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "112年至114年臺東縣公路客運TPASS逐年使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -2305,10 +2290,10 @@ save_plot_Taitung_THB_TPASS_ratio_by_year <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Taitung_THB_TPASS_ratio_by_year(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -2325,27 +2310,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 # 篩選資料：只保留 2024/7 ~ 2025/6
 Hualien_THB_TPASS_ratio_by_month_sub <- Hualien_THB_TPASS_ratio_by_month[
   Hualien_THB_TPASS_ratio_by_month$year_month >= "2024-07" &
-  Hualien_THB_TPASS_ratio_by_month$year_month <= "2025-06",
+    Hualien_THB_TPASS_ratio_by_month$year_month <= "2025-06",
 ]
 
 # def function
 plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(tpass_prop_table$year_month, 1, 4)) - 1911,
     "/",
     substr(tpass_prop_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -2365,14 +2349,14 @@ plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月花蓮縣公路客運TPASS逐月使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -2381,7 +2365,7 @@ plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -2389,7 +2373,7 @@ plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -2399,10 +2383,10 @@ plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -2422,14 +2406,13 @@ plot_Hualien_THB_TPASS_ratio_by_month(Hualien_THB_TPASS_ratio_by_month_sub)
 
 # 存圖
 save_plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月花蓮縣公路客運TPASS逐月使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -2439,10 +2422,10 @@ save_plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Hualien_THB_TPASS_ratio_by_month(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -2459,27 +2442,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 # 篩選資料：只保留 2024/6 ~ 2025/12
 Hualien_THB_TPASS_ratio_by_month_sub <- Hualien_THB_TPASS_ratio_by_month[
   Hualien_THB_TPASS_ratio_by_month$year_month >= "2024-06" &
-  Hualien_THB_TPASS_ratio_by_month$year_month <= "2025-12",
+    Hualien_THB_TPASS_ratio_by_month$year_month <= "2025-12",
 ]
 
 # def function
 plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(tpass_prop_table$year_month, 1, 4)) - 1911,
     "/",
     substr(tpass_prop_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -2499,14 +2481,14 @@ plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月花蓮縣公路客運TPASS逐月使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -2515,7 +2497,7 @@ plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -2523,7 +2505,7 @@ plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -2533,10 +2515,10 @@ plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -2556,14 +2538,13 @@ plot_Hualien_THB_TPASS_ratio_by_month(Hualien_THB_TPASS_ratio_by_month_sub)
 
 # 存圖
 save_plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月花蓮縣公路客運TPASS逐月使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -2573,10 +2554,10 @@ save_plot_Hualien_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Hualien_THB_TPASS_ratio_by_month(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -2594,27 +2575,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 # 篩選資料：只保留 2024/7 ~ 2025/6
 Taitung_THB_TPASS_ratio_by_month_sub <- Taitung_THB_TPASS_ratio_by_month[
   Taitung_THB_TPASS_ratio_by_month$year_month >= "2024-07" &
-  Taitung_THB_TPASS_ratio_by_month$year_month <= "2025-06",
+    Taitung_THB_TPASS_ratio_by_month$year_month <= "2025-06",
 ]
 
 # def function
 plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(tpass_prop_table$year_month, 1, 4)) - 1911,
     "/",
     substr(tpass_prop_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -2634,14 +2614,14 @@ plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月臺東縣公路客運TPASS逐月使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -2650,7 +2630,7 @@ plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -2658,7 +2638,7 @@ plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -2668,10 +2648,10 @@ plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -2691,14 +2671,13 @@ plot_Taitung_THB_TPASS_ratio_by_month(Taitung_THB_TPASS_ratio_by_month_sub)
 
 # 存圖
 save_plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月臺東縣公路客運TPASS逐月使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -2708,10 +2687,10 @@ save_plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Taitung_THB_TPASS_ratio_by_month(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -2728,27 +2707,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 # 篩選資料：只保留 2024/6 ~ 2025/12
 Taitung_THB_TPASS_ratio_by_month_sub <- Taitung_THB_TPASS_ratio_by_month[
   Taitung_THB_TPASS_ratio_by_month$year_month >= "2024-06" &
-  Taitung_THB_TPASS_ratio_by_month$year_month <= "2025-12",
+    Taitung_THB_TPASS_ratio_by_month$year_month <= "2025-12",
 ]
 
 # def function
 plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   tpass_prop <- tpass_prop_table$rate
   x_idx <- 1:nrow(tpass_prop_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(tpass_prop_table$year_month, 1, 4)) - 1911,
     "/",
     substr(tpass_prop_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 6, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -2768,14 +2746,14 @@ plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月臺東縣公路客運TPASS逐月使用比例折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -2784,7 +2762,7 @@ plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -2792,7 +2770,7 @@ plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # 百分比標註
   text(
     x = x_idx,
@@ -2802,10 +2780,10 @@ plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -2825,14 +2803,13 @@ plot_Taitung_THB_TPASS_ratio_by_month(Taitung_THB_TPASS_ratio_by_month_sub)
 
 # 存圖
 save_plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月臺東縣公路客運TPASS逐月使用比例折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -2842,10 +2819,10 @@ save_plot_Taitung_THB_TPASS_ratio_by_month <- function(tpass_prop_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Taitung_THB_TPASS_ratio_by_month(tpass_prop_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -2866,25 +2843,25 @@ bus_TPASS <- rbind(bus_hualien_TPASS, bus_taitung_TPASS)
 bus_TPASS_growth_rates <- bus_TPASS %>%
   # 整理「年 + 票種次類型」
   mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>%
-  count(`票種次類型`, year) %>% 
+  count(`票種次類型`, year) %>%
   # 補齊資料
   complete(
     `票種次類型`,
     year = c("2023", "2024", "2025"),
     fill = list(n = 0)
-  ) %>% 
+  ) %>%
   # 轉成寬表
   tidyr::pivot_wider(
     names_from = year,
     values_from = n,
     values_fill = 0
-  ) %>% 
+  ) %>%
   # 轉成民國年
   rename(
     `112` = `2023`,
     `113` = `2024`,
     `114` = `2025`
-  ) %>% 
+  ) %>%
   # 計算成長率
   mutate(
     `113成長率` = ifelse(`112` == 0, NA, (`113` - `112`) / `112`),
@@ -2895,7 +2872,9 @@ bus_TPASS_growth_rates <- bus_TPASS %>%
 bus_TPASS_growth_rates
 
 # 計算逐年數量
-bus_TPASS %>% mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>% count(year)
+bus_TPASS %>%
+  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>%
+  count(year)
 ```
 
 ### 公路客運
@@ -2907,25 +2886,25 @@ THB_TPASS <- rbind(Hualien_THB_TPASS, Taitung_THB_TPASS)
 THB_TPASS_growth_rates <- THB_TPASS %>%
   # 整理「年 + 票種次類型」
   mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>%
-  count(`票種次類型`, year) %>% 
+  count(`票種次類型`, year) %>%
   # 補齊資料
   complete(
     `票種次類型`,
     year = c("2023", "2024", "2025"),
     fill = list(n = 0)
-  ) %>% 
+  ) %>%
   # 轉成寬表
   tidyr::pivot_wider(
     names_from = year,
     values_from = n,
     values_fill = 0
-  ) %>% 
+  ) %>%
   # 轉成民國年
   rename(
     `112` = `2023`,
     `113` = `2024`,
     `114` = `2025`
-  ) %>% 
+  ) %>%
   # 計算成長率
   mutate(
     `113成長率` = ifelse(`112` == 0, NA, (`113` - `112`) / `112`),
@@ -2936,7 +2915,9 @@ THB_TPASS_growth_rates <- THB_TPASS %>%
 THB_TPASS_growth_rates
 
 # 計算逐年數量
-THB_TPASS %>% mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>% count(year)
+THB_TPASS %>%
+  mutate(year = format(`資料代表日期(yyyy-MM-dd)`, "%Y")) %>%
+  count(year)
 ```
 
 
@@ -2960,596 +2941,13 @@ library(purrr)
 library(readr)
 
 # ===== 資料切分 (2024/7~2025/6) =====
-sub_bus_hualien <- bus_hualien %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30"),
-         `上車計費站序資料` != -99,
-         `下車站牌站序` != -99
-         )
-
-# 花蓮縣市區客運
-city <- "HualienCounty"   
-
-# 搭乘路線名稱 → 路線代碼
-# 301 → 0301
-# 302 → 0302
-# 303 → 0303
-# 305 → 0305
-# 308 → 0308
-# 309 → 0027
-# 310 → 0300
-# 311 → 0117
-# 1123、307 額外處理
-
-route_ids <- c("0301", "0302", "0303", "0305", "0308", "0027", "0300", "0117")
-response_format <- "JSON" # 回傳格式
-
-route_name_map <- c(
-  "0301" = "301",
-  "0302" = "302",
-  "0303" = "303",
-  "0305" = "305",
-  "0308" = "308",
-  "0027" = "309",
-  "0300" = "310",
-  "0117" = "311"
-)
-
-subroute_map <- list(
-  "301" = c("301"),
-  "302" = c("302", "302A"),
-  "303" = c("303", "303B", "303C", "303D"),
-  "305" = c("305", "305A"),
-  "308" = c("308", "308A"),
-  "309" = c("309"),
-  "310" = c("310", "310A"),
-  "311" = c("311", "311A")
-)
-
-# ===== 取得 access token =====
-token_res <- POST(
-  url = "https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token",
-  body = list(
-    grant_type = "client_credentials",
-    client_id = client_id,
-    client_secret = client_secret
-  ),
-  encode = "form"
-)
-
-stop_for_status(token_res)
-
-access_token <- content(token_res, as = "parsed", type = "application/json")$access_token
-
-# ===== function：單一路線 =====
-get_one_route <- function(route_id) {
-  api_url <- paste0(
-    "https://tdx.transportdata.tw/api/premium/S2SDistance/City/",
-    city,
-    "/RouteID/",
-    URLencode(route_id, reserved = TRUE)
+sub_bus_hualien <- bus_hualien %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30"),
+    `上車計費站序資料` != -99,
+    `下車站牌站序` != -99
   )
-
-  res <- GET(
-    url = api_url,
-    query = list(`$format` = response_format),
-    add_headers(Authorization = paste("Bearer", access_token))
-  )
-
-  stop_for_status(res)
-
-  txt <- content(res, as = "text", encoding = "UTF-8")
-  raw_data <- fromJSON(txt, flatten = TRUE)
-
-  if (!"Stops" %in% names(raw_data)) {
-    return(NULL)
-  }
-
-  bind_rows(raw_data$Stops, .id = "direction") %>%
-    mutate(
-      原始方向 = as.integer(direction),
-      Route_ID = route_id
-    ) %>%
-    select(Route_ID, everything(), -direction) %>%
-    rename(
-      站序資料 = Sequence,
-      上車站牌代碼 = FromStopID,
-      下車站牌代碼 = ToStopID,
-      站間距離 = Distance
-    )
-}
-
-# ===== function：用方向分段並指派附屬路線名稱 =====
-assign_subroute_name <- function(df, main_name) {
-  if (main_name == "311") {
-    df$搭乘附屬路線名稱 <- ifelse(df$原始方向 == 1, "311", "311A")
-    return(df)
-  }
-
-  if (max(df$原始方向, na.rm = TRUE) <= 2) {
-    df$搭乘附屬路線名稱 <- main_name
-    return(df)
-  }
-
-  sub_names <- subroute_map[[main_name]]
-
-  if (is.null(sub_names)) {
-    stop(paste0("subroute_map 缺少主線 ", main_name, " 的設定。"))
-  }
-
-  group_id <- cumsum(
-    seq_len(nrow(df)) == 1 |
-      (
-        lag(df$搭乘公車路線方向, default = df$搭乘公車路線方向[1]) == 1 &
-        df$搭乘公車路線方向 == 0
-      )
-  )
-
-  group_id <- as.integer(group_id)
-
-  if (max(group_id, na.rm = TRUE) > length(sub_names)) {
-    stop(paste0(
-      "主線 ", main_name,
-      " 的附屬路線名稱數量不足；需要 ",
-      max(group_id, na.rm = TRUE),
-      " 個，但目前只有 ",
-      length(sub_names),
-      " 個。"
-    ))
-  }
-
-  df$搭乘附屬路線名稱 <- sub_names[group_id]
-  df
-}
-
-# ===== 主流程 =====
-bus_hualien_distance_between_stations <- map_df(route_ids, get_one_route) %>%
-  mutate(Route_ID = factor(Route_ID, levels = route_ids)) %>%
-  arrange(Route_ID, 原始方向, 站序資料) %>%
-  mutate(
-    Route_ID = as.character(Route_ID),
-    搭乘路線名稱 = unname(route_name_map[Route_ID])
-  ) %>%
-  mutate(
-    搭乘公車路線方向 = case_when(
-      搭乘路線名稱 == "311" & 原始方向 == 2 ~ 0L,
-      搭乘路線名稱 == "311" & 原始方向 == 3 ~ 1L,
-      原始方向 %% 2 == 1 ~ 0L,
-      TRUE ~ 1L
-    )
-  ) %>%
-  group_by(搭乘路線名稱) %>%
-  group_modify(~ assign_subroute_name(.x, .y$搭乘路線名稱[[1]])) %>%
-  ungroup() %>%
-  select(搭乘路線名稱, 搭乘附屬路線名稱, Route_ID, everything())
-
-if (any(is.na(bus_hualien_distance_between_stations$搭乘路線名稱))) {
-  stop("有些 Route_ID 沒有對應到搭乘路線名稱，請檢查 route_name_map。")
-}
-
-if (any(is.na(bus_hualien_distance_between_stations$搭乘附屬路線名稱))) {
-  stop("有些資料沒有對應到搭乘附屬路線名稱，請檢查分組規則。")
-}
-
-# ===== 存csv =====
-# write_excel_csv(
-#   bus_hualien_distance_between_stations,
-#   "C:/Users/user/Desktop/運籌/115/公車站間距離資料/花蓮縣市區客運站間距離資料.csv"
-# )
-```
-
-##### 計算平均搭乘里程
-```{r}
-library(dplyr)
-library(readr)
-
-# =========================
-# 1. ticket 資料整理
-# =========================
-ticket <- sub_bus_hualien %>%
-  select(
-    `搭乘路線名稱`,
-    `搭乘附屬路線名稱`,
-    `搭乘公車路線方向`,
-    `上車站牌代碼`,
-    `上車計費站序資料`,
-    `下車站牌代碼`,
-    `下車站牌站序`,
-    `資料代表日期(yyyy-MM-dd)`
-  ) %>%
-  mutate(
-    ticket_id = row_number(),
-    `上車站牌代碼` = sub("^HUA", "", as.character(`上車站牌代碼`)),
-    `下車站牌代碼` = sub("^HUA", "", as.character(`下車站牌代碼`)),
-    `搭乘附屬路線名稱` = as.character(`搭乘附屬路線名稱`),
-    `搭乘公車路線方向` = as.numeric(`搭乘公車路線方向`),
-    `上車計費站序資料` = as.numeric(`上車計費站序資料`),
-    `下車站牌站序` = as.numeric(`下車站牌站序`)
-  )
-
-# =========================
-# 2. 載入 Distance 資料
-# =========================
-Distance <- read_csv(
-  "公車站間距離資料/花蓮縣市區客運站間距離資料.csv",
-  show_col_types = FALSE
-) %>%
-  mutate(
-    `站牌代碼` = as.character(`站牌代碼`),
-    `搭乘附屬路線名稱` = as.character(`搭乘附屬路線名稱`),
-    `搭乘公車路線方向` = as.numeric(`搭乘公車路線方向`),
-    `站序資料` = as.numeric(`站序資料`),
-    `站間距離` = as.numeric(`站間距離`)
-  )
-
-# =========================
-# 3. 建立 Distance 累積里程
-# =========================
-distance_index <- Distance %>%
-  arrange(`搭乘附屬路線名稱`, `搭乘公車路線方向`, `站序資料`) %>%
-  group_by(`搭乘附屬路線名稱`, `搭乘公車路線方向`) %>%
-  mutate(
-    `站間距離` = coalesce(`站間距離`, 0),
-    `累積里程` = cumsum(`站間距離`)
-  ) %>%
-  ungroup()
-
-# =========================
-# 4. 判斷每條附屬路線有幾種方向
-# =========================
-route_direction_info <- distance_index %>%
-  distinct(`搭乘附屬路線名稱`, `搭乘公車路線方向`) %>%
-  group_by(`搭乘附屬路線名稱`) %>%
-  summarise(
-    方向數量 = n(),
-    唯一方向 = ifelse(n() == 1, first(`搭乘公車路線方向`), NA_real_),
-    .groups = "drop"
-  )
-
-ticket2 <- ticket %>%
-  left_join(route_direction_info, by = "搭乘附屬路線名稱") %>%
-  mutate(
-    對應方向 = if_else(
-      方向數量 == 1,
-      唯一方向,
-      `搭乘公車路線方向`
-    )
-  )
-
-# =========================
-# 5. 多方向路線用的唯一站牌表
-#    多方向時只用站牌代碼對應
-# =========================
-distance_index_unique <- distance_index %>%
-  group_by(`搭乘附屬路線名稱`, `搭乘公車路線方向`, `站牌代碼`) %>%
-  slice(1) %>%
-  ungroup()
-
-# =========================
-# 6. 上車站配對
-#    單方向：用站牌代碼 + 站序資料
-#    多方向：只用站牌代碼
-# =========================
-on_match_single <- ticket2 %>%
-  filter(方向數量 == 1) %>%
-  select(
-    ticket_id,
-    `搭乘附屬路線名稱`,
-    對應方向,
-    `上車站牌代碼`,
-    `上車計費站序資料`
-  ) %>%
-  left_join(
-    distance_index,
-    by = c(
-      "搭乘附屬路線名稱",
-      "對應方向" = "搭乘公車路線方向",
-      "上車站牌代碼" = "站牌代碼"
-    ),
-    relationship = "many-to-many"
-  ) %>%
-  mutate(
-    上車站序差 = abs(`上車計費站序資料` - `站序資料`)
-  ) %>%
-  arrange(ticket_id, 上車站序差, `站序資料`) %>%
-  group_by(ticket_id) %>%
-  slice(1) %>%
-  ungroup() %>%
-  transmute(
-    ticket_id,
-    上車站序_距離表 = `站序資料`,
-    上車累積里程 = `累積里程`
-  )
-
-on_match_multi <- ticket2 %>%
-  filter(方向數量 != 1) %>%
-  select(
-    ticket_id,
-    `搭乘附屬路線名稱`,
-    對應方向,
-    `上車站牌代碼`
-  ) %>%
-  left_join(
-    distance_index_unique,
-    by = c(
-      "搭乘附屬路線名稱",
-      "對應方向" = "搭乘公車路線方向",
-      "上車站牌代碼" = "站牌代碼"
-    )
-  ) %>%
-  transmute(
-    ticket_id,
-    上車站序_距離表 = `站序資料`,
-    上車累積里程 = `累積里程`
-  )
-
-on_match <- bind_rows(on_match_single, on_match_multi)
-
-# =========================
-# 7. 下車站配對
-#    單方向：用站牌代碼 + 站序資料
-#    多方向：只用站牌代碼
-# =========================
-off_match_single <- ticket2 %>%
-  filter(方向數量 == 1) %>%
-  select(
-    ticket_id,
-    `搭乘附屬路線名稱`,
-    對應方向,
-    `下車站牌代碼`,
-    `下車站牌站序`
-  ) %>%
-  left_join(
-    distance_index,
-    by = c(
-      "搭乘附屬路線名稱",
-      "對應方向" = "搭乘公車路線方向",
-      "下車站牌代碼" = "站牌代碼"
-    ),
-    relationship = "many-to-many"
-  ) %>%
-  mutate(
-    下車站序差 = abs(`下車站牌站序` - `站序資料`)
-  ) %>%
-  arrange(ticket_id, 下車站序差, `站序資料`) %>%
-  group_by(ticket_id) %>%
-  slice(1) %>%
-  ungroup() %>%
-  transmute(
-    ticket_id,
-    下車站序_距離表 = `站序資料`,
-    下車累積里程 = `累積里程`
-  )
-
-off_match_multi <- ticket2 %>%
-  filter(方向數量 != 1) %>%
-  select(
-    ticket_id,
-    `搭乘附屬路線名稱`,
-    對應方向,
-    `下車站牌代碼`
-  ) %>%
-  left_join(
-    distance_index_unique,
-    by = c(
-      "搭乘附屬路線名稱",
-      "對應方向" = "搭乘公車路線方向",
-      "下車站牌代碼" = "站牌代碼"
-    )
-  ) %>%
-  transmute(
-    ticket_id,
-    下車站序_距離表 = `站序資料`,
-    下車累積里程 = `累積里程`
-  )
-
-off_match <- bind_rows(off_match_single, off_match_multi)
-
-# =========================
-# 8. 回填並計算票證里程
-#    單方向路線若上車站序 > 下車站序，則反轉
-# =========================
-ticket_mileage <- ticket2 %>%
-  left_join(on_match, by = "ticket_id") %>%
-  left_join(off_match, by = "ticket_id") %>%
-  mutate(
-    是否反轉 = 方向數量 == 1 &
-      !is.na(上車站序_距離表) &
-      !is.na(下車站序_距離表) &
-      上車站序_距離表 > 下車站序_距離表
-  ) %>%
-  mutate(
-    原上車站序_距離表 = 上車站序_距離表,
-    原下車站序_距離表 = 下車站序_距離表,
-    原上車累積里程 = 上車累積里程,
-    原下車累積里程 = 下車累積里程
-  ) %>%
-  mutate(
-    上車站序_距離表 = if_else(是否反轉, 原下車站序_距離表, 原上車站序_距離表),
-    下車站序_距離表 = if_else(是否反轉, 原上車站序_距離表, 原下車站序_距離表),
-    上車累積里程 = if_else(是否反轉, 原下車累積里程, 原上車累積里程),
-    下車累積里程 = if_else(是否反轉, 原上車累積里程, 原下車累積里程)
-  ) %>%
-  mutate(
-    票證里程 = case_when(
-      is.na(上車累積里程) | is.na(下車累積里程) ~ NA_real_,
-      上車站序_距離表 == 下車站序_距離表 ~ 0,
-      下車累積里程 >= 上車累積里程 ~ 下車累積里程 - 上車累積里程,
-      TRUE ~ NA_real_
-    )
-  ) %>%
-  select(-starts_with("原"))
-
-# =========================
-# 9. 計算月平均里程
-# =========================
-monthly_summary <- ticket_mileage %>%
-  mutate(
-    月份 = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")
-  ) %>%
-  group_by(月份) %>%
-  summarise(
-    該月資料總筆數 = n(),
-    該月有效里程筆數 = sum(!is.na(票證里程)),
-    該月累積里程_公里 = round(sum(票證里程, na.rm = TRUE) / 1000),
-    該月平均里程_公里 = round(mean(票證里程, na.rm = TRUE) / 1000, 1),
-    .groups = "drop"
-  )
-```
-
-```{r}
-# Check NA
-ticket_mileage_na <- ticket_mileage %>%
-  filter(is.na(票證里程))
-```
-
-##### plot
-```{r}
-library(dplyr)
-
-# 字型設定
-windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
-
-# 整理畫圖資料
-bus_hualien_avg_mileage_by_month <- monthly_summary %>%
-  mutate(
-    year_month = 月份,
-    avg_km = round(`該月平均里程_公里`, 1)
-  ) %>%
-  select(year_month, avg_km)
-
-# def function
-plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
-  
-  # 基本資料設定
-  color <- gray.colors(2)
-  avg_km <- avg_mileage_table$avg_km
-  x_idx <- 1:nrow(avg_mileage_table)
-  
-  # 西元年月轉民國年月
-  roc_label <- paste0(
-    as.numeric(substr(avg_mileage_table$year_month, 1, 4)) - 1911,
-    "/",
-    substr(avg_mileage_table$year_month, 6, 7)
-  )
-  
-  # 圖形設定
-  par(family = "Kai", mar = c(6, 3, 4, 4))
-  
-  # 主圖
-  plot(
-    x = x_idx,
-    y = avg_km,
-    type = "o",
-    lwd = 1.5,
-    pch = 16,
-    col = color[1],
-    xlab = "年月",
-    ylab = "",
-    ylim = c(min(avg_km) * 0.9, max(avg_km) * 1.15),
-    cex.main = 2,
-    cex.lab = 2,
-    cex.axis = 1.5,
-    cex = 1.3,
-    xaxt = "n",
-    yaxt = "n",
-    bty = "n"
-  )
-  
-  # 標題
-  title(
-    main = "113年7月至114年6月花蓮縣市區客運平均搭乘里程折線圖",
-    cex.main = 2,
-    adj = 0
-  )
-  
-  # X 軸
-  axis(
-    side = 1,
-    at = x_idx,
-    labels = roc_label,
-    cex.axis = 1.5,
-    las = 1
-  )
-  
-  # y 軸 (不用)
-  
-  # 數值標籤
-  text(
-    x = x_idx,
-    y = avg_km + max(avg_km) * 0.03,
-    labels = format(avg_km, nsmall = 1),
-    pos = 3,
-    cex = 1.3,
-    col = "black"
-  )
-  
-  # 網格線
-  grid()
-  
-  # 圖例
-  legend(
-    "topright",
-    legend = c("公里"),
-    col = color[1],
-    lwd = 1.5,
-    pch = 16,
-    bty = "n",
-    cex = 1.3
-  )
-}
-
-# 執行畫圖
-plot_bus_hualien_avg_mileage_by_month(bus_hualien_avg_mileage_by_month)
-
-# 存圖
-save_plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
-  
-  # 路徑設定
-  path <- "images/line_chart/113.7~114.6"
-  if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
-  # 檔名
-  img_filename <- "113年7月至114年6月花蓮縣市區客運平均搭乘里程折線圖"
-  
-  # 開啟 PNG 裝置
-  png(
-    filename = paste0(path, "/", img_filename, ".png"),
-    width = 12,
-    height = 4,
-    units = "in",
-    res = 300,
-    family = "Kai"
-  )
-  
-  # 畫圖
-  plot_bus_hualien_avg_mileage_by_month(avg_mileage_table)
-  
-  # 關閉裝置
-  dev.off()
-}
-
-# 執行存圖
-save_plot_bus_hualien_avg_mileage_by_month(bus_hualien_avg_mileage_by_month)
-```
-
-#### 2024/6~2025/12
-##### 取得公車站間距離資料
-```{r}
-library(httr)
-library(jsonlite)
-library(dplyr)
-library(tidyr)
-library(purrr)
-library(readr)
-
-# ===== 資料切分 (2024/6~2025/12) =====
-sub_bus_hualien <- bus_hualien %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31"),
-         `上車計費站序資料` != -99,
-         `下車站牌站序` != -99
-         )
 
 # 花蓮縣市區客運
 city <- "HualienCounty"
@@ -3665,7 +3063,7 @@ assign_subroute_name <- function(df, main_name) {
     seq_len(nrow(df)) == 1 |
       (
         lag(df$搭乘公車路線方向, default = df$搭乘公車路線方向[1]) == 1 &
-        df$搭乘公車路線方向 == 0
+          df$搭乘公車路線方向 == 0
       )
   )
 
@@ -4004,22 +3402,21 @@ bus_hualien_avg_mileage_by_month <- monthly_summary %>%
 
 # def function
 plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   avg_km <- avg_mileage_table$avg_km
   x_idx <- 1:nrow(avg_mileage_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(avg_mileage_table$year_month, 1, 4)) - 1911,
     "/",
     substr(avg_mileage_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(6, 3, 4, 4))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -4039,14 +3436,14 @@ plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
-    main = "113年6月至114年12月花蓮縣市區客運平均搭乘里程折線圖",
-    cex.main = 1.6,
+    main = "113年7月至114年6月花蓮縣市區客運平均搭乘里程折線圖",
+    cex.main = 2,
     adj = 0
   )
-  
+
   # X 軸
   axis(
     side = 1,
@@ -4055,9 +3452,9 @@ plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸 (不用)
-  
+
   # 數值標籤
   text(
     x = x_idx,
@@ -4067,10 +3464,10 @@ plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -4088,14 +3485,13 @@ plot_bus_hualien_avg_mileage_by_month(bus_hualien_avg_mileage_by_month)
 
 # 存圖
 save_plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
-  
   # 路徑設定
-  path <- "images/line_chart/113.6~114.12"
+  path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
-  img_filename <- "113年6月至114年12月花蓮縣市區客運平均搭乘里程折線圖"
-  
+  img_filename <- "113年7月至114年6月花蓮縣市區客運平均搭乘里程折線圖"
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -4105,10 +3501,593 @@ save_plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_hualien_avg_mileage_by_month(avg_mileage_table)
-  
+
+  # 關閉裝置
+  dev.off()
+}
+
+# 執行存圖
+save_plot_bus_hualien_avg_mileage_by_month(bus_hualien_avg_mileage_by_month)
+```
+
+#### 2024/6~2025/12
+##### 取得公車站間距離資料
+```{r}
+library(httr)
+library(jsonlite)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(readr)
+
+# ===== 資料切分 (2024/6~2025/12) =====
+sub_bus_hualien <- bus_hualien %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31"),
+    `上車計費站序資料` != -99,
+    `下車站牌站序` != -99
+  )
+
+# 花蓮縣市區客運
+city <- "HualienCounty"
+
+# 搭乘路線名稱 → 路線代碼
+# 301 → 0301
+# 302 → 0302
+# 303 → 0303
+# 305 → 0305
+# 308 → 0308
+# 309 → 0027
+# 310 → 0300
+# 311 → 0117
+# 1123、307 額外處理
+
+route_ids <- c("0301", "0302", "0303", "0305", "0308", "0027", "0300", "0117")
+response_format <- "JSON" # 回傳格式
+
+route_name_map <- c(
+  "0301" = "301",
+  "0302" = "302",
+  "0303" = "303",
+  "0305" = "305",
+  "0308" = "308",
+  "0027" = "309",
+  "0300" = "310",
+  "0117" = "311"
+)
+
+subroute_map <- list(
+  "301" = c("301"),
+  "302" = c("302", "302A"),
+  "303" = c("303", "303B", "303C", "303D"),
+  "305" = c("305", "305A"),
+  "308" = c("308", "308A"),
+  "309" = c("309"),
+  "310" = c("310", "310A"),
+  "311" = c("311", "311A")
+)
+
+# ===== 取得 access token =====
+token_res <- POST(
+  url = "https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token",
+  body = list(
+    grant_type = "client_credentials",
+    client_id = client_id,
+    client_secret = client_secret
+  ),
+  encode = "form"
+)
+
+stop_for_status(token_res)
+
+access_token <- content(token_res, as = "parsed", type = "application/json")$access_token
+
+# ===== function：單一路線 =====
+get_one_route <- function(route_id) {
+  api_url <- paste0(
+    "https://tdx.transportdata.tw/api/premium/S2SDistance/City/",
+    city,
+    "/RouteID/",
+    URLencode(route_id, reserved = TRUE)
+  )
+
+  res <- GET(
+    url = api_url,
+    query = list(`$format` = response_format),
+    add_headers(Authorization = paste("Bearer", access_token))
+  )
+
+  stop_for_status(res)
+
+  txt <- content(res, as = "text", encoding = "UTF-8")
+  raw_data <- fromJSON(txt, flatten = TRUE)
+
+  if (!"Stops" %in% names(raw_data)) {
+    return(NULL)
+  }
+
+  bind_rows(raw_data$Stops, .id = "direction") %>%
+    mutate(
+      原始方向 = as.integer(direction),
+      Route_ID = route_id
+    ) %>%
+    select(Route_ID, everything(), -direction) %>%
+    rename(
+      站序資料 = Sequence,
+      上車站牌代碼 = FromStopID,
+      下車站牌代碼 = ToStopID,
+      站間距離 = Distance
+    )
+}
+
+# ===== function：用方向分段並指派附屬路線名稱 =====
+assign_subroute_name <- function(df, main_name) {
+  if (main_name == "311") {
+    df$搭乘附屬路線名稱 <- ifelse(df$原始方向 == 1, "311", "311A")
+    return(df)
+  }
+
+  if (max(df$原始方向, na.rm = TRUE) <= 2) {
+    df$搭乘附屬路線名稱 <- main_name
+    return(df)
+  }
+
+  sub_names <- subroute_map[[main_name]]
+
+  if (is.null(sub_names)) {
+    stop(paste0("subroute_map 缺少主線 ", main_name, " 的設定。"))
+  }
+
+  group_id <- cumsum(
+    seq_len(nrow(df)) == 1 |
+      (
+        lag(df$搭乘公車路線方向, default = df$搭乘公車路線方向[1]) == 1 &
+          df$搭乘公車路線方向 == 0
+      )
+  )
+
+  group_id <- as.integer(group_id)
+
+  if (max(group_id, na.rm = TRUE) > length(sub_names)) {
+    stop(paste0(
+      "主線 ", main_name,
+      " 的附屬路線名稱數量不足；需要 ",
+      max(group_id, na.rm = TRUE),
+      " 個，但目前只有 ",
+      length(sub_names),
+      " 個。"
+    ))
+  }
+
+  df$搭乘附屬路線名稱 <- sub_names[group_id]
+  df
+}
+
+# ===== 主流程 =====
+bus_hualien_distance_between_stations <- map_df(route_ids, get_one_route) %>%
+  mutate(Route_ID = factor(Route_ID, levels = route_ids)) %>%
+  arrange(Route_ID, 原始方向, 站序資料) %>%
+  mutate(
+    Route_ID = as.character(Route_ID),
+    搭乘路線名稱 = unname(route_name_map[Route_ID])
+  ) %>%
+  mutate(
+    搭乘公車路線方向 = case_when(
+      搭乘路線名稱 == "311" & 原始方向 == 2 ~ 0L,
+      搭乘路線名稱 == "311" & 原始方向 == 3 ~ 1L,
+      原始方向 %% 2 == 1 ~ 0L,
+      TRUE ~ 1L
+    )
+  ) %>%
+  group_by(搭乘路線名稱) %>%
+  group_modify(~ assign_subroute_name(.x, .y$搭乘路線名稱[[1]])) %>%
+  ungroup() %>%
+  select(搭乘路線名稱, 搭乘附屬路線名稱, Route_ID, everything())
+
+if (any(is.na(bus_hualien_distance_between_stations$搭乘路線名稱))) {
+  stop("有些 Route_ID 沒有對應到搭乘路線名稱，請檢查 route_name_map。")
+}
+
+if (any(is.na(bus_hualien_distance_between_stations$搭乘附屬路線名稱))) {
+  stop("有些資料沒有對應到搭乘附屬路線名稱，請檢查分組規則。")
+}
+
+# ===== 存csv =====
+# write_excel_csv(
+#   bus_hualien_distance_between_stations,
+#   "C:/Users/user/Desktop/運籌/115/公車站間距離資料/花蓮縣市區客運站間距離資料.csv"
+# )
+```
+
+##### 計算平均搭乘里程
+```{r}
+library(dplyr)
+library(readr)
+
+# =========================
+# 1. ticket 資料整理
+# =========================
+ticket <- sub_bus_hualien %>%
+  select(
+    `搭乘路線名稱`,
+    `搭乘附屬路線名稱`,
+    `搭乘公車路線方向`,
+    `上車站牌代碼`,
+    `上車計費站序資料`,
+    `下車站牌代碼`,
+    `下車站牌站序`,
+    `資料代表日期(yyyy-MM-dd)`
+  ) %>%
+  mutate(
+    ticket_id = row_number(),
+    `上車站牌代碼` = sub("^HUA", "", as.character(`上車站牌代碼`)),
+    `下車站牌代碼` = sub("^HUA", "", as.character(`下車站牌代碼`)),
+    `搭乘附屬路線名稱` = as.character(`搭乘附屬路線名稱`),
+    `搭乘公車路線方向` = as.numeric(`搭乘公車路線方向`),
+    `上車計費站序資料` = as.numeric(`上車計費站序資料`),
+    `下車站牌站序` = as.numeric(`下車站牌站序`)
+  )
+
+# =========================
+# 2. 載入 Distance 資料
+# =========================
+Distance <- read_csv(
+  "公車站間距離資料/花蓮縣市區客運站間距離資料.csv",
+  show_col_types = FALSE
+) %>%
+  mutate(
+    `站牌代碼` = as.character(`站牌代碼`),
+    `搭乘附屬路線名稱` = as.character(`搭乘附屬路線名稱`),
+    `搭乘公車路線方向` = as.numeric(`搭乘公車路線方向`),
+    `站序資料` = as.numeric(`站序資料`),
+    `站間距離` = as.numeric(`站間距離`)
+  )
+
+# =========================
+# 3. 建立 Distance 累積里程
+# =========================
+distance_index <- Distance %>%
+  arrange(`搭乘附屬路線名稱`, `搭乘公車路線方向`, `站序資料`) %>%
+  group_by(`搭乘附屬路線名稱`, `搭乘公車路線方向`) %>%
+  mutate(
+    `站間距離` = coalesce(`站間距離`, 0),
+    `累積里程` = cumsum(`站間距離`)
+  ) %>%
+  ungroup()
+
+# =========================
+# 4. 判斷每條附屬路線有幾種方向
+# =========================
+route_direction_info <- distance_index %>%
+  distinct(`搭乘附屬路線名稱`, `搭乘公車路線方向`) %>%
+  group_by(`搭乘附屬路線名稱`) %>%
+  summarise(
+    方向數量 = n(),
+    唯一方向 = ifelse(n() == 1, first(`搭乘公車路線方向`), NA_real_),
+    .groups = "drop"
+  )
+
+ticket2 <- ticket %>%
+  left_join(route_direction_info, by = "搭乘附屬路線名稱") %>%
+  mutate(
+    對應方向 = if_else(
+      方向數量 == 1,
+      唯一方向,
+      `搭乘公車路線方向`
+    )
+  )
+
+# =========================
+# 5. 多方向路線用的唯一站牌表
+#    多方向時只用站牌代碼對應
+# =========================
+distance_index_unique <- distance_index %>%
+  group_by(`搭乘附屬路線名稱`, `搭乘公車路線方向`, `站牌代碼`) %>%
+  slice(1) %>%
+  ungroup()
+
+# =========================
+# 6. 上車站配對
+#    單方向：用站牌代碼 + 站序資料
+#    多方向：只用站牌代碼
+# =========================
+on_match_single <- ticket2 %>%
+  filter(方向數量 == 1) %>%
+  select(
+    ticket_id,
+    `搭乘附屬路線名稱`,
+    對應方向,
+    `上車站牌代碼`,
+    `上車計費站序資料`
+  ) %>%
+  left_join(
+    distance_index,
+    by = c(
+      "搭乘附屬路線名稱",
+      "對應方向" = "搭乘公車路線方向",
+      "上車站牌代碼" = "站牌代碼"
+    ),
+    relationship = "many-to-many"
+  ) %>%
+  mutate(
+    上車站序差 = abs(`上車計費站序資料` - `站序資料`)
+  ) %>%
+  arrange(ticket_id, 上車站序差, `站序資料`) %>%
+  group_by(ticket_id) %>%
+  slice(1) %>%
+  ungroup() %>%
+  transmute(
+    ticket_id,
+    上車站序_距離表 = `站序資料`,
+    上車累積里程 = `累積里程`
+  )
+
+on_match_multi <- ticket2 %>%
+  filter(方向數量 != 1) %>%
+  select(
+    ticket_id,
+    `搭乘附屬路線名稱`,
+    對應方向,
+    `上車站牌代碼`
+  ) %>%
+  left_join(
+    distance_index_unique,
+    by = c(
+      "搭乘附屬路線名稱",
+      "對應方向" = "搭乘公車路線方向",
+      "上車站牌代碼" = "站牌代碼"
+    )
+  ) %>%
+  transmute(
+    ticket_id,
+    上車站序_距離表 = `站序資料`,
+    上車累積里程 = `累積里程`
+  )
+
+on_match <- bind_rows(on_match_single, on_match_multi)
+
+# =========================
+# 7. 下車站配對
+#    單方向：用站牌代碼 + 站序資料
+#    多方向：只用站牌代碼
+# =========================
+off_match_single <- ticket2 %>%
+  filter(方向數量 == 1) %>%
+  select(
+    ticket_id,
+    `搭乘附屬路線名稱`,
+    對應方向,
+    `下車站牌代碼`,
+    `下車站牌站序`
+  ) %>%
+  left_join(
+    distance_index,
+    by = c(
+      "搭乘附屬路線名稱",
+      "對應方向" = "搭乘公車路線方向",
+      "下車站牌代碼" = "站牌代碼"
+    ),
+    relationship = "many-to-many"
+  ) %>%
+  mutate(
+    下車站序差 = abs(`下車站牌站序` - `站序資料`)
+  ) %>%
+  arrange(ticket_id, 下車站序差, `站序資料`) %>%
+  group_by(ticket_id) %>%
+  slice(1) %>%
+  ungroup() %>%
+  transmute(
+    ticket_id,
+    下車站序_距離表 = `站序資料`,
+    下車累積里程 = `累積里程`
+  )
+
+off_match_multi <- ticket2 %>%
+  filter(方向數量 != 1) %>%
+  select(
+    ticket_id,
+    `搭乘附屬路線名稱`,
+    對應方向,
+    `下車站牌代碼`
+  ) %>%
+  left_join(
+    distance_index_unique,
+    by = c(
+      "搭乘附屬路線名稱",
+      "對應方向" = "搭乘公車路線方向",
+      "下車站牌代碼" = "站牌代碼"
+    )
+  ) %>%
+  transmute(
+    ticket_id,
+    下車站序_距離表 = `站序資料`,
+    下車累積里程 = `累積里程`
+  )
+
+off_match <- bind_rows(off_match_single, off_match_multi)
+
+# =========================
+# 8. 回填並計算票證里程
+#    單方向路線若上車站序 > 下車站序，則反轉
+# =========================
+ticket_mileage <- ticket2 %>%
+  left_join(on_match, by = "ticket_id") %>%
+  left_join(off_match, by = "ticket_id") %>%
+  mutate(
+    是否反轉 = 方向數量 == 1 &
+      !is.na(上車站序_距離表) &
+      !is.na(下車站序_距離表) &
+      上車站序_距離表 > 下車站序_距離表
+  ) %>%
+  mutate(
+    原上車站序_距離表 = 上車站序_距離表,
+    原下車站序_距離表 = 下車站序_距離表,
+    原上車累積里程 = 上車累積里程,
+    原下車累積里程 = 下車累積里程
+  ) %>%
+  mutate(
+    上車站序_距離表 = if_else(是否反轉, 原下車站序_距離表, 原上車站序_距離表),
+    下車站序_距離表 = if_else(是否反轉, 原上車站序_距離表, 原下車站序_距離表),
+    上車累積里程 = if_else(是否反轉, 原下車累積里程, 原上車累積里程),
+    下車累積里程 = if_else(是否反轉, 原上車累積里程, 原下車累積里程)
+  ) %>%
+  mutate(
+    票證里程 = case_when(
+      is.na(上車累積里程) | is.na(下車累積里程) ~ NA_real_,
+      上車站序_距離表 == 下車站序_距離表 ~ 0,
+      下車累積里程 >= 上車累積里程 ~ 下車累積里程 - 上車累積里程,
+      TRUE ~ NA_real_
+    )
+  ) %>%
+  select(-starts_with("原"))
+
+# =========================
+# 9. 計算月平均里程
+# =========================
+monthly_summary <- ticket_mileage %>%
+  mutate(
+    月份 = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")
+  ) %>%
+  group_by(月份) %>%
+  summarise(
+    該月資料總筆數 = n(),
+    該月有效里程筆數 = sum(!is.na(票證里程)),
+    該月累積里程_公里 = round(sum(票證里程, na.rm = TRUE) / 1000),
+    該月平均里程_公里 = round(mean(票證里程, na.rm = TRUE) / 1000, 1),
+    .groups = "drop"
+  )
+```
+
+```{r}
+# Check NA
+ticket_mileage_na <- ticket_mileage %>%
+  filter(is.na(票證里程))
+```
+
+##### plot
+```{r}
+library(dplyr)
+
+# 字型設定
+windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
+
+# 整理畫圖資料
+bus_hualien_avg_mileage_by_month <- monthly_summary %>%
+  mutate(
+    year_month = 月份,
+    avg_km = round(`該月平均里程_公里`, 1)
+  ) %>%
+  select(year_month, avg_km)
+
+# def function
+plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
+  # 基本資料設定
+  color <- gray.colors(2)
+  avg_km <- avg_mileage_table$avg_km
+  x_idx <- 1:nrow(avg_mileage_table)
+
+  # 西元年月轉民國年月
+  roc_label <- paste0(
+    as.numeric(substr(avg_mileage_table$year_month, 1, 4)) - 1911,
+    "/",
+    substr(avg_mileage_table$year_month, 6, 7)
+  )
+
+  # 圖形設定
+  par(family = "Kai", mar = c(6, 3, 4, 4))
+
+  # 主圖
+  plot(
+    x = x_idx,
+    y = avg_km,
+    type = "o",
+    lwd = 1.5,
+    pch = 16,
+    col = color[1],
+    xlab = "年月",
+    ylab = "",
+    ylim = c(min(avg_km) * 0.9, max(avg_km) * 1.15),
+    cex.main = 2,
+    cex.lab = 2,
+    cex.axis = 1.5,
+    cex = 1.3,
+    xaxt = "n",
+    yaxt = "n",
+    bty = "n"
+  )
+
+  # 標題
+  title(
+    main = "113年6月至114年12月花蓮縣市區客運平均搭乘里程折線圖",
+    cex.main = 1.6,
+    adj = 0
+  )
+
+  # X 軸
+  axis(
+    side = 1,
+    at = x_idx,
+    labels = roc_label,
+    cex.axis = 1.5,
+    las = 1
+  )
+
+  # y 軸 (不用)
+
+  # 數值標籤
+  text(
+    x = x_idx,
+    y = avg_km + max(avg_km) * 0.03,
+    labels = format(avg_km, nsmall = 1),
+    pos = 3,
+    cex = 1.3,
+    col = "black"
+  )
+
+  # 網格線
+  grid()
+
+  # 圖例
+  legend(
+    "topright",
+    legend = c("公里"),
+    col = color[1],
+    lwd = 1.5,
+    pch = 16,
+    bty = "n",
+    cex = 1.3
+  )
+}
+
+# 執行畫圖
+plot_bus_hualien_avg_mileage_by_month(bus_hualien_avg_mileage_by_month)
+
+# 存圖
+save_plot_bus_hualien_avg_mileage_by_month <- function(avg_mileage_table) {
+  # 路徑設定
+  path <- "images/line_chart/113.6~114.12"
+  if (!dir.exists(path)) dir.create(path, recursive = TRUE)
+
+  # 檔名
+  img_filename <- "113年6月至114年12月花蓮縣市區客運平均搭乘里程折線圖"
+
+  # 開啟 PNG 裝置
+  png(
+    filename = paste0(path, "/", img_filename, ".png"),
+    width = 12,
+    height = 4,
+    units = "in",
+    res = 300,
+    family = "Kai"
+  )
+
+  # 畫圖
+  plot_bus_hualien_avg_mileage_by_month(avg_mileage_table)
+
   # 關閉裝置
   dev.off()
 }
@@ -4129,12 +4108,13 @@ library(purrr)
 library(readr)
 
 # ===== 資料切分 (2024/7~2025/6) =====
-sub_bus_taitung <- bus_taitung %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30"),
-         `上車計費站序資料` != -99,
-         `下車站牌站序` != -99
-         )
+sub_bus_taitung <- bus_taitung %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30"),
+    `上車計費站序資料` != -99,
+    `下車站牌站序` != -99
+  )
 
 # 臺東縣市區客運
 city <- "TaitungCounty"
@@ -4235,7 +4215,7 @@ assign_subroute_name <- function(df, main_name) {
     seq_len(nrow(df)) == 1 |
       (
         lag(df$搭乘公車路線方向, default = df$搭乘公車路線方向[1]) == 1 &
-        df$搭乘公車路線方向 == 0
+          df$搭乘公車路線方向 == 0
       )
   )
 
@@ -4572,22 +4552,21 @@ bus_taitung_avg_mileage_by_month <- monthly_summary %>%
 
 # def function
 plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   avg_km <- avg_mileage_table$avg_km
   x_idx <- 1:nrow(avg_mileage_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(avg_mileage_table$year_month, 1, 4)) - 1911,
     "/",
     substr(avg_mileage_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(6, 3, 4, 4))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -4607,14 +4586,14 @@ plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月臺東縣市區客運平均搭乘里程折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -4623,9 +4602,9 @@ plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸 (不用)
-  
+
   # 數值標籤
   text(
     x = x_idx,
@@ -4635,10 +4614,10 @@ plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -4656,14 +4635,13 @@ plot_bus_taitung_avg_mileage_by_month(bus_taitung_avg_mileage_by_month)
 
 # 存圖
 save_plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月臺東縣市區客運平均搭乘里程折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -4673,10 +4651,10 @@ save_plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_taitung_avg_mileage_by_month(avg_mileage_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -4696,12 +4674,13 @@ library(purrr)
 library(readr)
 
 # ===== 資料切分 (2024/6~2025/12) =====
-sub_bus_taitung <- bus_taitung %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31"),
-         `上車計費站序資料` != -99,
-         `下車站牌站序` != -99
-         )
+sub_bus_taitung <- bus_taitung %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31"),
+    `上車計費站序資料` != -99,
+    `下車站牌站序` != -99
+  )
 
 # 臺東縣市區客運
 city <- "TaitungCounty"
@@ -4802,7 +4781,7 @@ assign_subroute_name <- function(df, main_name) {
     seq_len(nrow(df)) == 1 |
       (
         lag(df$搭乘公車路線方向, default = df$搭乘公車路線方向[1]) == 1 &
-        df$搭乘公車路線方向 == 0
+          df$搭乘公車路線方向 == 0
       )
   )
 
@@ -5139,22 +5118,21 @@ bus_taitung_avg_mileage_by_month <- monthly_summary %>%
 
 # def function
 plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   avg_km <- avg_mileage_table$avg_km
   x_idx <- 1:nrow(avg_mileage_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(avg_mileage_table$year_month, 1, 4)) - 1911,
     "/",
     substr(avg_mileage_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(6, 3, 4, 4))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -5174,14 +5152,14 @@ plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月臺東縣市區客運平均搭乘里程折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -5190,9 +5168,9 @@ plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸 (不用)
-  
+
   # 數值標籤
   text(
     x = x_idx,
@@ -5202,10 +5180,10 @@ plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -5223,14 +5201,13 @@ plot_bus_taitung_avg_mileage_by_month(bus_taitung_avg_mileage_by_month)
 
 # 存圖
 save_plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月臺東縣市區客運平均搭乘里程折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -5240,10 +5217,10 @@ save_plot_bus_taitung_avg_mileage_by_month <- function(avg_mileage_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_taitung_avg_mileage_by_month(avg_mileage_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -5267,12 +5244,13 @@ library(purrr)
 library(readr)
 
 # ===== 資料切分 (2024/7~2025/6) =====
-sub_Hualien_THB <- Hualien_THB %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30"),
-         `上車計費站序資料` != -99,
-         `下車站牌站序` != -99
-         )
+sub_Hualien_THB <- Hualien_THB %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30"),
+    `上車計費站序資料` != -99,
+    `下車站牌站序` != -99
+  )
 
 # 公路客運
 city <- "InterCity"
@@ -5439,7 +5417,7 @@ assign_subroute_name <- function(df, main_name) {
     seq_len(nrow(df)) == 1 |
       (
         lag(df$搭乘公車路線方向, default = df$搭乘公車路線方向[1]) == 1 &
-        df$搭乘公車路線方向 == 0
+          df$搭乘公車路線方向 == 0
       )
   )
 
@@ -5793,22 +5771,21 @@ Hualien_THB_avg_mileage_by_month <- monthly_summary %>%
 
 # def function
 plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   avg_km <- avg_mileage_table$avg_km
   x_idx <- 1:nrow(avg_mileage_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(avg_mileage_table$year_month, 1, 4)) - 1911,
     "/",
     substr(avg_mileage_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(6, 3, 4, 4))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -5828,14 +5805,14 @@ plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月花蓮縣公路客運平均搭乘里程折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -5844,9 +5821,9 @@ plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸 (不用)
-  
+
   # 數值標籤
   text(
     x = x_idx,
@@ -5856,10 +5833,10 @@ plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -5877,14 +5854,13 @@ plot_Hualien_THB_avg_mileage_by_month(Hualien_THB_avg_mileage_by_month)
 
 # 存圖
 save_plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月花蓮縣公路客運平均搭乘里程折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -5894,10 +5870,10 @@ save_plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Hualien_THB_avg_mileage_by_month(avg_mileage_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -5917,12 +5893,13 @@ library(purrr)
 library(readr)
 
 # ===== 資料切分 (2024/6~2025/12) =====
-sub_Hualien_THB <- Hualien_THB %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31"),
-         `上車計費站序資料` != -99,
-         `下車站牌站序` != -99
-         )
+sub_Hualien_THB <- Hualien_THB %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31"),
+    `上車計費站序資料` != -99,
+    `下車站牌站序` != -99
+  )
 
 # 公路客運
 city <- "InterCity"
@@ -6089,7 +6066,7 @@ assign_subroute_name <- function(df, main_name) {
     seq_len(nrow(df)) == 1 |
       (
         lag(df$搭乘公車路線方向, default = df$搭乘公車路線方向[1]) == 1 &
-        df$搭乘公車路線方向 == 0
+          df$搭乘公車路線方向 == 0
       )
   )
 
@@ -6443,22 +6420,21 @@ Hualien_THB_avg_mileage_by_month <- monthly_summary %>%
 
 # def function
 plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   avg_km <- avg_mileage_table$avg_km
   x_idx <- 1:nrow(avg_mileage_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(avg_mileage_table$year_month, 1, 4)) - 1911,
     "/",
     substr(avg_mileage_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(6, 3, 4, 4))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -6478,14 +6454,14 @@ plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月花蓮縣公路客運平均搭乘里程折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -6494,9 +6470,9 @@ plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸 (不用)
-  
+
   # 數值標籤
   text(
     x = x_idx,
@@ -6506,10 +6482,10 @@ plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -6527,14 +6503,13 @@ plot_Hualien_THB_avg_mileage_by_month(Hualien_THB_avg_mileage_by_month)
 
 # 存圖
 save_plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月花蓮縣公路客運平均搭乘里程折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -6544,10 +6519,10 @@ save_plot_Hualien_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Hualien_THB_avg_mileage_by_month(avg_mileage_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -6568,11 +6543,13 @@ library(purrr)
 library(readr)
 
 # ===== 資料切分 (2024/7~2025/6) =====
-sub_Taitung_THB <- Taitung_THB %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30"),
-         `上車計費站序資料` != -99,
-         `下車站牌站序` != -99)
+sub_Taitung_THB <- Taitung_THB %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30"),
+    `上車計費站序資料` != -99,
+    `下車站牌站序` != -99
+  )
 
 # 公路客運
 city <- "InterCity"
@@ -6789,7 +6766,7 @@ assign_subroute_name <- function(df, main_name) {
     seq_len(nrow(df)) == 1 |
       (
         lag(df$搭乘公車路線方向, default = df$搭乘公車路線方向[1]) == 1 &
-        df$搭乘公車路線方向 == 0
+          df$搭乘公車路線方向 == 0
       )
   )
 
@@ -7142,25 +7119,24 @@ Taitung_THB_avg_mileage_by_month <- monthly_summary %>%
 
 # def function
 plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   avg_km <- avg_mileage_table$avg_km
   x_idx <- 1:nrow(avg_mileage_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(avg_mileage_table$year_month, 1, 4)) - 1911,
     "/",
     substr(avg_mileage_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(
     family = "Kai",
     mar = c(6, 3, 4, 4)
   )
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -7180,14 +7156,14 @@ plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月臺東縣公路客運平均搭乘里程折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -7196,9 +7172,9 @@ plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸 (不用)
-  
+
   # 數值標籤
   text(
     x = x_idx,
@@ -7208,10 +7184,10 @@ plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -7231,14 +7207,13 @@ plot_Taitung_THB_avg_mileage_by_month(Taitung_THB_avg_mileage_by_month)
 
 # 存圖
 save_plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月臺東縣公路客運平均搭乘里程折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -7248,10 +7223,10 @@ save_plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Taitung_THB_avg_mileage_by_month(avg_mileage_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -7271,12 +7246,13 @@ library(purrr)
 library(readr)
 
 # ===== 資料切分 (2024/6~2025/12) =====
-sub_Taitung_THB <- Taitung_THB %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31"),
-         `上車計費站序資料` != -99,
-         `下車站牌站序` != -99
-         )
+sub_Taitung_THB <- Taitung_THB %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31"),
+    `上車計費站序資料` != -99,
+    `下車站牌站序` != -99
+  )
 
 # 公路客運
 city <- "InterCity"
@@ -7493,7 +7469,7 @@ assign_subroute_name <- function(df, main_name) {
     seq_len(nrow(df)) == 1 |
       (
         lag(df$搭乘公車路線方向, default = df$搭乘公車路線方向[1]) == 1 &
-        df$搭乘公車路線方向 == 0
+          df$搭乘公車路線方向 == 0
       )
   )
 
@@ -7846,22 +7822,21 @@ Taitung_THB_avg_mileage_by_month <- monthly_summary %>%
 
 # def function
 plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   avg_km <- avg_mileage_table$avg_km
   x_idx <- 1:nrow(avg_mileage_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(avg_mileage_table$year_month, 1, 4)) - 1911,
     "/",
     substr(avg_mileage_table$year_month, 6, 7)
   )
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(6, 3, 4, 4))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -7881,14 +7856,14 @@ plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月臺東縣公路客運平均搭乘里程折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -7897,9 +7872,9 @@ plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸 (不用)
-  
+
   # 數值標籤
   text(
     x = x_idx,
@@ -7909,10 +7884,10 @@ plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     cex = 1.3,
     col = "black"
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -7932,14 +7907,13 @@ plot_Taitung_THB_avg_mileage_by_month(Taitung_THB_avg_mileage_by_month)
 
 # 存圖
 save_plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月臺東縣公路客運平均搭乘里程折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -7949,10 +7923,10 @@ save_plot_Taitung_THB_avg_mileage_by_month <- function(avg_mileage_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Taitung_THB_avg_mileage_by_month(avg_mileage_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -7972,10 +7946,11 @@ library(dplyr)
 library(tidyr)
 
 # 平均每日使用次數
-bus_hualien_by_month <- bus_hualien %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
-         ) %>% 
+bus_hualien_by_month <- bus_hualien %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month) %>%
   summarise(
@@ -8001,7 +7976,6 @@ bus_hualien_by_month <- bus_hualien %>%
     每人每月使用次數,
     平均每日使用次數
   )
-
 ```
 
 ###### plot
@@ -8011,27 +7985,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   avg_daily_use <- month_table$`平均每日使用次數`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # Y 軸刻度
   y_min <- floor(min(avg_daily_use) / 0.005) * 0.005
   y_max <- ceiling(max(avg_daily_use) / 0.005) * 0.005
   y_ticks <- seq(y_min, y_max, by = 0.005)
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 10, 4, 2))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -8051,14 +8024,14 @@ plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月花蓮縣市區客運平均每日使用次數折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -8067,7 +8040,7 @@ plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -8077,7 +8050,7 @@ plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # y 軸標題
   mtext(
     text = "日均使用次數",
@@ -8085,10 +8058,10 @@ plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -8108,14 +8081,13 @@ plot_bus_hualien_avg_daily_use_by_month(bus_hualien_by_month)
 
 # 定義存圖函數
 save_plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月花蓮縣市區客運平均每日使用次數折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -8125,10 +8097,10 @@ save_plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_hualien_avg_daily_use_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -8144,11 +8116,11 @@ library(dplyr)
 library(tidyr)
 
 # 月人數變化
-bus_hualien_table <- bus_hualien %>% 
+bus_hualien_table <- bus_hualien %>%
   filter(
     `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
     `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
-  ) %>% 
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month, `卡號`) %>%
   summarise(
@@ -8194,29 +8166,28 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_bus_hualien_usage_group_by_month <- function(month_table) {
-  
   # 基本資料設定
   once_use <- month_table$`人數_僅一次`
   two_to_four_use <- month_table$`人數_二至四次`
   five_plus_use <- month_table$`人數_五次以上`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # 顏色設定
   color <- gray.colors(3, start = 0.3, end = 0.75)
-  
+
   # Y 軸範圍
   y_max <- max(c(once_use, two_to_four_use, five_plus_use)) * 1.1
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 8, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -8236,7 +8207,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     cex = 1.3,
     bty = "n"
   )
-  
+
   lines(
     x = x_idx,
     y = two_to_four_use,
@@ -8245,7 +8216,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[2]
   )
-  
+
   lines(
     x = x_idx,
     y = five_plus_use,
@@ -8254,14 +8225,14 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[3]
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月花蓮縣市區客運乘客各搭乘次數區間月人數變化折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -8270,7 +8241,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -8279,7 +8250,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     las = 1,
     cex.axis = 1.5
   )
-  
+
   # y 軸標題
   mtext(
     text = "人數",
@@ -8287,10 +8258,10 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -8311,14 +8282,13 @@ plot_bus_hualien_usage_group_by_month(bus_hualien_table)
 
 # 定義存圖函數
 save_plot_bus_hualien_usage_group_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月花蓮縣市區客運乘客各搭乘次數區間月人數變化折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -8328,10 +8298,10 @@ save_plot_bus_hualien_usage_group_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_hualien_usage_group_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -8346,11 +8316,11 @@ library(dplyr)
 library(tidyr)
 
 # 月人數變化
-bus_hualien_TPASS_table <- bus_hualien_TPASS %>% 
+bus_hualien_TPASS_table <- bus_hualien_TPASS %>%
   filter(
     `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
     `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
-  ) %>% 
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month, `卡號`) %>%
   summarise(
@@ -8398,29 +8368,28 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_bus_hualien_usage_group_by_month <- function(month_table) {
-  
   # 基本資料設定
   once_use <- month_table$`人數_僅一次`
   two_to_four_use <- month_table$`人數_二至四次`
   five_plus_use <- month_table$`人數_五次以上`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # 顏色設定
   color <- gray.colors(3, start = 0.3, end = 0.75)
-  
+
   # Y 軸範圍
   y_max <- max(c(once_use, two_to_four_use, five_plus_use)) * 1.1
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 8, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -8440,7 +8409,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     cex = 1.3,
     bty = "n"
   )
-  
+
   lines(
     x = x_idx,
     y = two_to_four_use,
@@ -8449,7 +8418,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[2]
   )
-  
+
   lines(
     x = x_idx,
     y = five_plus_use,
@@ -8458,14 +8427,14 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[3]
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月花蓮縣市區客運TPASS乘客各搭乘次數區間月人數變化折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -8474,7 +8443,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -8483,7 +8452,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     las = 1,
     cex.axis = 1.5
   )
-  
+
   # y 軸標題
   mtext(
     text = "人數",
@@ -8491,10 +8460,10 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -8515,14 +8484,13 @@ plot_bus_hualien_usage_group_by_month(bus_hualien_TPASS_table)
 
 # 定義存圖函數
 save_plot_bus_hualien_usage_group_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月花蓮縣市區客運TPASS乘客各搭乘次數區間月人數變化折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -8532,10 +8500,10 @@ save_plot_bus_hualien_usage_group_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_hualien_usage_group_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -8551,10 +8519,11 @@ library(dplyr)
 library(tidyr)
 
 # 平均每日使用次數
-bus_hualien_by_month <- bus_hualien %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
-         ) %>% 
+bus_hualien_by_month <- bus_hualien %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month) %>%
   summarise(
@@ -8580,7 +8549,6 @@ bus_hualien_by_month <- bus_hualien %>%
     每人每月使用次數,
     平均每日使用次數
   )
-
 ```
 
 ###### plot
@@ -8590,27 +8558,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   avg_daily_use <- month_table$`平均每日使用次數`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # Y 軸刻度
   y_min <- floor(min(avg_daily_use) / 0.005) * 0.005
   y_max <- ceiling(max(avg_daily_use) / 0.005) * 0.005
   y_ticks <- seq(y_min, y_max, by = 0.005)
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 10, 4, 2))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -8630,14 +8597,14 @@ plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月花蓮縣市區客運平均每日使用次數折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -8646,7 +8613,7 @@ plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -8656,7 +8623,7 @@ plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # Y 軸標題
   mtext(
     text = "日均使用次數",
@@ -8664,10 +8631,10 @@ plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -8687,14 +8654,13 @@ plot_bus_hualien_avg_daily_use_by_month(bus_hualien_by_month)
 
 # 定義存圖函數
 save_plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月花蓮縣市區客運平均每日使用次數折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -8704,10 +8670,10 @@ save_plot_bus_hualien_avg_daily_use_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_hualien_avg_daily_use_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -8722,10 +8688,11 @@ library(dplyr)
 library(tidyr)
 
 # 月人數變化
-bus_hualien_table <- bus_hualien %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
-         ) %>% 
+bus_hualien_table <- bus_hualien %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month, `卡號`) %>%
   summarise(
@@ -8771,29 +8738,28 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_bus_hualien_usage_group_by_month <- function(month_table) {
-  
   # 基本資料設定
   once_use <- month_table$`人數_僅一次`
   two_to_four_use <- month_table$`人數_二至四次`
   five_plus_use <- month_table$`人數_五次以上`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(bus_hualien_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # 顏色設定
   color <- gray.colors(3, start = 0.3, end = 0.75)
-  
+
   # Y 軸範圍
   y_max <- max(c(once_use, two_to_four_use, five_plus_use)) * 1.1
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 8, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -8813,7 +8779,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     cex = 1.3,
     bty = "n"
   )
-  
+
   lines(
     x = x_idx,
     y = two_to_four_use,
@@ -8822,7 +8788,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[2]
   )
-  
+
   lines(
     x = x_idx,
     y = five_plus_use,
@@ -8831,14 +8797,14 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[3]
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月花蓮縣市區客運乘客各搭乘次數區間月人數變化折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -8847,7 +8813,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -8856,7 +8822,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     las = 1,
     cex.axis = 1.5
   )
-  
+
   # y 軸標題
   mtext(
     text = "人數",
@@ -8864,10 +8830,10 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -8888,14 +8854,13 @@ plot_bus_hualien_usage_group_by_month(bus_hualien_table)
 
 # 定義存圖函數
 save_plot_bus_hualien_usage_group_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月花蓮縣市區客運乘客各搭乘次數區間月人數變化折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -8905,10 +8870,10 @@ save_plot_bus_hualien_usage_group_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_hualien_usage_group_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -8923,10 +8888,11 @@ library(dplyr)
 library(tidyr)
 
 # 月人數變化
-bus_hualien_TPASS_table <- bus_hualien_TPASS %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
-         ) %>% 
+bus_hualien_TPASS_table <- bus_hualien_TPASS %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month, `卡號`) %>%
   summarise(
@@ -8974,29 +8940,28 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_bus_hualien_usage_group_by_month <- function(month_table) {
-  
   # 基本資料設定
   once_use <- month_table$`人數_僅一次`
   two_to_four_use <- month_table$`人數_二至四次`
   five_plus_use <- month_table$`人數_五次以上`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(bus_hualien_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # 顏色設定
   color <- gray.colors(3, start = 0.3, end = 0.75)
-  
+
   # Y 軸範圍
   y_max <- max(c(once_use, two_to_four_use, five_plus_use)) * 1.1
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 8, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -9016,7 +8981,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     cex = 1.3,
     bty = "n"
   )
-  
+
   lines(
     x = x_idx,
     y = two_to_four_use,
@@ -9025,7 +8990,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[2]
   )
-  
+
   lines(
     x = x_idx,
     y = five_plus_use,
@@ -9034,14 +8999,14 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[3]
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月花蓮縣市區客運TPASS乘客各搭乘次數區間月人數變化折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -9050,7 +9015,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -9059,7 +9024,7 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     las = 1,
     cex.axis = 1.5
   )
-  
+
   # y 軸標題
   mtext(
     text = "人數",
@@ -9067,10 +9032,10 @@ plot_bus_hualien_usage_group_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -9091,14 +9056,13 @@ plot_bus_hualien_usage_group_by_month(bus_hualien_TPASS_table)
 
 # 定義存圖函數
 save_plot_bus_hualien_usage_group_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月花蓮縣市區客運TPASS乘客各搭乘次數區間月人數變化折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -9108,10 +9072,10 @@ save_plot_bus_hualien_usage_group_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_hualien_usage_group_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -9129,10 +9093,11 @@ library(dplyr)
 library(tidyr)
 
 # 平均每日使用次數
-bus_taitung_by_month <- bus_taitung %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
-         ) %>% 
+bus_taitung_by_month <- bus_taitung %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month) %>%
   summarise(
@@ -9158,7 +9123,6 @@ bus_taitung_by_month <- bus_taitung %>%
     每人每月使用次數,
     平均每日使用次數
   )
-
 ```
 
 ###### plot
@@ -9168,27 +9132,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   avg_daily_use <- month_table$`平均每日使用次數`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # Y 軸刻度
   y_min <- floor(min(avg_daily_use) / 0.005) * 0.005
   y_max <- ceiling(max(avg_daily_use) / 0.005) * 0.005
   y_ticks <- seq(y_min, y_max, by = 0.005)
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 10, 4, 2))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -9208,14 +9171,14 @@ plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月臺東縣市區客運平均每日使用次數折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -9224,7 +9187,7 @@ plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -9234,7 +9197,7 @@ plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # y 軸標題
   mtext(
     text = "日均使用次數",
@@ -9242,10 +9205,10 @@ plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -9265,14 +9228,13 @@ plot_bus_taitung_avg_daily_use_by_month(bus_taitung_by_month)
 
 # 定義存圖函數
 save_plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月臺東縣市區客運平均每日使用次數折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -9282,10 +9244,10 @@ save_plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_taitung_avg_daily_use_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -9300,11 +9262,11 @@ library(dplyr)
 library(tidyr)
 
 # 月人數變化
-bus_taitung_table <- bus_taitung %>% 
+bus_taitung_table <- bus_taitung %>%
   filter(
     `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
     `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
-  ) %>% 
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month, `卡號`) %>%
   summarise(
@@ -9350,29 +9312,28 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_bus_taitung_usage_group_by_month <- function(month_table) {
-  
   # 基本資料設定
   once_use <- month_table$`人數_僅一次`
   two_to_four_use <- month_table$`人數_二至四次`
   five_plus_use <- month_table$`人數_五次以上`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # 顏色設定
   color <- gray.colors(3, start = 0.3, end = 0.75)
-  
+
   # Y 軸範圍
   y_max <- max(c(once_use, two_to_four_use, five_plus_use)) * 1.1
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 8, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -9392,7 +9353,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     cex = 1.3,
     bty = "n"
   )
-  
+
   lines(
     x = x_idx,
     y = two_to_four_use,
@@ -9401,7 +9362,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[2]
   )
-  
+
   lines(
     x = x_idx,
     y = five_plus_use,
@@ -9410,14 +9371,14 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[3]
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月臺東縣市區客運乘客各搭乘次數區間月人數變化折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -9426,7 +9387,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -9435,7 +9396,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     las = 1,
     cex.axis = 1.5
   )
-  
+
   # y 軸標題
   mtext(
     text = "人數",
@@ -9443,10 +9404,10 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -9467,14 +9428,13 @@ plot_bus_taitung_usage_group_by_month(bus_taitung_table)
 
 # 定義存圖函數
 save_plot_bus_taitung_usage_group_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月臺東縣市區客運乘客各搭乘次數區間月人數變化折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -9484,10 +9444,10 @@ save_plot_bus_taitung_usage_group_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_taitung_usage_group_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -9502,11 +9462,11 @@ library(dplyr)
 library(tidyr)
 
 # 月人數變化
-bus_taitung_TPASS_table <- bus_taitung_TPASS %>% 
+bus_taitung_TPASS_table <- bus_taitung_TPASS %>%
   filter(
     `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
     `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
-  ) %>% 
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month, `卡號`) %>%
   summarise(
@@ -9554,29 +9514,28 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_bus_taitung_usage_group_by_month <- function(month_table) {
-  
   # 基本資料設定
   once_use <- month_table$`人數_僅一次`
   two_to_four_use <- month_table$`人數_二至四次`
   five_plus_use <- month_table$`人數_五次以上`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # 顏色設定
   color <- gray.colors(3, start = 0.3, end = 0.75)
-  
+
   # Y 軸範圍
   y_max <- max(c(once_use, two_to_four_use, five_plus_use)) * 1.1
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 8, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -9596,7 +9555,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     cex = 1.3,
     bty = "n"
   )
-  
+
   lines(
     x = x_idx,
     y = two_to_four_use,
@@ -9605,7 +9564,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[2]
   )
-  
+
   lines(
     x = x_idx,
     y = five_plus_use,
@@ -9614,14 +9573,14 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[3]
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月臺東縣市區客運TPASS乘客各搭乘次數區間月人數變化折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -9630,7 +9589,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -9639,7 +9598,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     las = 1,
     cex.axis = 1.5
   )
-  
+
   # y 軸標題
   mtext(
     text = "人數",
@@ -9647,10 +9606,10 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -9671,14 +9630,13 @@ plot_bus_taitung_usage_group_by_month(bus_taitung_TPASS_table)
 
 # 定義存圖函數
 save_plot_bus_taitung_usage_group_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月臺東縣市區客運TPASS乘客各搭乘次數區間月人數變化折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -9688,10 +9646,10 @@ save_plot_bus_taitung_usage_group_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_taitung_usage_group_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -9707,10 +9665,11 @@ library(dplyr)
 library(tidyr)
 
 # 平均每日使用次數
-bus_taitung_by_month <- bus_taitung %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
-         ) %>% 
+bus_taitung_by_month <- bus_taitung %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month) %>%
   summarise(
@@ -9736,7 +9695,6 @@ bus_taitung_by_month <- bus_taitung %>%
     每人每月使用次數,
     平均每日使用次數
   )
-
 ```
 
 ###### plot
@@ -9746,27 +9704,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   avg_daily_use <- month_table$`平均每日使用次數`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # Y 軸刻度
   y_min <- floor(min(avg_daily_use) / 0.005) * 0.005
   y_max <- ceiling(max(avg_daily_use) / 0.005) * 0.005
   y_ticks <- seq(y_min, y_max, by = 0.005)
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 10, 4, 2))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -9786,14 +9743,14 @@ plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月臺東縣市區客運平均每日使用次數折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -9802,7 +9759,7 @@ plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -9812,7 +9769,7 @@ plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # y 軸標題
   mtext(
     text = "日均使用次數",
@@ -9820,10 +9777,10 @@ plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -9843,14 +9800,13 @@ plot_bus_taitung_avg_daily_use_by_month(bus_taitung_by_month)
 
 # 定義存圖函數
 save_plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月臺東縣市區客運平均每日使用次數折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -9860,10 +9816,10 @@ save_plot_bus_taitung_avg_daily_use_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_taitung_avg_daily_use_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -9878,10 +9834,11 @@ library(dplyr)
 library(tidyr)
 
 # 月人數變化
-bus_taitung_table <- bus_taitung %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
-         ) %>% 
+bus_taitung_table <- bus_taitung %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month, `卡號`) %>%
   summarise(
@@ -9927,29 +9884,28 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_bus_taitung_usage_group_by_month <- function(month_table) {
-  
   # 基本資料設定
   once_use <- month_table$`人數_僅一次`
   two_to_four_use <- month_table$`人數_二至四次`
   five_plus_use <- month_table$`人數_五次以上`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # 顏色設定
   color <- gray.colors(3, start = 0.3, end = 0.75)
-  
+
   # Y 軸範圍
   y_max <- max(c(once_use, two_to_four_use, five_plus_use)) * 1.1
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 8, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -9969,7 +9925,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     cex = 1.3,
     bty = "n"
   )
-  
+
   lines(
     x = x_idx,
     y = two_to_four_use,
@@ -9978,7 +9934,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[2]
   )
-  
+
   lines(
     x = x_idx,
     y = five_plus_use,
@@ -9987,14 +9943,14 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[3]
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月臺東縣市區客運乘客各搭乘次數區間月人數變化折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -10003,7 +9959,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -10012,7 +9968,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     las = 1,
     cex.axis = 1.5
   )
-  
+
   # y 軸標題
   mtext(
     text = "人數",
@@ -10020,10 +9976,10 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -10044,14 +10000,13 @@ plot_bus_taitung_usage_group_by_month(bus_taitung_table)
 
 # 定義存圖函數
 save_plot_bus_taitung_usage_group_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月臺東縣市區客運乘客各搭乘次數區間月人數變化折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -10061,10 +10016,10 @@ save_plot_bus_taitung_usage_group_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_taitung_usage_group_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -10079,10 +10034,11 @@ library(dplyr)
 library(tidyr)
 
 # 月人數變化
-bus_taitung_TPASS_table <- bus_taitung_TPASS %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
-         ) %>% 
+bus_taitung_TPASS_table <- bus_taitung_TPASS %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month, `卡號`) %>%
   summarise(
@@ -10130,29 +10086,28 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_bus_taitung_usage_group_by_month <- function(month_table) {
-  
   # 基本資料設定
   once_use <- month_table$`人數_僅一次`
   two_to_four_use <- month_table$`人數_二至四次`
   five_plus_use <- month_table$`人數_五次以上`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # 顏色設定
   color <- gray.colors(3, start = 0.3, end = 0.75)
-  
+
   # Y 軸範圍
   y_max <- max(c(once_use, two_to_four_use, five_plus_use)) * 1.1
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 8, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -10172,7 +10127,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     cex = 1.3,
     bty = "n"
   )
-  
+
   lines(
     x = x_idx,
     y = two_to_four_use,
@@ -10181,7 +10136,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[2]
   )
-  
+
   lines(
     x = x_idx,
     y = five_plus_use,
@@ -10190,14 +10145,14 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[3]
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月臺東縣市區客運TPASS乘客各搭乘次數區間月人數變化折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -10206,7 +10161,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -10215,7 +10170,7 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     las = 1,
     cex.axis = 1.5
   )
-  
+
   # y 軸標題
   mtext(
     text = "人數",
@@ -10223,10 +10178,10 @@ plot_bus_taitung_usage_group_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -10247,14 +10202,13 @@ plot_bus_taitung_usage_group_by_month(bus_taitung_TPASS_table)
 
 # 定義存圖函數
 save_plot_bus_taitung_usage_group_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月臺東縣市區客運TPASS乘客各搭乘次數區間月人數變化折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -10264,10 +10218,10 @@ save_plot_bus_taitung_usage_group_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_bus_taitung_usage_group_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -10286,10 +10240,11 @@ library(dplyr)
 library(tidyr)
 
 # 平均每日使用次數
-Hualien_THB_by_month <- Hualien_THB %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
-         ) %>% 
+Hualien_THB_by_month <- Hualien_THB %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month) %>%
   summarise(
@@ -10315,7 +10270,6 @@ Hualien_THB_by_month <- Hualien_THB %>%
     每人每月使用次數,
     平均每日使用次數
   )
-
 ```
 
 ###### plot
@@ -10325,27 +10279,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   avg_daily_use <- month_table$`平均每日使用次數`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # Y 軸刻度
   y_min <- floor(min(avg_daily_use) / 0.02) * 0.02
   y_max <- ceiling(max(avg_daily_use) / 0.02) * 0.02
   y_ticks <- seq(y_min, y_max, by = 0.02)
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 10, 4, 2))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -10365,14 +10318,14 @@ plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月花蓮縣公路客運平均每日使用次數折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -10381,7 +10334,7 @@ plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -10391,7 +10344,7 @@ plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # y 軸標題
   mtext(
     text = "日均使用次數",
@@ -10399,10 +10352,10 @@ plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -10422,14 +10375,13 @@ plot_Hualien_THB_avg_daily_use_by_month(Hualien_THB_by_month)
 
 # 定義存圖函數
 save_plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月花蓮縣公路客運平均每日使用次數折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -10439,10 +10391,10 @@ save_plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Hualien_THB_avg_daily_use_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -10457,10 +10409,11 @@ library(dplyr)
 library(tidyr)
 
 # 月人數變化
-Hualien_THB_table <- Hualien_THB %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
-         ) %>% 
+Hualien_THB_table <- Hualien_THB %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month, `卡號`) %>%
   summarise(
@@ -10506,29 +10459,28 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_Hualien_THB_usage_group_by_month <- function(month_table) {
-  
   # 基本資料設定
   once_use <- month_table$`人數_僅一次`
   two_to_four_use <- month_table$`人數_二至四次`
   five_plus_use <- month_table$`人數_五次以上`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # 顏色設定
   color <- gray.colors(3, start = 0.3, end = 0.75)
-  
+
   # Y 軸範圍
   y_max <- max(c(once_use, two_to_four_use, five_plus_use)) * 1.1
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 8, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -10548,7 +10500,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     cex = 1.3,
     bty = "n"
   )
-  
+
   lines(
     x = x_idx,
     y = two_to_four_use,
@@ -10557,7 +10509,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[2]
   )
-  
+
   lines(
     x = x_idx,
     y = five_plus_use,
@@ -10566,14 +10518,14 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[3]
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月花蓮縣公路客運乘客各搭乘次數區間月人數變化折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -10582,7 +10534,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -10591,7 +10543,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     las = 1,
     cex.axis = 1.5
   )
-  
+
   # y 軸標題
   mtext(
     text = "人數",
@@ -10599,10 +10551,10 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -10623,14 +10575,13 @@ plot_Hualien_THB_usage_group_by_month(Hualien_THB_table)
 
 # 定義存圖函數
 save_plot_Hualien_THB_usage_group_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月花蓮縣公路客運乘客各搭乘次數區間月人數變化折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -10640,10 +10591,10 @@ save_plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Hualien_THB_usage_group_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -10658,10 +10609,11 @@ library(dplyr)
 library(tidyr)
 
 # 月人數變化
-Hualien_THB_TPASS_table <- Hualien_THB_TPASS %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
-         ) %>% 
+Hualien_THB_TPASS_table <- Hualien_THB_TPASS %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month, `卡號`) %>%
   summarise(
@@ -10709,29 +10661,28 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_Hualien_THB_usage_group_by_month <- function(month_table) {
-  
   # 基本資料設定
   once_use <- month_table$`人數_僅一次`
   two_to_four_use <- month_table$`人數_二至四次`
   five_plus_use <- month_table$`人數_五次以上`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # 顏色設定
   color <- gray.colors(3, start = 0.3, end = 0.75)
-  
+
   # Y 軸範圍
   y_max <- max(c(once_use, two_to_four_use, five_plus_use)) * 1.1
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 8, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -10751,7 +10702,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     cex = 1.3,
     bty = "n"
   )
-  
+
   lines(
     x = x_idx,
     y = two_to_four_use,
@@ -10760,7 +10711,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[2]
   )
-  
+
   lines(
     x = x_idx,
     y = five_plus_use,
@@ -10769,14 +10720,14 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[3]
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月花蓮縣公路客運TPASS乘客各搭乘次數區間月人數變化折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -10785,7 +10736,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -10794,7 +10745,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     las = 1,
     cex.axis = 1.5
   )
-  
+
   # y 軸標題
   mtext(
     text = "人數",
@@ -10802,10 +10753,10 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -10826,14 +10777,13 @@ plot_Hualien_THB_usage_group_by_month(Hualien_THB_TPASS_table)
 
 # 定義存圖函數
 save_plot_Hualien_THB_usage_group_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月花蓮縣公路客運TPASS乘客各搭乘次數區間月人數變化折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -10843,10 +10793,10 @@ save_plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Hualien_THB_usage_group_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -10862,10 +10812,11 @@ library(dplyr)
 library(tidyr)
 
 # 平均每日使用次數
-Hualien_THB_by_month <- Hualien_THB %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
-         ) %>% 
+Hualien_THB_by_month <- Hualien_THB %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month) %>%
   summarise(
@@ -10891,7 +10842,6 @@ Hualien_THB_by_month <- Hualien_THB %>%
     每人每月使用次數,
     平均每日使用次數
   )
-
 ```
 
 ###### plot
@@ -10901,27 +10851,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   avg_daily_use <- month_table$`平均每日使用次數`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # Y 軸刻度
   y_min <- floor(min(avg_daily_use) / 0.02) * 0.02
   y_max <- ceiling(max(avg_daily_use) / 0.02) * 0.02
   y_ticks <- seq(y_min, y_max, by = 0.02)
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 10, 4, 2))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -10941,14 +10890,14 @@ plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月花蓮縣公路客運平均每日使用次數折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -10957,7 +10906,7 @@ plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -10967,7 +10916,7 @@ plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # y 軸標題
   mtext(
     text = "日均使用次數",
@@ -10975,10 +10924,10 @@ plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -10998,14 +10947,13 @@ plot_Hualien_THB_avg_daily_use_by_month(Hualien_THB_by_month)
 
 # 定義存圖函數
 save_plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月花蓮縣公路客運平均每日使用次數折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -11015,10 +10963,10 @@ save_plot_Hualien_THB_avg_daily_use_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Hualien_THB_avg_daily_use_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -11033,10 +10981,11 @@ library(dplyr)
 library(tidyr)
 
 # 月人數變化
-Hualien_THB_table <- Hualien_THB %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
-         ) %>% 
+Hualien_THB_table <- Hualien_THB %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month, `卡號`) %>%
   summarise(
@@ -11082,29 +11031,28 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_Hualien_THB_usage_group_by_month <- function(month_table) {
-  
   # 基本資料設定
   once_use <- month_table$`人數_僅一次`
   two_to_four_use <- month_table$`人數_二至四次`
   five_plus_use <- month_table$`人數_五次以上`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # 顏色設定
   color <- gray.colors(3, start = 0.3, end = 0.75)
-  
+
   # Y 軸範圍
   y_max <- max(c(once_use, two_to_four_use, five_plus_use)) * 1.1
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 8, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -11124,7 +11072,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     cex = 1.3,
     bty = "n"
   )
-  
+
   lines(
     x = x_idx,
     y = two_to_four_use,
@@ -11133,7 +11081,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[2]
   )
-  
+
   lines(
     x = x_idx,
     y = five_plus_use,
@@ -11142,14 +11090,14 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[3]
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月花蓮縣公路客運乘客各搭乘次數區間月人數變化折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -11158,7 +11106,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -11167,7 +11115,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     las = 1,
     cex.axis = 1.5
   )
-  
+
   # y 軸標題
   mtext(
     text = "人數",
@@ -11175,10 +11123,10 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -11199,14 +11147,13 @@ plot_Hualien_THB_usage_group_by_month(Hualien_THB_table)
 
 # 定義存圖函數
 save_plot_Hualien_THB_usage_group_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月花蓮縣公路客運乘客各搭乘次數區間月人數變化折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -11216,10 +11163,10 @@ save_plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Hualien_THB_usage_group_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -11234,10 +11181,11 @@ library(dplyr)
 library(tidyr)
 
 # 月人數變化
-Hualien_THB_TPASS_table <- Hualien_THB_TPASS %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
-         ) %>% 
+Hualien_THB_TPASS_table <- Hualien_THB_TPASS %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month, `卡號`) %>%
   summarise(
@@ -11285,29 +11233,28 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_Hualien_THB_usage_group_by_month <- function(month_table) {
-  
   # 基本資料設定
   once_use <- month_table$`人數_僅一次`
   two_to_four_use <- month_table$`人數_二至四次`
   five_plus_use <- month_table$`人數_五次以上`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # 顏色設定
   color <- gray.colors(3, start = 0.3, end = 0.75)
-  
+
   # Y 軸範圍
   y_max <- max(c(once_use, two_to_four_use, five_plus_use)) * 1.1
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 8, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -11327,7 +11274,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     cex = 1.3,
     bty = "n"
   )
-  
+
   lines(
     x = x_idx,
     y = two_to_four_use,
@@ -11336,7 +11283,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[2]
   )
-  
+
   lines(
     x = x_idx,
     y = five_plus_use,
@@ -11345,14 +11292,14 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[3]
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月花蓮縣公路客運TPASS乘客各搭乘次數區間月人數變化折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -11361,7 +11308,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -11370,7 +11317,7 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     las = 1,
     cex.axis = 1.5
   )
-  
+
   # y 軸標題
   mtext(
     text = "人數",
@@ -11378,10 +11325,10 @@ plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -11402,14 +11349,13 @@ plot_Hualien_THB_usage_group_by_month(Hualien_THB_TPASS_table)
 
 # 定義存圖函數
 save_plot_Hualien_THB_usage_group_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月花蓮縣公路客運TPASS乘客各搭乘次數區間月人數變化折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -11419,10 +11365,10 @@ save_plot_Hualien_THB_usage_group_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Hualien_THB_usage_group_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -11440,10 +11386,11 @@ library(dplyr)
 library(tidyr)
 
 # 平均每日使用次數
-Taitung_THB_by_month <- Taitung_THB %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
-         ) %>% 
+Taitung_THB_by_month <- Taitung_THB %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month) %>%
   summarise(
@@ -11469,7 +11416,6 @@ Taitung_THB_by_month <- Taitung_THB %>%
     每人每月使用次數,
     平均每日使用次數
   )
-
 ```
 
 ###### plot
@@ -11479,27 +11425,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   avg_daily_use <- month_table$`平均每日使用次數`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # Y 軸刻度
   y_min <- floor(min(avg_daily_use) / 0.02) * 0.02
   y_max <- ceiling(max(avg_daily_use) / 0.02) * 0.02
   y_ticks <- seq(y_min, y_max, by = 0.02)
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 10, 4, 2))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -11519,14 +11464,14 @@ plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月臺東縣公路客運平均每日使用次數折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -11535,7 +11480,7 @@ plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -11545,7 +11490,7 @@ plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # y 軸標題
   mtext(
     text = "日均使用次數",
@@ -11553,10 +11498,10 @@ plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -11576,14 +11521,13 @@ plot_Taitung_THB_avg_daily_use_by_month(Taitung_THB_by_month)
 
 # 定義存圖函數
 save_plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月臺東縣公路客運平均每日使用次數折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -11593,10 +11537,10 @@ save_plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Taitung_THB_avg_daily_use_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -11611,10 +11555,11 @@ library(dplyr)
 library(tidyr)
 
 # 月人數變化
-Taitung_THB_table <- Taitung_THB %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
-         ) %>% 
+Taitung_THB_table <- Taitung_THB %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month, `卡號`) %>%
   summarise(
@@ -11660,29 +11605,28 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_Taitung_THB_usage_group_by_month <- function(month_table) {
-  
   # 基本資料設定
   once_use <- month_table$`人數_僅一次`
   two_to_four_use <- month_table$`人數_二至四次`
   five_plus_use <- month_table$`人數_五次以上`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # 顏色設定
   color <- gray.colors(3, start = 0.3, end = 0.75)
-  
+
   # Y 軸範圍
   y_max <- max(c(once_use, two_to_four_use, five_plus_use)) * 1.1
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 8, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -11702,7 +11646,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     cex = 1.3,
     bty = "n"
   )
-  
+
   lines(
     x = x_idx,
     y = two_to_four_use,
@@ -11711,7 +11655,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[2]
   )
-  
+
   lines(
     x = x_idx,
     y = five_plus_use,
@@ -11720,14 +11664,14 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[3]
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月臺東縣公路客運乘客各搭乘次數區間月人數變化折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -11736,7 +11680,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -11745,7 +11689,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     las = 1,
     cex.axis = 1.5
   )
-  
+
   # y 軸標題
   mtext(
     text = "人數",
@@ -11753,10 +11697,10 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -11777,14 +11721,13 @@ plot_Taitung_THB_usage_group_by_month(Taitung_THB_table)
 
 # 定義存圖函數
 save_plot_Taitung_THB_usage_group_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月臺東縣公路客運乘客各搭乘次數區間月人數變化折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -11794,10 +11737,10 @@ save_plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Taitung_THB_usage_group_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -11812,10 +11755,11 @@ library(dplyr)
 library(tidyr)
 
 # 月人數變化
-Taitung_THB_TPASS_table <- Taitung_THB_TPASS %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
-         ) %>% 
+Taitung_THB_TPASS_table <- Taitung_THB_TPASS %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-07-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-06-30")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month, `卡號`) %>%
   summarise(
@@ -11863,29 +11807,28 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_Taitung_THB_usage_group_by_month <- function(month_table) {
-  
   # 基本資料設定
   once_use <- month_table$`人數_僅一次`
   two_to_four_use <- month_table$`人數_二至四次`
   five_plus_use <- month_table$`人數_五次以上`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # 顏色設定
   color <- gray.colors(3, start = 0.3, end = 0.75)
-  
+
   # Y 軸範圍
   y_max <- max(c(once_use, two_to_four_use, five_plus_use)) * 1.1
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 8, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -11905,7 +11848,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     cex = 1.3,
     bty = "n"
   )
-  
+
   lines(
     x = x_idx,
     y = two_to_four_use,
@@ -11914,7 +11857,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[2]
   )
-  
+
   lines(
     x = x_idx,
     y = five_plus_use,
@@ -11923,14 +11866,14 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[3]
   )
-  
+
   # 標題
   title(
     main = "113年7月至114年6月臺東縣公路客運TPASS乘客各搭乘次數區間月人數變化折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -11939,7 +11882,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -11948,7 +11891,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     las = 1,
     cex.axis = 1.5
   )
-  
+
   # y 軸標題
   mtext(
     text = "人數",
@@ -11956,10 +11899,10 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -11980,14 +11923,13 @@ plot_Taitung_THB_usage_group_by_month(Taitung_THB_TPASS_table)
 
 # 定義存圖函數
 save_plot_Taitung_THB_usage_group_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.7~114.6"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年7月至114年6月臺東縣公路客運TPASS乘客各搭乘次數區間月人數變化折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -11997,10 +11939,10 @@ save_plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Taitung_THB_usage_group_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -12016,10 +11958,11 @@ library(dplyr)
 library(tidyr)
 
 # 平均每日使用次數
-Taitung_THB_by_month <- Taitung_THB %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
-         ) %>%  
+Taitung_THB_by_month <- Taitung_THB %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month) %>%
   summarise(
@@ -12045,7 +11988,6 @@ Taitung_THB_by_month <- Taitung_THB %>%
     每人每月使用次數,
     平均每日使用次數
   )
-
 ```
 
 ###### plot
@@ -12055,27 +11997,26 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
-  
   # 基本資料設定
   color <- gray.colors(2)
   avg_daily_use <- month_table$`平均每日使用次數`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # Y 軸刻度
   y_min <- floor(min(avg_daily_use) / 0.02) * 0.02
   y_max <- ceiling(max(avg_daily_use) / 0.02) * 0.02
   y_ticks <- seq(y_min, y_max, by = 0.02)
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(7, 10, 4, 2))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -12095,14 +12036,14 @@ plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
     yaxt = "n",
     bty = "n"
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月臺東縣公路客運平均每日使用次數折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -12111,7 +12052,7 @@ plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -12121,7 +12062,7 @@ plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
     cex.axis = 1.5,
     line = 0
   )
-  
+
   # y 軸標題
   mtext(
     text = "日均使用次數",
@@ -12129,10 +12070,10 @@ plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -12152,14 +12093,13 @@ plot_Taitung_THB_avg_daily_use_by_month(Taitung_THB_by_month)
 
 # 定義存圖函數
 save_plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月臺東縣公路客運平均每日使用次數折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -12169,10 +12109,10 @@ save_plot_Taitung_THB_avg_daily_use_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Taitung_THB_avg_daily_use_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -12187,10 +12127,11 @@ library(dplyr)
 library(tidyr)
 
 # 月人數變化
-Taitung_THB_table <- Taitung_THB %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
-         ) %>% 
+Taitung_THB_table <- Taitung_THB %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month, `卡號`) %>%
   summarise(
@@ -12236,29 +12177,28 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_Taitung_THB_usage_group_by_month <- function(month_table) {
-  
   # 基本資料設定
   once_use <- month_table$`人數_僅一次`
   two_to_four_use <- month_table$`人數_二至四次`
   five_plus_use <- month_table$`人數_五次以上`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # 顏色設定
   color <- gray.colors(3, start = 0.3, end = 0.75)
-  
+
   # Y 軸範圍
   y_max <- max(c(once_use, two_to_four_use, five_plus_use)) * 1.1
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 8, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -12278,7 +12218,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     cex = 1.3,
     bty = "n"
   )
-  
+
   lines(
     x = x_idx,
     y = two_to_four_use,
@@ -12287,7 +12227,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[2]
   )
-  
+
   lines(
     x = x_idx,
     y = five_plus_use,
@@ -12296,14 +12236,14 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[3]
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月臺東縣公路客運乘客各搭乘次數區間月人數變化折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -12312,7 +12252,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -12321,7 +12261,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     las = 1,
     cex.axis = 1.5
   )
-  
+
   # y 軸標題
   mtext(
     text = "人數",
@@ -12329,10 +12269,10 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -12353,14 +12293,13 @@ plot_Taitung_THB_usage_group_by_month(Taitung_THB_table)
 
 # 定義存圖函數
 save_plot_Taitung_THB_usage_group_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月臺東縣公路客運乘客各搭乘次數區間月人數變化折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -12370,10 +12309,10 @@ save_plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Taitung_THB_usage_group_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
@@ -12388,10 +12327,11 @@ library(dplyr)
 library(tidyr)
 
 # 月人數變化
-Taitung_THB_TPASS_table <- Taitung_THB_TPASS %>% 
-  filter(`資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
-         `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
-         ) %>%
+Taitung_THB_TPASS_table <- Taitung_THB_TPASS %>%
+  filter(
+    `資料代表日期(yyyy-MM-dd)` >= as.Date("2024-06-01"),
+    `資料代表日期(yyyy-MM-dd)` <= as.Date("2025-12-31")
+  ) %>%
   mutate(year_month = format(`資料代表日期(yyyy-MM-dd)`, "%Y-%m")) %>%
   group_by(year_month, `卡號`) %>%
   summarise(
@@ -12439,29 +12379,28 @@ windowsFonts(Kai = windowsFont("Microsoft JhengHei"))
 
 # 定義畫圖函數
 plot_Taitung_THB_usage_group_by_month <- function(month_table) {
-  
   # 基本資料設定
   once_use <- month_table$`人數_僅一次`
   two_to_four_use <- month_table$`人數_二至四次`
   five_plus_use <- month_table$`人數_五次以上`
   x_idx <- 1:nrow(month_table)
-  
+
   # 西元年月轉民國年月
   roc_label <- paste0(
     as.numeric(substr(month_table$year_month, 1, 4)) - 1911,
     "/",
     substr(month_table$year_month, 6, 7)
   )
-  
+
   # 顏色設定
   color <- gray.colors(3, start = 0.3, end = 0.75)
-  
+
   # Y 軸範圍
   y_max <- max(c(once_use, two_to_four_use, five_plus_use)) * 1.1
-  
+
   # 圖形設定
   par(family = "Kai", mar = c(5, 8, 4, 10))
-  
+
   # 主圖
   plot(
     x = x_idx,
@@ -12481,7 +12420,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     cex = 1.3,
     bty = "n"
   )
-  
+
   lines(
     x = x_idx,
     y = two_to_four_use,
@@ -12490,7 +12429,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[2]
   )
-  
+
   lines(
     x = x_idx,
     y = five_plus_use,
@@ -12499,14 +12438,14 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     pch = 16,
     col = color[3]
   )
-  
+
   # 標題
   title(
     main = "113年6月至114年12月臺東縣公路客運TPASS乘客各搭乘次數區間月人數變化折線圖",
     cex.main = 2,
     adj = 0
   )
-  
+
   # x 軸
   axis(
     side = 1,
@@ -12515,7 +12454,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     cex.axis = 1.5,
     las = 1
   )
-  
+
   # y 軸
   axis(
     side = 2,
@@ -12524,7 +12463,7 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     las = 1,
     cex.axis = 1.5
   )
-  
+
   # y 軸標題
   mtext(
     text = "人數",
@@ -12532,10 +12471,10 @@ plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     line = 5,
     cex = 2
   )
-  
+
   # 網格線
   grid()
-  
+
   # 圖例
   legend(
     "topright",
@@ -12556,14 +12495,13 @@ plot_Taitung_THB_usage_group_by_month(Taitung_THB_TPASS_table)
 
 # 定義存圖函數
 save_plot_Taitung_THB_usage_group_by_month <- function(month_table) {
-  
   # 路徑設定
   path <- "images/line_chart/113.6~114.12"
   if (!dir.exists(path)) dir.create(path, recursive = TRUE)
-  
+
   # 檔名
   img_filename <- "113年6月至114年12月臺東縣公路客運TPASS乘客各搭乘次數區間月人數變化折線圖"
-  
+
   # 開啟 PNG 裝置
   png(
     filename = paste0(path, "/", img_filename, ".png"),
@@ -12573,10 +12511,10 @@ save_plot_Taitung_THB_usage_group_by_month <- function(month_table) {
     res = 300,
     family = "Kai"
   )
-  
+
   # 畫圖
   plot_Taitung_THB_usage_group_by_month(month_table)
-  
+
   # 關閉裝置
   dev.off()
 }
