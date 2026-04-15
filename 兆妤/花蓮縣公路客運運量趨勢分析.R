@@ -13,19 +13,19 @@ print(sort(unique_routes))
 route_type <- list(
   hualien = list(
     coast = c(
-      1129, 1132, 1136, 1140,1145, 8101, 8102, 8105, 8119
-      #8103,8107, 8110, 8111, 8113,, 8120  #井字部分為有出現在資料裡的路線，但不在"花蓮交通e點通"的所列路線中
-    ), 
+      1129, 1132, 1136, 1140, 1145, 8101, 8102, 8105, 8119
+      # 8103, 8107, 8110, 8111, 8113,, 8120  #井字部分為有出現在資料裡的路線，但不在"花蓮交通e點通"的所列路線中
+    ),
     valley = c(
       1121, 1122, 1123, 1128, 1130, 1135, 1137, 1139, 1142, 1143,
-      8161,8173
-      #8109, 8115, 8117, 8128, 8129, 8130, 8131, 8132, 8135, 8136,
-      #8137, 8138, 8150, 8151, 8152, 8153, 8156, 8157, 8158, 8163, 
-      #8165, 8166, 8167, 8168, 8170, 8171, 8172, 8178, 8180, 8122
+      8161, 8173
+      # 8109, 8115, 8117, 8128, 8129, 8130, 8131, 8132, 8135, 8136,
+      # 8137, 8138, 8150, 8151, 8152, 8153, 8156, 8157, 8158, 8163,
+      # 8165, 8166, 8167, 8168, 8170, 8171, 8172, 8178, 8180, 8122
     ),
     cross = c(
       1125, 1126, 1133, 1141, 8181
-      #8125
+      # 8125
     )
   )
 )
@@ -40,7 +40,7 @@ route_map <- data.frame(
     rep("海岸線", length(route_type$hualien$coast)),
     rep("縱谷線", length(route_type$hualien$valley)),
     rep("山海線", length(route_type$hualien$cross))
-  ),stringsAsFactors = FALSE  
+  ), stringsAsFactors = FALSE
 )
 
 df_all$搭乘路線名稱 <- as.character(df_all$搭乘路線名稱)
@@ -49,7 +49,9 @@ if ("路線類別" %in% names(df_all)) {
   df_all$路線類別 <- NULL
 }
 df_all <- left_join(
-  df_all, route_map, by = "搭乘路線名稱")
+  df_all, route_map,
+  by = "搭乘路線名稱"
+)
 
 temp <- df_all %>%
   filter(!is.na(路線類別)) %>%
@@ -71,40 +73,49 @@ n2 <- df[, "海岸線"]
 n3 <- df[, "縱谷線"]
 n4 <- df[, "山海線"]
 
-par(family = "msjh",mar = c(5,6,4,10))
+par(family = "msjh", mar = c(5, 6, 4, 10))
 
 plot(
   years, n1,
   type = "o", pch = 16, lwd = 2, col = "black",
-  ylim = c(min(df) * 0.9 , max(df) * 1.1),
-  xlim = c(min(years) -0.15 ,max(years) + 0.15),
-  xlab = "年",ylab = "搭乘次數",
+  ylim = c(min(df) * 0.9, max(df) * 1.1),
+  xlim = c(min(years) - 0.15, max(years) + 0.15),
+  xlab = "年", ylab = "搭乘次數",
   main = "112年至114年花蓮縣公路客運年總運量折線圖",
   cex.main = 2,
   cex.lab = 2,
   cex.axis = 1.5,
   cex = 1.5,
-  xaxt = "n", yaxt = "n", bty = "n")
+  xaxt = "n", yaxt = "n", bty = "n"
+)
 
 axis(1, at = years, labels = years)
 
 # 其他線
-lines(years, n2, type="o", pch=16, lwd=2, col="grey40",
-      cex.main = 2,cex.lab = 2,cex.axis = 1.5,cex = 1.5)
-lines(years, n3, type="o", pch=16, lwd=2, col="grey60",
-      cex.main = 2,cex.lab = 2,cex.axis = 1.5,cex = 1.5)
-lines(years, n4, type="o", pch=16, lwd=2, col="grey75",
-      cex.main = 2,cex.lab = 2,cex.axis = 1.5,cex = 1.5)
+lines(years, n2,
+  type = "o", pch = 16, lwd = 2, col = "grey40",
+  cex.main = 2, cex.lab = 2, cex.axis = 1.5, cex = 1.5
+)
+lines(years, n3,
+  type = "o", pch = 16, lwd = 2, col = "grey60",
+  cex.main = 2, cex.lab = 2, cex.axis = 1.5, cex = 1.5
+)
+lines(years, n4,
+  type = "o", pch = 16, lwd = 2, col = "grey75",
+  cex.main = 2, cex.lab = 2, cex.axis = 1.5, cex = 1.5
+)
 
 text(years, n1 + max(n1) * 0.02,
-     labels = format(n1, big.mark = ",")
-     ,pos = 3, col = "black", cex = 1.2)
+  labels = format(n1, big.mark = ","),
+  pos = 3, col = "black", cex = 1.2
+)
 
 legend("topright",
-       inset = c(-0.2, 0),
-       legend = c("總運量","海岸線","縱谷線","山海線"),
-       col = c("black", "grey40", "grey60", "grey75"),
-       lwd = 2, pch = 16,bty = "n",xpd = TRUE,cex = 1.2)
+  inset = c(-0.2, 0),
+  legend = c("總運量", "海岸線", "縱谷線", "山海線"),
+  col = c("black", "grey40", "grey60", "grey75"),
+  lwd = 2, pch = 16, bty = "n", xpd = TRUE, cex = 1.2
+)
 
 # 百分比計算 ------
 percent_table <- rbind(
@@ -112,4 +123,3 @@ percent_table <- rbind(
   總運量 = 100
 )
 percent_table
-
