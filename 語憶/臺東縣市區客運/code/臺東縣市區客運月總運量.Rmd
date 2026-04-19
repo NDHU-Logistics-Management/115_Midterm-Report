@@ -1,0 +1,110 @@
+---
+title: "Untitled"
+author: "yuiy"
+date: "2026-03-29"
+output: html_document
+---
+
+```{r}
+library(lubridate)
+library(dplyr)
+
+data <- read.csv("C:/Users/AVITA/Downloads/臺東縣公車.csv",
+                 stringsAsFactors = FALSE)
+
+
+date1 <- as.Date(data$資料代表日期.yyyy.MM.dd.)
+data$year <- year(date1)
+data$month <- month(date1)
+
+
+data_use <- data %>%
+  filter(year %in% c(2023, 2024, 2025))
+
+
+month_table <- table(data_use$year, data_use$month)
+month_table <- as.matrix(month_table)
+
+month_table[is.na(month_table)] <- 0
+
+
+png("C:/Users/AVITA/Downloads/112年至114年1月至12月臺東縣市區客運月總運量折線圖.png",
+    width = 12, height = 6, units = "in", res = 300)
+
+par(
+  family = "yui",
+  mar = c(5,6,6,10),
+  mgp = c(4.1,1,0)   
+)
+windowsFonts(yui = windowsFont("Microsoft JhengHei"))
+
+
+plot(
+  1:12,
+  month_table["2023",],
+  type = "o",
+  pch = 16,           
+  lwd = 2.5,
+  col = "gray10",
+  ylim = c(0, max(month_table)*1.2),
+  xlab = "月份",
+  ylab = "搭乘次數",
+  xaxt = "n",
+  yaxt = "n",        
+  bty = "n",
+  cex.lab = 1.6
+
+)
+
+
+axis(1, at = 1:12, labels = 1:12)
+
+
+axis(
+  2,
+  at = pretty(c(0, max(month_table))),
+  las = 1,
+  cex.axis = 1.2
+)
+
+
+lines(
+  1:12,
+  month_table["2024",],
+  type = "o",
+  pch = 16,
+  lwd = 2.5,
+  col = "gray40"
+)
+
+lines(
+  1:12,
+  month_table["2025",],
+  type = "o",
+  pch = 16,
+  lwd = 2.5,
+  col = "gray70"
+)
+
+
+title(
+  main = "112年至114年1月至12月臺東縣市區客運月總運量折線圖",
+  adj = 0,
+  cex.main = 1.8
+)
+
+
+legend(
+  "topright",
+  legend = c("112年", "113年", "114年"),
+  col = c("gray10", "gray40", "gray70"),
+  pch = 16,
+  lwd = 2.5,
+  bty = "n",
+  inset = c(-0.15, 0),
+  xpd = TRUE
+)
+
+
+dev.off()
+```
