@@ -1,0 +1,86 @@
+---
+title: "支援4月"
+author: "yuiy"
+date: "2026-04-05"
+output: html_document
+---
+
+```{r}
+library(lubridate)
+library(dplyr)
+
+path <- "C:/Users/AVITA/Downloads/花蓮縣公車.csv"
+data <- read.csv(path, stringsAsFactors = FALSE)
+
+date1 <- as.Date(data$資料代表日期.yyyy.MM.dd.)
+data$year <- year(date1)
+data$month <- month(date1)
+
+
+data <- data %>%
+  filter(year == 2025, month %in% 1:6)
+
+
+data$票種 <- recode(data$持卡身分,
+  "A" = "普通(含TPASS)",
+  "B" = "學生",
+  "C01" = "敬老優待",
+  "C02" = "愛心優待",
+  "C09" = "其他優待",
+  "D" = "員工",
+  "X" = "無法區別"
+)
+
+
+card_table <- table(data$票種)
+
+
+card_table <- sort(card_table, decreasing = TRUE)
+
+
+percent <- round(prop.table(card_table) * 100, 1)
+
+
+png(
+  "C:/Users/AVITA/Downloads/114年1月至114年6月花蓮縣市區客運持卡身分長條圖.png",
+  width = 8, height = 6, units = "in", res = 300
+)
+
+windowsFonts(yui = windowsFont("Microsoft JhengHei"))
+
+par(
+  family = "yui",
+  mar = c(4,2,6,2),
+  xpd = NA
+)
+
+
+bp <- barplot(
+  card_table,
+  col = gray.colors(length(card_table), start=0.3, end=0.9),
+  main = "",
+  ylab = "",
+  xlab = "",
+  axes = FALSE,   
+  border = NA,
+  cex.names = 0.9
+)
+
+
+title(
+  main = "114年1月至114年6月花蓮縣市區客運持卡身分長條圖",
+  adj = 0.085
+)
+
+
+text(
+  bp,
+  card_table,
+  labels = paste0(sprintf("%.1f", percent), "%"),
+  pos = 3,
+  cex = 0.9
+)
+
+
+dev.off()
+```

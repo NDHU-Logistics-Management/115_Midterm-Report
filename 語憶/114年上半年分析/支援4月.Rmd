@@ -1,0 +1,101 @@
+---
+title: "支援4月"
+author: "yuiy"
+date: "2026-04-05"
+output: html_document
+---
+
+```{r}
+library(lubridate)
+library(dplyr)
+library(data.table)
+
+
+path <- "C:/Users/AVITA/Downloads/臺東縣公車.csv"
+data <- read.csv(path, stringsAsFactors = FALSE)
+
+
+date1 <- ymd(data$資料代表日期.yyyy.MM.dd.)
+data$year <- year(date1)
+data$month <- month(date1)
+
+
+data_use <- data %>%
+  filter(year == 2025, month %in% 1:6)
+
+
+month_table <- table(data_use$month)
+
+
+all_months <- 1:6
+month_table <- month_table[as.character(all_months)]
+month_table[is.na(month_table)] <- 0
+
+ride_count <- as.numeric(month_table)
+
+
+x_labels <- paste0("114", sprintf("%02d", all_months))
+
+
+png(
+  filename = "C:/Users/AVITA/Downloads/114年1月至114年6月臺東縣市區客運運量折線圖.png",
+  width = 12,
+  height = 6,
+  units = "in",
+  res = 300
+)
+
+windowsFonts(kai = windowsFont("Microsoft JhengHei"))
+
+par(
+  family = "kai",
+  mar = c(5,7,6,2),
+  mgp = c(4.1,1,0)  
+)
+
+plot(
+  x = all_months,
+  y = ride_count,
+  type = "o",
+  pch = 16,
+  lwd = 2,
+  col = "black",
+  xlab = "月份",
+  ylab = "搭乘次數",
+  ylim = c(0, max(ride_count)*1.3),
+  xaxt = "n",
+  yaxt = "n",
+  bty = "n",
+  cex.lab = 1.8 
+)
+
+
+title(
+  main = "114年1月至114年6月臺東縣市區客運運量折線圖",
+  adj = 0,
+  cex.main = 1.8
+)
+
+
+axis(
+  1,
+  at = all_months,
+  labels = x_labels,
+  cex.axis = 1.2
+  )
+
+
+axis(
+  2,
+  at = pretty(c(0, max(ride_count))),
+  las = 1,
+  cex.axis = 1.2
+)
+
+
+
+grid()
+
+
+dev.off()
+```
