@@ -47,11 +47,11 @@ Hualien_THB <- rbind(Hualien_THB_2022, Hualien_THB_23_25)
 Taitung_THB <- rbind(Taitung_THB_2022, Taitung_THB_23_25)
 
 # extract year and aggregate total volume per year
-temp <- Taitung_THB %>%
+temp <- Hualien_THB %>%
     filter(date >= anal_time_range[1] & date <= anal_time_range[2])
 yearly <- temp[, .(volume = .N), by = .(year = year(as.vector(temp$date)))]
 roc_year <- yearly$year - 1911
-title <- "111年至114年上半年臺東縣公路客運運量趨勢折線圖"
+title <- "111年至114年上半年花蓮縣公路客運運量趨勢折線圖"
 
 # plot
 png(

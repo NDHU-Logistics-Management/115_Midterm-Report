@@ -6,7 +6,7 @@ setwd("D:/Github/115_Midterm-Report")
 load("兆妤/df_hualien.RData")
 
 # ---------------- 前處理 ----------------
-type_order <- c("非定期票", "花蓮縣199", "花蓮縣399", "台東縣299")
+type_order <- c("花蓮縣399", "花蓮縣199", "台東縣299", "非定期票")
 
 temp1 <- df_hualien %>%
     mutate(
