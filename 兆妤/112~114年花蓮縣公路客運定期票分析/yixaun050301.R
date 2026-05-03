@@ -67,7 +67,6 @@ bp <- barplot(
     prop_vec,
     names.arg = names(prop_vec),
     col = color,
-    border = NA,
     las = 1,
     cex.main = 2,
     cex.lab = 2,

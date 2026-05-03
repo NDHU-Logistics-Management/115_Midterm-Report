@@ -52,7 +52,8 @@ openxlsx::write.xlsx(
 if (!dir.exists(path)) {
     dir.create(path, recursive = TRUE)
 }
-file_name <- "114年花蓮縣公路客運持卡分析長條圖.png"
+title <- "114年花蓮縣公路客運持卡分析長條圖"
+file_name <- paste0(title, ".png")
 color <- gray.colors(length(ticket_order))
 
 png(
@@ -63,20 +64,18 @@ png(
     res = 300
 )
 
-prop_vec <- sort(table2[, "114"], decreasing = TRUE)
+prop_vec <- sort(table2[, "114"], decreasing = TRUE)[-7]
 label_vec <- sprintf("%.1f%%", prop_vec * 100)
 
 windowsFonts(msjh = windowsFont("Microsoft JhengHei"))
-pct <- round(prop_vec / sum(prop_vec) * 100, 1)
 par(family = "msjh", mar = c(5, 3, 4, 3))
 
 bp <- barplot(
     height = prop_vec,
     col = color,
-    border = NA,
     las = 1,
     ylim = c(0, max(prop_vec) * 1.1),
-    main = "114年花蓮縣公路客運持卡身分長條圖", cex.main = 2, adj = 0,
+    main = title, cex.main = 2, adj = 0,
     cex.lab = 2,
     cex = 1.2,
     cex.axis = 1.5,
