@@ -471,71 +471,80 @@ generate_bus_monthly_passenger_changes_plot <- function(
 }
 
 # Recommended usage with `E:/0408俊典/115期中.RData`
-# load("E:/0408俊典/115期中.RData")
-# source("D:/Github/115_Midterm-Report/TPASS/0414.r")
+# load("D:/Github/115_Midterm-Report/TPASS/115期中.RData")
+# source("D:/Github/115_Midterm-Report/TPASS/搭乘次數區間.R")
 #
+# 定義時間範圍
+year.from <- 2024
+month.from <- 6
+year.to <- 2025
+month.to <- 12
+
+# 定義標題時間範圍字串
+title_time <- paste0(year.from - 1911, "年", month.from, "月至", year.to - 1911, "年", month.to, "月")
+
 # 花蓮縣市區客運:
-# generate_bus_monthly_passenger_changes_plot(
-#     2024, 7, 2025, 6,
-#     data = bus_hualien,
-#     png_title = "113年7月至114年6月花蓮縣市區客運乘客各搭乘次數區間月人數變化折線圖",
-#     xlsx_title = "113年7月至114年6月花蓮縣市區客運乘客各搭乘次數區間月人數變化"
-# )
-# #
-# # 花蓮縣市區客運 TPASS:
-# generate_bus_monthly_passenger_changes_plot(
-#     2024, 7, 2025, 6,
-#     data = bus_hualien_TPASS,
-#     png_title = "113年7月至114年6月花蓮縣市區客運TPASS乘客各搭乘次數區間月人數變化折線圖",
-#     xlsx_title = "113年7月至114年6月花蓮縣市區客運TPASS乘客各搭乘次數區間月人數變化"
-# )
-# #
-# # 花蓮縣公路客運:
-# generate_bus_monthly_passenger_changes_plot(
-#     2024, 7, 2025, 6,
-#     data = Hualien_THB,
-#     png_title = "113年7月至114年6月花蓮縣公路客運乘客各搭乘次數區間月人數變化折線圖",
-#     xlsx_title = "113年7月至114年6月花蓮縣公路客運乘客各搭乘次數區間月人數變化"
-# )
-# #
-# # 花蓮縣公路客運 TPASS:
-# generate_bus_monthly_passenger_changes_plot(
-#     2024, 7, 2025, 6,
-#     data = Hualien_THB_TPASS,
-#     png_title = "113年7月至114年6月花蓮縣公路客運TPASS乘客各搭乘次數區間月人數變化折線圖",
-#     xlsx_title = "113年7月至114年6月花蓮縣公路客運TPASS乘客各搭乘次數區間月人數變化"
-# )
+generate_bus_monthly_passenger_changes_plot(
+    year.from, month.from, year.to, month.to,
+    data = bus_hualien,
+    png_title = paste0(title_time, "花蓮縣市區客運乘客各搭乘次數區間月人數變化折線圖"),
+    xlsx_title = paste0(title_time, "花蓮縣市區客運乘客各搭乘次數區間月人數變化")
+)
 #
-# # ----------------------------------------------
+# 花蓮縣市區客運 TPASS:
+generate_bus_monthly_passenger_changes_plot(
+    year.from, month.from, year.to, month.to,
+    data = bus_hualien_TPASS,
+    png_title = paste0(title_time, "花蓮縣市區客運TPASS乘客各搭乘次數區間月人數變化折線圖"),
+    xlsx_title = paste0(title_time, "花蓮縣市區客運TPASS乘客各搭乘次數區間月人數變化")
+)
 #
-# # 臺東縣市區客運:
-# generate_bus_monthly_passenger_changes_plot(
-#     2024, 7, 2025, 6,
-#     data = bus_taitung,
-#     png_title = "113年7月至114年6月臺東縣市區客運乘客各搭乘次數區間月人數變化折線圖",
-#     xlsx_title = "113年7月至114年6月臺東縣市區客運乘客各搭乘次數區間月人數變化"
-# )
-# #
-# # 臺東縣市區客運 TPASS:
-# generate_bus_monthly_passenger_changes_plot(
-#     2024, 7, 2025, 6,
-#     data = bus_taitung_TPASS,
-#     png_title = "113年7月至114年6月臺東縣市區客運TPASS乘客各搭乘次數區間月人數變化折線圖",
-#     xlsx_title = "113年7月至114年6月臺東縣市區客運TPASS乘客各搭乘次數區間月人數變化"
-# )
-# #
-# # 臺東縣公路客運:
-# generate_bus_monthly_passenger_changes_plot(
-#     2024, 7, 2025, 6,
-#     data = Taitung_THB,
-#     png_title = "113年7月至114年6月臺東縣公路客運乘客各搭乘次數區間月人數變化折線圖",
-#     xlsx_title = "113年7月至114年6月臺東縣公路客運乘客各搭乘次數區間月人數變化"
-# )
-# #
-# # 臺東縣公路客運 TPASS:
-# generate_bus_monthly_passenger_changes_plot(
-#     2024, 7, 2025, 6,
-#     data = Taitung_THB_TPASS,
-#     png_title = "113年7月至114年6月臺東縣公路客運TPASS乘客各搭乘次數區間月人數變化折線圖",
-#     xlsx_title = "113年7月至114年6月臺東縣公路客運TPASS乘客各搭乘次數區間月人數變化"
-# )
+# 花蓮縣公路客運:
+generate_bus_monthly_passenger_changes_plot(
+    year.from, month.from, year.to, month.to,
+    data = Hualien_THB,
+    png_title = paste0(title_time, "花蓮縣公路客運乘客各搭乘次數區間月人數變化折線圖"),
+    xlsx_title = paste0(title_time, "花蓮縣公路客運乘客各搭乘次數區間月人數變化")
+)
+#
+# 花蓮縣公路客運 TPASS:
+generate_bus_monthly_passenger_changes_plot(
+    year.from, month.from, year.to, month.to,
+    data = Hualien_THB_TPASS,
+    png_title = paste0(title_time, "花蓮縣公路客運TPASS乘客各搭乘次數區間月人數變化折線圖"),
+    xlsx_title = paste0(title_time, "花蓮縣公路客運TPASS乘客各搭乘次數區間月人數變化")
+)
+
+# ----------------------------------------------
+
+# 臺東縣市區客運:
+generate_bus_monthly_passenger_changes_plot(
+    year.from, month.from, year.to, month.to,
+    data = bus_taitung,
+    png_title = paste0(title_time, "臺東縣市區客運乘客各搭乘次數區間月人數變化折線圖"),
+    xlsx_title = paste0(title_time, "臺東縣市區客運乘客各搭乘次數區間月人數變化")
+)
+#
+# 臺東縣市區客運 TPASS:
+generate_bus_monthly_passenger_changes_plot(
+    year.from, month.from, year.to, month.to,
+    data = bus_taitung_TPASS,
+    png_title = paste0(title_time, "臺東縣市區客運TPASS乘客各搭乘次數區間月人數變化折線圖"),
+    xlsx_title = paste0(title_time, "臺東縣市區客運TPASS乘客各搭乘次數區間月人數變化")
+)
+#
+# 臺東縣公路客運:
+generate_bus_monthly_passenger_changes_plot(
+    year.from, month.from, year.to, month.to,
+    data = Taitung_THB,
+    png_title = paste0(title_time, "臺東縣公路客運乘客各搭乘次數區間月人數變化折線圖"),
+    xlsx_title = paste0(title_time, "臺東縣公路客運乘客各搭乘次數區間月人數變化")
+)
+#
+# 臺東縣公路客運 TPASS:
+generate_bus_monthly_passenger_changes_plot(
+    year.from, month.from, year.to, month.to,
+    data = Taitung_THB_TPASS,
+    png_title = paste0(title_time, "臺東縣公路客運TPASS乘客各搭乘次數區間月人數變化折線圖"),
+    xlsx_title = paste0(title_time, "臺東縣公路客運TPASS乘客各搭乘次數區間月人數變化")
+)
